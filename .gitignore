@@ -1,6 +1,6 @@
 # Binary
-invoice
-invoice.exe
+/invoice
+/invoice.exe
 
 # IDE
 .idea/
