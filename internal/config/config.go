@@ -1,0 +1,83 @@
+package config
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+)
+
+type Config struct {
+	DataDir   string
+	DBPath    string
+	PDFDir    string
+	LogoDir   string
+	ExportDir string
+}
+
+func New() (*Config, error) {
+	dataDir, err := getDataDir()
+	if err != nil {
+		return nil, err
+	}
+
+	cfg := &Config{
+		DataDir:   dataDir,
+		DBPath:    filepath.Join(dataDir, "invoices.db"),
+		PDFDir:    filepath.Join(dataDir, "pdfs"),
+		LogoDir:   filepath.Join(dataDir, "logos"),
+		ExportDir: filepath.Join(dataDir, "exports"),
+	}
+
+	dirs := []string{cfg.DataDir, cfg.PDFDir, cfg.LogoDir, cfg.ExportDir}
+	for _, dir := range dirs {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return nil, err
+		}
+	}
+
+	return cfg, nil
+}
+
+func getDataDir() (string, error) {
+	var baseDir string
+
+	switch runtime.GOOS {
+	case "windows":
+		appData := os.Getenv("APPDATA")
+		if appData == "" {
+			home, err := os.UserHomeDir()
+			if err != nil {
+				return "", err
+			}
+			appData = filepath.Join(home, "AppData", "Roaming")
+		}
+		baseDir = filepath.Join(appData, "InvoiceManager")
+
+	case "darwin":
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		baseDir = filepath.Join(home, "Library", "Application Support", "InvoiceManager")
+
+	default:
+		configDir := os.Getenv("XDG_CONFIG_HOME")
+		if configDir == "" {
+			home, err := os.UserHomeDir()
+			if err != nil {
+				return "", err
+			}
+			configDir = filepath.Join(home, ".config")
+		}
+		baseDir = filepath.Join(configDir, "invoice-manager")
+	}
+
+	return baseDir, nil
+}
+
+func (c *Config) GetPDFPath(invoiceNumber string, year int) string {
+	yearDir := filepath.Join(c.PDFDir, fmt.Sprintf("%d", year))
+	os.MkdirAll(yearDir, 0755)
+	return filepath.Join(yearDir, invoiceNumber+".pdf")
+}
