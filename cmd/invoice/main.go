@@ -26,7 +26,7 @@ func main() {
 	defer db.Close()
 
 	// Start CLI
-	app := cli.New(db)
+	app := cli.New(db, cfg)
 	if err := app.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Chyba: %v\n", err)
 		os.Exit(1)

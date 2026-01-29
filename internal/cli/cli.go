@@ -7,30 +7,36 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/user/invoice-app/internal/config"
 	"github.com/user/invoice-app/internal/database"
 	"github.com/user/invoice-app/internal/database/repository"
+	"github.com/user/invoice-app/internal/service"
 )
 
 type CLI struct {
 	db          *database.DB
+	cfg         *config.Config
 	suppliers   *repository.SupplierRepository
 	customers   *repository.CustomerRepository
 	bankAccs    *repository.BankAccountRepository
 	invoices    *repository.InvoiceRepository
 	invItems    *repository.InvoiceItemRepository
+	pdfService  *service.PDFService
 	scanner     *bufio.Scanner
 	currentSupp string // Current supplier ID
 }
 
-func New(db *database.DB) *CLI {
+func New(db *database.DB, cfg *config.Config) *CLI {
 	return &CLI{
-		db:        db,
-		suppliers: repository.NewSupplierRepository(db.DB),
-		customers: repository.NewCustomerRepository(db.DB),
-		bankAccs:  repository.NewBankAccountRepository(db.DB),
-		invoices:  repository.NewInvoiceRepository(db.DB),
-		invItems:  repository.NewInvoiceItemRepository(db.DB),
-		scanner:   bufio.NewScanner(os.Stdin),
+		db:         db,
+		cfg:        cfg,
+		suppliers:  repository.NewSupplierRepository(db.DB),
+		customers:  repository.NewCustomerRepository(db.DB),
+		bankAccs:   repository.NewBankAccountRepository(db.DB),
+		invoices:   repository.NewInvoiceRepository(db.DB),
+		invItems:   repository.NewInvoiceItemRepository(db.DB),
+		pdfService: service.NewPDFService(cfg.PDFDir),
+		scanner:    bufio.NewScanner(os.Stdin),
 	}
 }
 

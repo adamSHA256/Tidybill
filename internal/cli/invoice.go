@@ -2,10 +2,13 @@ package cli
 
 import (
 	"fmt"
+	"os/exec"
+	"runtime"
 	"time"
 
 	"github.com/user/invoice-app/internal/database/repository"
 	"github.com/user/invoice-app/internal/model"
+	"github.com/user/invoice-app/internal/service"
 )
 
 func (c *CLI) createInvoice() {
@@ -162,6 +165,11 @@ func (c *CLI) createInvoice() {
 	}
 
 	c.printSuccess(fmt.Sprintf("Faktura %s byla vytvořena!", invoice.InvoiceNumber))
+
+	// Ask to generate PDF
+	if c.confirm("Generovat PDF?") {
+		c.generatePDF(invoice)
+	}
 
 	// Ask to change status
 	if c.confirm("Označit jako odeslanou?") {
@@ -434,6 +442,10 @@ func (c *CLI) invoiceDetail(inv *model.Invoice) {
 		fmt.Printf("  CELKEM: %.2f %s\n", inv.Total, inv.Currency)
 		fmt.Println()
 
+		fmt.Println("  G) Generovat PDF")
+		if inv.PDFPath != "" {
+			fmt.Println("  O) Otevřít PDF")
+		}
 		fmt.Println("  S) Změnit stav")
 		fmt.Println("  P) Označit jako zaplacenou")
 		fmt.Println("  X) Smazat fakturu")
@@ -445,6 +457,12 @@ func (c *CLI) invoiceDetail(inv *model.Invoice) {
 		switch choice {
 		case "0", "":
 			return
+		case "g", "G":
+			c.generatePDF(inv)
+		case "o", "O":
+			if inv.PDFPath != "" {
+				c.openFile(inv.PDFPath)
+			}
 		case "s", "S":
 			c.changeInvoiceStatus(inv)
 		case "p", "P":
@@ -459,6 +477,75 @@ func (c *CLI) invoiceDetail(inv *model.Invoice) {
 				return
 			}
 		}
+	}
+}
+
+func (c *CLI) generatePDF(inv *model.Invoice) {
+	supplier, err := c.suppliers.GetByID(inv.SupplierID)
+	if err != nil || supplier == nil {
+		c.printError("Nepodařilo se načíst dodavatele")
+		return
+	}
+
+	customer, err := c.customers.GetByID(inv.CustomerID)
+	if err != nil || customer == nil {
+		c.printError("Nepodařilo se načíst odběratele")
+		return
+	}
+
+	bankAcc, err := c.bankAccs.GetByID(inv.BankAccountID)
+	if err != nil || bankAcc == nil {
+		c.printError("Nepodařilo se načíst bankovní účet")
+		return
+	}
+
+	items, err := c.invItems.GetByInvoice(inv.ID)
+	if err != nil {
+		c.printError("Nepodařilo se načíst položky")
+		return
+	}
+
+	fmt.Println("Generuji PDF...")
+
+	data := &service.InvoiceData{
+		Invoice:     inv,
+		Supplier:    supplier,
+		Customer:    customer,
+		BankAccount: bankAcc,
+		Items:       items,
+	}
+
+	pdfPath, err := c.pdfService.GenerateInvoice(data)
+	if err != nil {
+		c.printError(err.Error())
+		return
+	}
+
+	// Update invoice with PDF path
+	inv.PDFPath = pdfPath
+	c.invoices.Update(inv)
+
+	c.printSuccess(fmt.Sprintf("PDF vytvořeno: %s", pdfPath))
+
+	if c.confirm("Otevřít PDF?") {
+		c.openFile(pdfPath)
+	}
+}
+
+func (c *CLI) openFile(path string) {
+	var cmd *exec.Cmd
+
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("cmd", "/c", "start", "", path)
+	case "darwin":
+		cmd = exec.Command("open", path)
+	default:
+		cmd = exec.Command("xdg-open", path)
+	}
+
+	if err := cmd.Start(); err != nil {
+		c.printError(fmt.Sprintf("Nepodařilo se otevřít soubor: %v", err))
 	}
 }
 
