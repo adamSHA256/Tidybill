@@ -11,6 +11,7 @@ CREATE TABLE suppliers (
     dic TEXT,
     phone TEXT,
     email TEXT,
+    website TEXT,
     logo_path TEXT,
     is_vat_payer INTEGER DEFAULT 0,
     is_default INTEGER DEFAULT 0,

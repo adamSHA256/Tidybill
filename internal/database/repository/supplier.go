@@ -24,10 +24,10 @@ func (r *SupplierRepository) Create(s *model.Supplier) error {
 	s.UpdatedAt = time.Now()
 
 	_, err := r.db.Exec(`
-		INSERT INTO suppliers (id, name, street, city, zip, country, ico, dic, phone, email,
+		INSERT INTO suppliers (id, name, street, city, zip, country, ico, dic, phone, email, website,
 			logo_path, is_vat_payer, is_default, invoice_prefix, notes, language, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		s.ID, s.Name, s.Street, s.City, s.ZIP, s.Country, s.ICO, s.DIC, s.Phone, s.Email,
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		s.ID, s.Name, s.Street, s.City, s.ZIP, s.Country, s.ICO, s.DIC, s.Phone, s.Email, s.Website,
 		s.LogoPath, s.IsVATPayer, s.IsDefault, s.InvoicePrefix, s.Notes, s.Language, s.CreatedAt, s.UpdatedAt)
 	return err
 }
@@ -35,10 +35,10 @@ func (r *SupplierRepository) Create(s *model.Supplier) error {
 func (r *SupplierRepository) Update(s *model.Supplier) error {
 	s.UpdatedAt = time.Now()
 	_, err := r.db.Exec(`
-		UPDATE suppliers SET name=?, street=?, city=?, zip=?, country=?, ico=?, dic=?, phone=?, email=?,
+		UPDATE suppliers SET name=?, street=?, city=?, zip=?, country=?, ico=?, dic=?, phone=?, email=?, website=?,
 			logo_path=?, is_vat_payer=?, is_default=?, invoice_prefix=?, notes=?, language=?, updated_at=?
 		WHERE id=?`,
-		s.Name, s.Street, s.City, s.ZIP, s.Country, s.ICO, s.DIC, s.Phone, s.Email,
+		s.Name, s.Street, s.City, s.ZIP, s.Country, s.ICO, s.DIC, s.Phone, s.Email, s.Website,
 		s.LogoPath, s.IsVATPayer, s.IsDefault, s.InvoicePrefix, s.Notes, s.Language, s.UpdatedAt, s.ID)
 	return err
 }
@@ -46,10 +46,10 @@ func (r *SupplierRepository) Update(s *model.Supplier) error {
 func (r *SupplierRepository) GetByID(id string) (*model.Supplier, error) {
 	s := &model.Supplier{}
 	err := r.db.QueryRow(`
-		SELECT id, name, street, city, zip, country, ico, dic, phone, email,
+		SELECT id, name, street, city, zip, country, ico, dic, phone, email, website,
 			logo_path, is_vat_payer, is_default, invoice_prefix, notes, language, created_at, updated_at
 		FROM suppliers WHERE id = ?`, id).Scan(
-		&s.ID, &s.Name, &s.Street, &s.City, &s.ZIP, &s.Country, &s.ICO, &s.DIC, &s.Phone, &s.Email,
+		&s.ID, &s.Name, &s.Street, &s.City, &s.ZIP, &s.Country, &s.ICO, &s.DIC, &s.Phone, &s.Email, &s.Website,
 		&s.LogoPath, &s.IsVATPayer, &s.IsDefault, &s.InvoicePrefix, &s.Notes, &s.Language, &s.CreatedAt, &s.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -60,10 +60,10 @@ func (r *SupplierRepository) GetByID(id string) (*model.Supplier, error) {
 func (r *SupplierRepository) GetDefault() (*model.Supplier, error) {
 	s := &model.Supplier{}
 	err := r.db.QueryRow(`
-		SELECT id, name, street, city, zip, country, ico, dic, phone, email,
+		SELECT id, name, street, city, zip, country, ico, dic, phone, email, website,
 			logo_path, is_vat_payer, is_default, invoice_prefix, notes, language, created_at, updated_at
 		FROM suppliers WHERE is_default = 1 LIMIT 1`).Scan(
-		&s.ID, &s.Name, &s.Street, &s.City, &s.ZIP, &s.Country, &s.ICO, &s.DIC, &s.Phone, &s.Email,
+		&s.ID, &s.Name, &s.Street, &s.City, &s.ZIP, &s.Country, &s.ICO, &s.DIC, &s.Phone, &s.Email, &s.Website,
 		&s.LogoPath, &s.IsVATPayer, &s.IsDefault, &s.InvoicePrefix, &s.Notes, &s.Language, &s.CreatedAt, &s.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -73,7 +73,7 @@ func (r *SupplierRepository) GetDefault() (*model.Supplier, error) {
 
 func (r *SupplierRepository) List() ([]*model.Supplier, error) {
 	rows, err := r.db.Query(`
-		SELECT id, name, street, city, zip, country, ico, dic, phone, email,
+		SELECT id, name, street, city, zip, country, ico, dic, phone, email, website,
 			logo_path, is_vat_payer, is_default, invoice_prefix, notes, language, created_at, updated_at
 		FROM suppliers ORDER BY is_default DESC, name ASC`)
 	if err != nil {
@@ -85,7 +85,7 @@ func (r *SupplierRepository) List() ([]*model.Supplier, error) {
 	for rows.Next() {
 		s := &model.Supplier{}
 		if err := rows.Scan(&s.ID, &s.Name, &s.Street, &s.City, &s.ZIP, &s.Country, &s.ICO, &s.DIC,
-			&s.Phone, &s.Email, &s.LogoPath, &s.IsVATPayer, &s.IsDefault, &s.InvoicePrefix,
+			&s.Phone, &s.Email, &s.Website, &s.LogoPath, &s.IsVATPayer, &s.IsDefault, &s.InvoicePrefix,
 			&s.Notes, &s.Language, &s.CreatedAt, &s.UpdatedAt); err != nil {
 			return nil, err
 		}

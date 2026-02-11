@@ -3,13 +3,13 @@ package main
 import (
 	"fmt"
 	"os"
-
 	"github.com/user/invoice-app/internal/cli"
 	"github.com/user/invoice-app/internal/config"
 	"github.com/user/invoice-app/internal/database"
 )
 
 func main() {
+
 	// Load configuration
 	cfg, err := config.New()
 	if err != nil {

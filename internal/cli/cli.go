@@ -91,6 +91,7 @@ func (c *CLI) mainMenu() error {
 		fmt.Println("  8) Sync / Import / Export")
 		fmt.Println("  9) Šablony PDF")
 		fmt.Println("  S) Nastavení")
+		fmt.Println("  W) Přehled")
 		fmt.Println("  0) Ukončit")
 		fmt.Println()
 
@@ -117,6 +118,8 @@ func (c *CLI) mainMenu() error {
 			c.templatesMenu()
 		case "s":
 			c.settingsMenu()
+		case "w":
+			c.showStats()
 		case "0", "q":
 			fmt.Println("Na shledanou!")
 			return nil
@@ -230,4 +233,20 @@ func (c *CLI) printError(msg string) {
 
 func (c *CLI) printSuccess(msg string) {
 	fmt.Printf("\n✓ %s\n", msg)
+}
+
+func (c *CLI) showStats() {
+	count, err := c.suppliers.Count()
+	if err != nil {
+		fmt.Println("Nelze zobrazit statistiku dodavatelů, %s\n", err)	
+	} else {
+		fmt.Printf("Vytvořených dodavatelů: %d\n", count)
+	}
+	invoices, err := c.invoices.CountUnpaid()
+	if err != nil {
+		fmt.Println("Nelze zobrazit statistiku faktur, %s\n", err)	
+	} else {
+		fmt.Printf("Celkový nezaplacených faktur: %d\n", invoices)
+	}
+	c.waitEnter()
 }

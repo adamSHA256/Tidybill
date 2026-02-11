@@ -36,6 +36,7 @@ func (c *CLI) firstRunWizard() error {
 	supplier.DIC = c.prompt("DIČ (pokud jste plátce DPH, jinak nechte prázdné)")
 	supplier.Phone = c.prompt("Telefon")
 	supplier.Email = c.prompt("E-mail")
+	supplier.Website= c.prompt("Website")
 
 	if supplier.DIC != "" {
 		supplier.IsVATPayer = c.confirm("Jste plátce DPH?")

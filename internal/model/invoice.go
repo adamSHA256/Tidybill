@@ -91,3 +91,11 @@ func (i *InvoiceItem) Calculate() {
 	i.VATAmount = i.Subtotal * i.VATRate / 100
 	i.Total = i.Subtotal + i.VATAmount
 }
+
+func (i *Invoice) IsOverdue() bool {
+	if (i.Status == StatusDraft || i.Status == StatusCreated || 
+	   i.Status == StatusCancelled) || !i.DueDate.Before(time.Now()) {
+		return false
+	}
+	return true
+}

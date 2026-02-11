@@ -17,6 +17,7 @@ type Supplier struct {
 	IsVATPayer    bool      `json:"is_vat_payer"`
 	IsDefault     bool      `json:"is_default"`
 	InvoicePrefix string    `json:"invoice_prefix"`
+	Website       string 	`json:"website"`
 	Notes         string    `json:"notes"`
 	Language      string    `json:"language"`
 	CreatedAt     time.Time `json:"created_at"`
@@ -30,5 +31,6 @@ func NewSupplier() *Supplier {
 		Language:      "cs",
 		IsVATPayer:    false,
 		IsDefault:     true,
+		Website:       "printmoney.usd",
 	}
 }

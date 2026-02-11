@@ -72,6 +72,7 @@ func (c *CLI) createSupplier() {
 	supplier.DIC = c.prompt("DIČ")
 	supplier.Phone = c.prompt("Telefon")
 	supplier.Email = c.prompt("E-mail")
+	supplier.Website = c.prompt("Website")
 	supplier.InvoicePrefix = c.promptDefault("Prefix faktur", "VF")
 
 	if err := c.suppliers.Create(supplier); err != nil {
@@ -100,6 +101,7 @@ func (c *CLI) editSupplier(s *model.Supplier) {
 		fmt.Printf("  DIČ:     %s\n", s.DIC)
 		fmt.Printf("  Tel:     %s\n", s.Phone)
 		fmt.Printf("  E-mail:  %s\n", s.Email)
+		fmt.Printf("  Website: %s\n", s.Website)
 		fmt.Printf("  Prefix:  %s\n", s.InvoicePrefix)
 		fmt.Printf("  Výchozí: %v\n", s.IsDefault)
 		fmt.Println()
@@ -161,6 +163,7 @@ func (c *CLI) editSupplierDetails(s *model.Supplier) {
 	s.DIC = c.promptDefault("DIČ", s.DIC)
 	s.Phone = c.promptDefault("Telefon", s.Phone)
 	s.Email = c.promptDefault("E-mail", s.Email)
+	s.Website = c.promptDefault("Website", s.Website)
 	s.InvoicePrefix = c.promptDefault("Prefix faktur", s.InvoicePrefix)
 
 	if err := c.suppliers.Update(s); err != nil {
