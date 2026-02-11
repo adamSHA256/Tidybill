@@ -52,14 +52,14 @@ func getDataDir() (string, error) {
 			}
 			appData = filepath.Join(home, "AppData", "Roaming")
 		}
-		baseDir = filepath.Join(appData, "InvoiceManager")
+		baseDir = filepath.Join(appData, "TidyBill")
 
 	case "darwin":
 		home, err := os.UserHomeDir()
 		if err != nil {
 			return "", err
 		}
-		baseDir = filepath.Join(home, "Library", "Application Support", "InvoiceManager")
+		baseDir = filepath.Join(home, "Library", "Application Support", "TidyBill")
 
 	default:
 		configDir := os.Getenv("XDG_CONFIG_HOME")
@@ -70,7 +70,7 @@ func getDataDir() (string, error) {
 			}
 			configDir = filepath.Join(home, ".config")
 		}
-		baseDir = filepath.Join(configDir, "invoice-manager")
+		baseDir = filepath.Join(configDir, "tidybill")
 	}
 
 	return baseDir, nil

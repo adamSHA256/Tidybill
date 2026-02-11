@@ -3,13 +3,13 @@ package cli
 import (
 	"fmt"
 
-	"github.com/user/invoice-app/internal/model"
+	"github.com/adamSHA256/tidybill/internal/model"
 )
 
 func (c *CLI) firstRunWizard() error {
 	c.clearScreen()
 	fmt.Println("╔════════════════════════════════════════════════════════════╗")
-	fmt.Println("║            VÍTEJTE V INVOICE MANAGER                       ║")
+	fmt.Println("║               VÍTEJTE V TIDYBILL                           ║")
 	fmt.Println("╠════════════════════════════════════════════════════════════╣")
 	fmt.Println("║                                                            ║")
 	fmt.Println("║  Nebyla nalezena žádná data.                               ║")

@@ -3,7 +3,7 @@ package cli
 import (
 	"fmt"
 
-	"github.com/user/invoice-app/internal/model"
+	"github.com/adamSHA256/tidybill/internal/model"
 )
 
 func (c *CLI) suppliersMenu() {

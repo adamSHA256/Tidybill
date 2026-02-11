@@ -6,9 +6,9 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/user/invoice-app/internal/database/repository"
-	"github.com/user/invoice-app/internal/model"
-	"github.com/user/invoice-app/internal/service"
+	"github.com/adamSHA256/tidybill/internal/database/repository"
+	"github.com/adamSHA256/tidybill/internal/model"
+	"github.com/adamSHA256/tidybill/internal/service"
 )
 
 func (c *CLI) createInvoice() {

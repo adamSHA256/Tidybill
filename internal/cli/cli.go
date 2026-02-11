@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/user/invoice-app/internal/config"
-	"github.com/user/invoice-app/internal/database"
-	"github.com/user/invoice-app/internal/database/repository"
-	"github.com/user/invoice-app/internal/service"
+	"github.com/adamSHA256/tidybill/internal/config"
+	"github.com/adamSHA256/tidybill/internal/database"
+	"github.com/adamSHA256/tidybill/internal/database/repository"
+	"github.com/adamSHA256/tidybill/internal/service"
 )
 
 type CLI struct {
@@ -135,7 +135,7 @@ func (c *CLI) printHeader() {
 	}
 
 	fmt.Println("╔════════════════════════════════════════════════════════════╗")
-	fmt.Println("║                    INVOICE MANAGER v0.1                    ║")
+	fmt.Println("║                      TIDYBILL v0.1                         ║")
 	fmt.Printf("║  Firma: %-50s ║\n", name)
 	fmt.Println("╠════════════════════════════════════════════════════════════╣")
 	fmt.Println("║                                                            ║")

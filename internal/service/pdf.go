@@ -18,7 +18,7 @@ import (
 	"github.com/johnfercher/maroto/v2/pkg/core"
 	"github.com/johnfercher/maroto/v2/pkg/props"
 
-	"github.com/user/invoice-app/internal/model"
+	"github.com/adamSHA256/tidybill/internal/model"
 )
 
 type PDFService struct {

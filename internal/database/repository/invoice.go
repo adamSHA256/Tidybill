@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/user/invoice-app/internal/model"
+	"github.com/adamSHA256/tidybill/internal/model"
 )
 
 type InvoiceRepository struct {

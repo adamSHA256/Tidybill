@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	"os"
-	"github.com/user/invoice-app/internal/cli"
-	"github.com/user/invoice-app/internal/config"
-	"github.com/user/invoice-app/internal/database"
+	"github.com/adamSHA256/tidybill/internal/cli"
+	"github.com/adamSHA256/tidybill/internal/config"
+	"github.com/adamSHA256/tidybill/internal/database"
 )
 
 func main() {

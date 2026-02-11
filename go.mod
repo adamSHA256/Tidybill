@@ -1,4 +1,4 @@
-module github.com/user/invoice-app
+module github.com/adamSHA256/tidybill
 
 go 1.24.12
 

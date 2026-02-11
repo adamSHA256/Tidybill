@@ -1,5 +1,5 @@
-APP_NAME := invoice
-SRC := ./cmd/invoice/
+APP_NAME := tidybill
+SRC := ./cmd/tidybill/
 
 .PHONY: build run clean build-linux build-windows build-all
 

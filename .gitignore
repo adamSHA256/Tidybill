@@ -1,6 +1,8 @@
 # Binary
-/invoice
-/invoice.exe
+/tidybill
+/tidybill.exe
+/tidybill-linux
+/main
 
 # IDE
 .idea/
