@@ -1,9 +1,11 @@
 package cli
 
 import (
+	"database/sql"
 	"fmt"
 	"os/exec"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/adamSHA256/tidybill/internal/database/repository"
@@ -64,6 +66,7 @@ func (c *CLI) createInvoice() {
 	for {
 		fmt.Println(i18n.T("prompt.add_item"))
 		fmt.Println("  " + i18n.T("action.new_item"))
+		fmt.Println("  " + i18n.T("action.from_catalog"))
 		fmt.Println("  " + i18n.T("action.done"))
 		fmt.Println("  " + i18n.T("action.cancel_invoice"))
 		fmt.Println()
@@ -82,7 +85,7 @@ func (c *CLI) createInvoice() {
 		}
 
 		if choice == "n" || choice == "N" {
-			item, goBack := c.addInvoiceItemWithBack(invoice.ID, position)
+			item, goBack := c.addInvoiceItemWithBack(invoice.ID, position, nil)
 			if goBack {
 				continue
 			}
@@ -96,6 +99,23 @@ func (c *CLI) createInvoice() {
 					total += it.Total
 				}
 				fmt.Printf("\n  %s\n\n", i18n.Tf("label.current_total", total, invoice.Currency))
+			}
+		}
+
+		if strings.ToLower(choice) == "k" {
+			catalogItem := c.selectFromCatalog(customer.ID)
+			if catalogItem != nil {
+				item, goBack := c.addInvoiceItemWithBack(invoice.ID, position, catalogItem)
+				if !goBack && item != nil {
+					items = append(items, *item)
+					position++
+
+					var total float64
+					for _, it := range items {
+						total += it.Total
+					}
+					fmt.Printf("\n  %s\n\n", i18n.Tf("label.current_total", total, invoice.Currency))
+				}
 			}
 		}
 	}
@@ -152,18 +172,35 @@ func (c *CLI) createInvoice() {
 		return
 	}
 
-	// Save invoice
-	if err := c.invoices.Create(invoice); err != nil {
-		c.printError(err.Error())
-		c.waitEnter()
-		return
-	}
+	// Save invoice + items + usage tracking atomically
+	if err := repository.WithTx(c.db.DB, func(tx *sql.Tx) error {
+		if err := c.invoices.WithDB(tx).Create(invoice); err != nil {
+			return fmt.Errorf("save invoice: %w", err)
+		}
 
-	// Save items
-	for i := range items {
-		items[i].InvoiceID = invoice.ID
-	}
-	if err := c.invItems.CreateBatch(items); err != nil {
+		for i := range items {
+			items[i].InvoiceID = invoice.ID
+		}
+		if err := c.invItems.WithDB(tx).CreateBatch(items); err != nil {
+			return fmt.Errorf("save items: %w", err)
+		}
+
+		itemRepo := c.items.WithDB(tx)
+		custItemRepo := c.custItems.WithDB(tx)
+		for _, invItem := range items {
+			if invItem.ItemID == "" {
+				continue
+			}
+			if err := itemRepo.IncrementUsage(invItem.ItemID, invItem.UnitPrice, customer.ID); err != nil {
+				return fmt.Errorf("update item usage: %w", err)
+			}
+			if err := custItemRepo.Upsert(customer.ID, invItem.ItemID, invItem.UnitPrice, invItem.Quantity); err != nil {
+				return fmt.Errorf("update customer item: %w", err)
+			}
+		}
+
+		return nil
+	}); err != nil {
 		c.printError(err.Error())
 		c.waitEnter()
 		return
@@ -293,17 +330,35 @@ func (c *CLI) selectBankAccountForInvoice(supplierID string) (*model.BankAccount
 }
 
 func (c *CLI) addInvoiceItem(invoiceID string, position int) *model.InvoiceItem {
-	item, _ := c.addInvoiceItemWithBack(invoiceID, position)
+	item, _ := c.addInvoiceItemWithBack(invoiceID, position, nil)
 	return item
 }
 
-func (c *CLI) addInvoiceItemWithBack(invoiceID string, position int) (*model.InvoiceItem, bool) {
+func (c *CLI) addInvoiceItemWithBack(invoiceID string, position int, catalogItem *model.Item) (*model.InvoiceItem, bool) {
 	item := model.NewInvoiceItem(invoiceID)
 	item.Position = position
 
-	desc, goBack := c.promptWithBack(i18n.T("prompt.item_description"))
-	if goBack {
-		return nil, true
+	var defaultDesc, defaultUnit string
+	var defaultPrice, defaultVAT float64
+	if catalogItem != nil {
+		defaultDesc = catalogItem.Description
+		defaultUnit = catalogItem.DefaultUnit
+		defaultPrice = catalogItem.DefaultPrice
+		defaultVAT = catalogItem.DefaultVATRate
+		item.ItemID = catalogItem.ID
+
+		fmt.Printf("  %s: %s\n", i18n.T("label.from_catalog"), catalogItem.Description)
+	}
+
+	var desc string
+	var goBack bool
+	if defaultDesc != "" {
+		desc = c.promptDefaultMaxLen(i18n.T("prompt.item_description"), defaultDesc, model.MaxDescriptionLen)
+	} else {
+		desc, goBack = c.promptMaxLenWithBack(i18n.T("prompt.item_description"), model.MaxDescriptionLen)
+		if goBack {
+			return nil, true
+		}
 	}
 	if desc == "" {
 		return nil, false
@@ -311,9 +366,13 @@ func (c *CLI) addInvoiceItemWithBack(invoiceID string, position int) (*model.Inv
 	item.Description = desc
 
 	item.Quantity = c.promptFloat(i18n.T("prompt.quantity"), 1)
-	item.Unit = c.promptDefault(i18n.T("prompt.unit"), i18n.T("default.unit_pcs"))
-	item.UnitPrice = c.promptFloat(i18n.T("prompt.unit_price"), 0)
-	item.VATRate = c.promptFloat(i18n.T("prompt.vat_rate"), 0)
+	if defaultUnit != "" {
+		item.Unit = c.promptDefault(i18n.T("prompt.unit"), defaultUnit)
+	} else {
+		item.Unit = c.promptDefault(i18n.T("prompt.unit"), i18n.T("default.unit_pcs"))
+	}
+	item.UnitPrice = c.promptFloat(i18n.T("prompt.unit_price"), defaultPrice)
+	item.VATRate = c.promptFloat(i18n.T("prompt.vat_rate"), defaultVAT)
 
 	item.Calculate()
 
@@ -658,4 +717,112 @@ func (c *CLI) statusName(status model.InvoiceStatus) string {
 	default:
 		return string(status)
 	}
+}
+
+func (c *CLI) selectFromCatalog(customerID string) *model.Item {
+	c.clearScreen()
+	fmt.Printf("=== %s ===\n", i18n.T("heading.select_from_catalog"))
+	fmt.Println()
+
+	customerItems, _ := c.custItems.GetByCustomer(customerID)
+	globalItems, _ := c.items.GetMostUsed(10)
+
+	type catalogEntry struct {
+		item      *model.Item
+		custPrice float64
+		custCount int
+	}
+
+	var entries []catalogEntry
+	seen := make(map[string]bool)
+
+	if len(customerItems) > 0 {
+		fmt.Println("  " + i18n.T("label.customer_items"))
+		for _, ci := range customerItems {
+			fullItem, _ := c.items.GetByID(ci.ItemID)
+			if fullItem == nil {
+				continue
+			}
+			seen[ci.ItemID] = true
+			entries = append(entries, catalogEntry{
+				item:      fullItem,
+				custPrice: ci.LastPrice,
+				custCount: ci.UsageCount,
+			})
+		}
+	}
+
+	var globalEntries []catalogEntry
+	for _, item := range globalItems {
+		if seen[item.ID] {
+			continue
+		}
+		globalEntries = append(globalEntries, catalogEntry{item: item})
+	}
+
+	if len(globalEntries) > 0 {
+		if len(customerItems) > 0 {
+			fmt.Println()
+		}
+		fmt.Println("  " + i18n.T("label.global_items"))
+		entries = append(entries, globalEntries...)
+	}
+
+	if len(entries) == 0 {
+		fmt.Println("  " + i18n.T("info.no_catalog_items"))
+		fmt.Println("  " + i18n.T("info.create_item_first"))
+		fmt.Println()
+
+		if c.confirm(i18n.T("prompt.create_new_item_yn")) {
+			return c.createItem()
+		}
+		return nil
+	}
+
+	for i, entry := range entries {
+		priceInfo := fmt.Sprintf("%.2f", entry.item.DefaultPrice)
+		if entry.custPrice > 0 && entry.custPrice != entry.item.DefaultPrice {
+			priceInfo = fmt.Sprintf("%.2f (%s: %.2f)",
+				entry.custPrice, i18n.T("label.catalog_price"), entry.item.DefaultPrice)
+		} else if entry.custPrice > 0 {
+			priceInfo = fmt.Sprintf("%.2f", entry.custPrice)
+		}
+
+		usageInfo := ""
+		if entry.custCount > 0 {
+			usageInfo = fmt.Sprintf(" [%dx]", entry.custCount)
+		} else if entry.item.UsageCount > 0 {
+			usageInfo = fmt.Sprintf(" [%dx %s]", entry.item.UsageCount, i18n.T("label.global"))
+		}
+
+		fmt.Printf("  %d) %s — %s %s%s\n",
+			i+1, entry.item.Description, priceInfo, entry.item.DefaultUnit, usageInfo)
+	}
+
+	fmt.Println()
+	fmt.Println("  " + i18n.T("action.new_item_inline"))
+	fmt.Println("  " + i18n.T("action.back"))
+	fmt.Println()
+
+	choice := c.prompt(i18n.T("prompt.choice"))
+
+	if choice == "0" || choice == "" {
+		return nil
+	}
+
+	if strings.ToLower(choice) == "n" {
+		return c.createItem()
+	}
+
+	idx := 0
+	fmt.Sscanf(choice, "%d", &idx)
+	if idx > 0 && idx <= len(entries) {
+		entry := entries[idx-1]
+		if entry.custPrice > 0 {
+			entry.item.DefaultPrice = entry.custPrice
+		}
+		return entry.item
+	}
+
+	return nil
 }
