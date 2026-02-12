@@ -6,15 +6,7 @@ import (
 	"github.com/adamSHA256/tidybill/internal/i18n"
 )
 
-// Placeholder menus for Phase 1 - will be implemented later
-
-func (c *CLI) itemsMenu() {
-	c.clearScreen()
-	fmt.Printf("=== %s ===\n", i18n.T("heading.items_catalog"))
-	fmt.Println()
-	fmt.Println(i18n.T("info.feature_coming"))
-	c.waitEnter()
-}
+// Placeholder menus - will be implemented later
 
 func (c *CLI) syncMenu() {
 	c.clearScreen()

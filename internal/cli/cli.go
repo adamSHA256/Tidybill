@@ -26,6 +26,8 @@ type CLI struct {
 	invItems    *repository.InvoiceItemRepository
 	pdfService  *service.PDFService
 	settings    *repository.SettingsRepository
+	items       *repository.ItemRepository
+	custItems   *repository.CustomerItemRepository
 	scanner     *bufio.Scanner
 	currentSupp string // Current supplier ID
 }
@@ -41,6 +43,8 @@ func New(db *database.DB, cfg *config.Config) *CLI {
 		invItems:   repository.NewInvoiceItemRepository(db.DB),
 		pdfService: service.NewPDFService(cfg.PDFDir),
 		settings:   repository.NewSettingsRepository(db.DB),
+		items:      repository.NewItemRepository(db.DB),
+		custItems:  repository.NewCustomerItemRepository(db.DB),
 		scanner:    bufio.NewScanner(os.Stdin),
 	}
 }
@@ -244,6 +248,42 @@ func (c *CLI) printError(msg string) {
 
 func (c *CLI) printSuccess(msg string) {
 	fmt.Printf("\n✓ %s\n", msg)
+}
+
+func (c *CLI) promptMaxLen(label string, maxLen int) string {
+	for {
+		val := c.prompt(label)
+		if len([]rune(val)) <= maxLen {
+			return val
+		}
+		fmt.Printf("  %s %s\n", i18n.T("error.prefix"),
+			i18n.Tf("error.input_too_long", maxLen))
+	}
+}
+
+func (c *CLI) promptMaxLenWithBack(label string, maxLen int) (string, bool) {
+	for {
+		val, goBack := c.promptWithBack(label)
+		if goBack {
+			return "", true
+		}
+		if len([]rune(val)) <= maxLen {
+			return val, false
+		}
+		fmt.Printf("  %s %s\n", i18n.T("error.prefix"),
+			i18n.Tf("error.input_too_long", maxLen))
+	}
+}
+
+func (c *CLI) promptDefaultMaxLen(label, defaultVal string, maxLen int) string {
+	for {
+		val := c.promptDefault(label, defaultVal)
+		if len([]rune(val)) <= maxLen {
+			return val
+		}
+		fmt.Printf("  %s %s\n", i18n.T("error.prefix"),
+			i18n.Tf("error.input_too_long", maxLen))
+	}
 }
 
 // printMultiline prints a label+value where continuation lines align under the first.
