@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
+
 	"github.com/adamSHA256/tidybill/internal/cli"
 	"github.com/adamSHA256/tidybill/internal/config"
 	"github.com/adamSHA256/tidybill/internal/database"
+	"github.com/adamSHA256/tidybill/internal/i18n"
 )
 
 func main() {
@@ -13,14 +15,14 @@ func main() {
 	// Load configuration
 	cfg, err := config.New()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Chyba konfigurace: %v\n", err)
+		fmt.Fprintln(os.Stderr, i18n.Tf("app.error_config", err))
 		os.Exit(1)
 	}
 
 	// Connect to database
 	db, err := database.New(cfg.DBPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Chyba databáze: %v\n", err)
+		fmt.Fprintln(os.Stderr, i18n.Tf("app.error_database", err))
 		os.Exit(1)
 	}
 	defer db.Close()
@@ -28,7 +30,7 @@ func main() {
 	// Start CLI
 	app := cli.New(db, cfg)
 	if err := app.Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "Chyba: %v\n", err)
+		fmt.Fprintln(os.Stderr, i18n.Tf("app.error_general", err))
 		os.Exit(1)
 	}
 }

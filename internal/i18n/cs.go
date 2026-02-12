@@ -235,6 +235,11 @@ var messagesCS = map[string]string{
 	"wizard.bank_account":     "Bankovní účet",
 	"wizard.summary":          "Souhrn",
 
+	// ── Settings ────────────────────────────────────────────────────────
+	"settings.change_language":  "Změnit jazyk aplikace",
+	"settings.current_language": "Aktuální jazyk:",
+	"success.language_changed":  "Jazyk změněn na: %s",
+
 	// ── Defaults ────────────────────────────────────────────────────────
 	"default.main_account": "Hlavní účet",
 	"default.unit_pcs":     "ks",

@@ -3,84 +3,110 @@ package cli
 import (
 	"fmt"
 
+	"github.com/adamSHA256/tidybill/internal/i18n"
 	"github.com/adamSHA256/tidybill/internal/model"
 )
 
 func (c *CLI) firstRunWizard() error {
+	// Language selection before wizard — labels in all languages so user can read
+	c.clearScreen()
+	fmt.Println("  Choose language / Vyberte jazyk / Vyberte jazyk:")
+	fmt.Println()
+	langs := i18n.AvailableLanguages()
+	currentLang := i18n.GetLang()
+	for idx, lang := range langs {
+		marker := "  "
+		if lang == currentLang {
+			marker = "* "
+		}
+		fmt.Printf("  %s%d) %s\n", marker, idx+1, langName(lang))
+	}
+	fmt.Println()
+	langChoice := c.prompt("->")
+	switch langChoice {
+	case "1":
+		i18n.SetLang(i18n.CS)
+	case "2":
+		i18n.SetLang(i18n.SK)
+	case "3":
+		i18n.SetLang(i18n.EN)
+	}
+	c.settings.Set("language", string(i18n.GetLang()))
+
 	c.clearScreen()
 	fmt.Println("╔════════════════════════════════════════════════════════════╗")
-	fmt.Println("║               VÍTEJTE V TIDYBILL                           ║")
+	fmt.Printf("║               %-45s║\n", i18n.T("wizard.welcome_title"))
 	fmt.Println("╠════════════════════════════════════════════════════════════╣")
 	fmt.Println("║                                                            ║")
-	fmt.Println("║  Nebyla nalezena žádná data.                               ║")
-	fmt.Println("║  Pojďme nastavit váš první firemní profil.                 ║")
+	fmt.Printf("║  %-58s║\n", i18n.T("wizard.no_data"))
+	fmt.Printf("║  %-58s║\n", i18n.T("wizard.setup_prompt"))
 	fmt.Println("║                                                            ║")
 	fmt.Println("╚════════════════════════════════════════════════════════════╝")
 	fmt.Println()
 
-	fmt.Println("=== Údaje dodavatele (vaše firma) ===")
+	fmt.Printf("=== %s ===\n", i18n.T("wizard.supplier_details"))
 	fmt.Println()
 
 	supplier := model.NewSupplier()
 
-	supplier.Name = c.prompt("Název firmy / Jméno")
+	supplier.Name = c.prompt(i18n.T("prompt.company_name"))
 	if supplier.Name == "" {
-		return fmt.Errorf("název je povinný")
+		return fmt.Errorf(i18n.T("error.name_required_lower"))
 	}
 
-	supplier.Street = c.prompt("Ulice a číslo")
-	supplier.City = c.prompt("Město")
-	supplier.ZIP = c.prompt("PSČ")
-	supplier.Country = c.promptDefault("Země", "CZ")
-	supplier.ICO = c.prompt("IČO")
-	supplier.DIC = c.prompt("DIČ (pokud jste plátce DPH, jinak nechte prázdné)")
-	supplier.Phone = c.prompt("Telefon")
-	supplier.Email = c.prompt("E-mail")
-	supplier.Website= c.prompt("Website")
+	supplier.Street = c.prompt(i18n.T("prompt.street"))
+	supplier.City = c.prompt(i18n.T("prompt.city"))
+	supplier.ZIP = c.prompt(i18n.T("prompt.zip"))
+	supplier.Country = c.promptDefault(i18n.T("prompt.country"), "CZ")
+	supplier.ICO = c.prompt(i18n.T("prompt.ico"))
+	supplier.DIC = c.prompt(i18n.T("prompt.dic_with_hint"))
+	supplier.Phone = c.prompt(i18n.T("prompt.phone"))
+	supplier.Email = c.prompt(i18n.T("prompt.email"))
+	supplier.Website = c.prompt(i18n.T("prompt.website"))
 
 	if supplier.DIC != "" {
-		supplier.IsVATPayer = c.confirm("Jste plátce DPH?")
+		supplier.IsVATPayer = c.confirm(i18n.T("confirm.vat_payer"))
 	}
 
-	supplier.InvoicePrefix = c.promptDefault("Prefix čísel faktur", "VF")
+	supplier.InvoicePrefix = c.promptDefault(i18n.T("prompt.invoice_prefix"), "VF")
 
 	fmt.Println()
-	fmt.Println("=== Bankovní účet ===")
+	fmt.Printf("=== %s ===\n", i18n.T("wizard.bank_account"))
 	fmt.Println()
 
 	bankAcc := model.NewBankAccount("")
-	bankAcc.Name = c.promptDefault("Název účtu", "Hlavní účet")
-	bankAcc.AccountNumber = c.prompt("Číslo účtu (např. 1234567890/0100)")
-	bankAcc.IBAN = c.prompt("IBAN")
-	bankAcc.Currency = c.promptDefault("Měna", "CZK")
+	bankAcc.Name = c.promptDefault(i18n.T("prompt.account_name"), i18n.T("default.main_account"))
+	bankAcc.AccountNumber = c.prompt(i18n.T("prompt.account_number"))
+	bankAcc.IBAN = c.prompt(i18n.T("prompt.iban"))
+	bankAcc.Currency = c.promptDefault(i18n.T("prompt.currency"), "CZK")
 
 	fmt.Println()
-	fmt.Println("=== Souhrn ===")
+	fmt.Printf("=== %s ===\n", i18n.T("wizard.summary"))
 	fmt.Println()
-	fmt.Printf("Firma:    %s\n", supplier.Name)
-	fmt.Printf("Adresa:   %s, %s %s\n", supplier.Street, supplier.ZIP, supplier.City)
-	fmt.Printf("IČO:      %s\n", supplier.ICO)
-	fmt.Printf("Účet:     %s\n", bankAcc.AccountNumber)
+	fmt.Println(i18n.Tf("label.company", supplier.Name))
+	fmt.Println(i18n.Tf("label.address_short", supplier.Street, supplier.ZIP, supplier.City))
+	fmt.Println(i18n.Tf("label.ico", supplier.ICO))
+	fmt.Println(i18n.Tf("label.account", bankAcc.AccountNumber))
 	fmt.Println()
 
-	if !c.confirm("Uložit tyto údaje?") {
-		return fmt.Errorf("zrušeno uživatelem")
+	if !c.confirm(i18n.T("confirm.save_data")) {
+		return fmt.Errorf(i18n.T("error.cancelled_by_user"))
 	}
 
 	// Save supplier
 	if err := c.suppliers.Create(supplier); err != nil {
-		return fmt.Errorf("chyba při ukládání: %w", err)
+		return fmt.Errorf(i18n.T("error.save_failed"), err)
 	}
 
 	// Save bank account
 	bankAcc.SupplierID = supplier.ID
 	if err := c.bankAccs.Create(bankAcc); err != nil {
-		return fmt.Errorf("chyba při ukládání účtu: %w", err)
+		return fmt.Errorf(i18n.T("error.save_account_failed"), err)
 	}
 
 	c.currentSupp = supplier.ID
 
-	c.printSuccess("Profil byl úspěšně vytvořen!")
+	c.printSuccess(i18n.T("success.profile_created"))
 	c.waitEnter()
 
 	return nil

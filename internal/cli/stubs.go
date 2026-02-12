@@ -1,37 +1,33 @@
 package cli
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/adamSHA256/tidybill/internal/i18n"
+)
 
 // Placeholder menus for Phase 1 - will be implemented later
 
 func (c *CLI) itemsMenu() {
 	c.clearScreen()
-	fmt.Println("=== KATALOG POLOŽEK ===")
+	fmt.Printf("=== %s ===\n", i18n.T("heading.items_catalog"))
 	fmt.Println()
-	fmt.Println("Tato funkce bude dostupná v další verzi.")
+	fmt.Println(i18n.T("info.feature_coming"))
 	c.waitEnter()
 }
 
 func (c *CLI) syncMenu() {
 	c.clearScreen()
-	fmt.Println("=== SYNC / IMPORT / EXPORT ===")
+	fmt.Printf("=== %s ===\n", i18n.T("heading.sync"))
 	fmt.Println()
-	fmt.Println("Tato funkce bude dostupná v další verzi.")
+	fmt.Println(i18n.T("info.feature_coming"))
 	c.waitEnter()
 }
 
 func (c *CLI) templatesMenu() {
 	c.clearScreen()
-	fmt.Println("=== ŠABLONY PDF ===")
+	fmt.Printf("=== %s ===\n", i18n.T("heading.pdf_templates"))
 	fmt.Println()
-	fmt.Println("Tato funkce bude dostupná v další verzi.")
-	c.waitEnter()
-}
-
-func (c *CLI) settingsMenu() {
-	c.clearScreen()
-	fmt.Println("=== NASTAVENÍ ===")
-	fmt.Println()
-	fmt.Println("Tato funkce bude dostupná v další verzi.")
+	fmt.Println(i18n.T("info.feature_coming"))
 	c.waitEnter()
 }

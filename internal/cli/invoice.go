@@ -7,14 +7,15 @@ import (
 	"time"
 
 	"github.com/adamSHA256/tidybill/internal/database/repository"
+	"github.com/adamSHA256/tidybill/internal/i18n"
 	"github.com/adamSHA256/tidybill/internal/model"
 	"github.com/adamSHA256/tidybill/internal/service"
 )
 
 func (c *CLI) createInvoice() {
 	c.clearScreen()
-	fmt.Println("=== NOVÁ FAKTURA ===")
-	fmt.Println("(Kdykoliv zadejte 0 pro návrat zpět)")
+	fmt.Printf("=== %s ===\n", i18n.T("heading.new_invoice"))
+	fmt.Println(i18n.T("prompt.enter_0_back_anytime"))
 	fmt.Println()
 
 	// Select supplier (if more than one)
@@ -50,9 +51,10 @@ func (c *CLI) createInvoice() {
 	invoice.Currency = bankAcc.Currency
 	invoice.DueDate = time.Now().AddDate(0, 0, customer.DefaultDueDays)
 
-	fmt.Printf("\nFaktura: %s\n", invoice.InvoiceNumber)
-	fmt.Printf("Odběratel: %s\n", customer.Name)
-	fmt.Printf("Splatnost: %s\n", invoice.DueDate.Format("02.01.2006"))
+	fmt.Println()
+	fmt.Println(i18n.Tf("label.invoice_number", invoice.InvoiceNumber))
+	fmt.Println(i18n.Tf("label.customer_short", customer.Name))
+	fmt.Println(i18n.Tf("label.due_date_short", invoice.DueDate.Format("02.01.2006")))
 	fmt.Println()
 
 	// Add items
@@ -60,16 +62,16 @@ func (c *CLI) createInvoice() {
 	position := 0
 
 	for {
-		fmt.Println("Přidat položku:")
-		fmt.Println("  N) Nová položka")
-		fmt.Println("  D) Hotovo")
-		fmt.Println("  0) Zrušit fakturu")
+		fmt.Println(i18n.T("prompt.add_item"))
+		fmt.Println("  " + i18n.T("action.new_item"))
+		fmt.Println("  " + i18n.T("action.done"))
+		fmt.Println("  " + i18n.T("action.cancel_invoice"))
 		fmt.Println()
 
-		choice := c.prompt("Volba")
+		choice := c.prompt(i18n.T("prompt.choice"))
 
 		if choice == "0" {
-			if c.confirm("Opravdu zrušit vytváření faktury?") {
+			if c.confirm(i18n.T("confirm.cancel_invoice")) {
 				return
 			}
 			continue
@@ -93,13 +95,13 @@ func (c *CLI) createInvoice() {
 				for _, it := range items {
 					total += it.Total
 				}
-				fmt.Printf("\n  Aktuální součet: %.2f %s\n\n", total, invoice.Currency)
+				fmt.Printf("\n  %s\n\n", i18n.Tf("label.current_total", total, invoice.Currency))
 			}
 		}
 	}
 
 	if len(items) == 0 {
-		c.printError("Faktura musí mít alespoň jednu položku")
+		c.printError(i18n.T("error.invoice_no_items"))
 		c.waitEnter()
 		return
 	}
@@ -114,35 +116,35 @@ func (c *CLI) createInvoice() {
 	// Show summary
 	c.clearScreen()
 	fmt.Println("═══════════════════════════════════════════════════════════")
-	fmt.Println("                    SOUHRN FAKTURY")
+	fmt.Printf("                    %s\n", i18n.T("heading.invoice_summary"))
 	fmt.Println("═══════════════════════════════════════════════════════════")
-	fmt.Printf("Číslo faktury: %s\n", invoice.InvoiceNumber)
-	fmt.Printf("Odběratel:     %s\n", customer.Name)
-	fmt.Printf("Datum:         %s\n", invoice.IssueDate.Format("02.01.2006"))
-	fmt.Printf("Splatnost:     %s\n", invoice.DueDate.Format("02.01.2006"))
+	fmt.Println(i18n.Tf("label.invoice_number_full", invoice.InvoiceNumber))
+	fmt.Println(i18n.Tf("label.customer", customer.Name))
+	fmt.Println(i18n.Tf("label.date", invoice.IssueDate.Format("02.01.2006")))
+	fmt.Println(i18n.Tf("label.due_date", invoice.DueDate.Format("02.01.2006")))
 	fmt.Println()
-	fmt.Println("Položky:")
+	fmt.Println(i18n.T("label.items"))
 	for _, item := range items {
 		fmt.Printf("  %.0fx %s @ %.2f %s = %.2f %s\n",
 			item.Quantity, item.Description, item.UnitPrice,
 			invoice.Currency, item.Total, invoice.Currency)
 	}
 	fmt.Println()
-	fmt.Printf("                              Základ:  %10.2f %s\n", invoice.Subtotal, invoice.Currency)
-	fmt.Printf("                              DPH:     %10.2f %s\n", invoice.VATTotal, invoice.Currency)
+	fmt.Printf("                              %-10s %10.2f %s\n", i18n.T("label.subtotal"), invoice.Subtotal, invoice.Currency)
+	fmt.Printf("                              %-10s %10.2f %s\n", i18n.T("label.vat"), invoice.VATTotal, invoice.Currency)
 	fmt.Println("                              ─────────────────────")
-	fmt.Printf("                              CELKEM:  %10.2f %s\n", invoice.Total, invoice.Currency)
+	fmt.Printf("                              %-10s %10.2f %s\n", i18n.T("label.total"), invoice.Total, invoice.Currency)
 	fmt.Println("═══════════════════════════════════════════════════════════")
 	fmt.Println()
 
-	fmt.Println("  U) Uložit fakturu")
-	fmt.Println("  Z) Zrušit")
+	fmt.Println("  " + i18n.T("action.save_invoice"))
+	fmt.Println("  " + i18n.T("action.cancel"))
 	fmt.Println()
 
-	choice := c.prompt("Volba")
+	choice := c.prompt(i18n.T("prompt.choice"))
 
 	if choice != "u" && choice != "U" {
-		fmt.Println("Faktura nebyla uložena.")
+		fmt.Println(i18n.T("info.invoice_not_saved"))
 		c.waitEnter()
 		return
 	}
@@ -164,15 +166,15 @@ func (c *CLI) createInvoice() {
 		return
 	}
 
-	c.printSuccess(fmt.Sprintf("Faktura %s byla vytvořena!", invoice.InvoiceNumber))
+	c.printSuccess(i18n.Tf("success.invoice_created", invoice.InvoiceNumber))
 
 	// Ask to generate PDF
-	if c.confirm("Generovat PDF?") {
+	if c.confirm(i18n.T("confirm.generate_pdf")) {
 		c.generatePDF(invoice)
 	}
 
 	// Ask to change status
-	if c.confirm("Označit jako odeslanou?") {
+	if c.confirm(i18n.T("confirm.mark_as_sent")) {
 		c.invoices.UpdateStatus(invoice.ID, model.StatusSent)
 		invoice.Status = model.StatusSent
 	}
@@ -183,14 +185,14 @@ func (c *CLI) createInvoice() {
 func (c *CLI) selectSupplierForInvoice() (*model.Supplier, bool) {
 	suppliers, err := c.suppliers.List()
 	if err != nil || len(suppliers) == 0 {
-		c.printError("Není nastaven žádný dodavatel")
+		c.printError(i18n.T("error.no_supplier"))
 		c.waitEnter()
 		return nil, true
 	}
 
 	// If only one supplier, use it automatically
 	if len(suppliers) == 1 {
-		fmt.Printf("Dodavatel: %s\n", suppliers[0].Name)
+		fmt.Println(i18n.Tf("label.supplier", suppliers[0].Name))
 		return suppliers[0], false
 	}
 
@@ -203,18 +205,18 @@ func (c *CLI) selectSupplierForInvoice() (*model.Supplier, bool) {
 		}
 	}
 
-	fmt.Println("Vyberte dodavatele (vaši firmu):")
+	fmt.Println(i18n.T("prompt.select_supplier"))
 	for i, s := range suppliers {
 		def := ""
 		if s.IsDefault {
-			def = " [výchozí]"
+			def = " " + i18n.T("label.default_lower")
 		}
 		fmt.Printf("  %d) %s%s\n", i+1, s.Name, def)
 	}
-	fmt.Println("  0) Zpět")
+	fmt.Println("  " + i18n.T("action.back"))
 	fmt.Println()
 
-	choice := c.promptDefault("Volba", fmt.Sprintf("%d", defaultIdx+1))
+	choice := c.promptDefault(i18n.T("prompt.choice"), fmt.Sprintf("%d", defaultIdx+1))
 
 	if choice == "0" {
 		return nil, true
@@ -223,7 +225,7 @@ func (c *CLI) selectSupplierForInvoice() (*model.Supplier, bool) {
 	idx := 0
 	fmt.Sscanf(choice, "%d", &idx)
 	if idx > 0 && idx <= len(suppliers) {
-		fmt.Printf("Dodavatel: %s\n", suppliers[idx-1].Name)
+		fmt.Println(i18n.Tf("label.supplier", suppliers[idx-1].Name))
 		return suppliers[idx-1], false
 	}
 
@@ -234,14 +236,14 @@ func (c *CLI) selectSupplierForInvoice() (*model.Supplier, bool) {
 func (c *CLI) selectBankAccountForInvoice(supplierID string) (*model.BankAccount, bool) {
 	accounts, err := c.bankAccs.GetBySupplier(supplierID)
 	if err != nil || len(accounts) == 0 {
-		c.printError("Není nastaven žádný bankovní účet")
+		c.printError(i18n.T("error.no_bank_account"))
 		c.waitEnter()
 		return nil, true
 	}
 
 	// If only one account, use it automatically
 	if len(accounts) == 1 {
-		fmt.Printf("Účet: %s (%s)\n", accounts[0].AccountNumber, accounts[0].Currency)
+		fmt.Println(i18n.Tf("label.account_with_currency", accounts[0].AccountNumber, accounts[0].Currency))
 		return accounts[0], false
 	}
 
@@ -255,11 +257,11 @@ func (c *CLI) selectBankAccountForInvoice(supplierID string) (*model.BankAccount
 	}
 
 	fmt.Println()
-	fmt.Println("Vyberte bankovní účet:")
+	fmt.Println(i18n.T("prompt.select_bank_account"))
 	for i, a := range accounts {
 		def := ""
 		if a.IsDefault {
-			def = " [výchozí]"
+			def = " " + i18n.T("label.default_lower")
 		}
 		name := a.Name
 		if name == "" {
@@ -267,10 +269,10 @@ func (c *CLI) selectBankAccountForInvoice(supplierID string) (*model.BankAccount
 		}
 		fmt.Printf("  %d) %s - %s%s\n", i+1, name, a.AccountNumber, def)
 	}
-	fmt.Println("  0) Zpět")
+	fmt.Println("  " + i18n.T("action.back"))
 	fmt.Println()
 
-	choice := c.promptDefault("Volba", fmt.Sprintf("%d", defaultIdx+1))
+	choice := c.promptDefault(i18n.T("prompt.choice"), fmt.Sprintf("%d", defaultIdx+1))
 
 	if choice == "0" {
 		return nil, true
@@ -279,7 +281,7 @@ func (c *CLI) selectBankAccountForInvoice(supplierID string) (*model.BankAccount
 	idx := 0
 	fmt.Sscanf(choice, "%d", &idx)
 	if idx > 0 && idx <= len(accounts) {
-		fmt.Printf("Účet: %s (%s)\n", accounts[idx-1].AccountNumber, accounts[idx-1].Currency)
+		fmt.Println(i18n.Tf("label.account_with_currency", accounts[idx-1].AccountNumber, accounts[idx-1].Currency))
 		return accounts[idx-1], false
 	}
 
@@ -296,7 +298,7 @@ func (c *CLI) addInvoiceItemWithBack(invoiceID string, position int) (*model.Inv
 	item := model.NewInvoiceItem(invoiceID)
 	item.Position = position
 
-	desc, goBack := c.promptWithBack("Popis položky")
+	desc, goBack := c.promptWithBack(i18n.T("prompt.item_description"))
 	if goBack {
 		return nil, true
 	}
@@ -305,10 +307,10 @@ func (c *CLI) addInvoiceItemWithBack(invoiceID string, position int) (*model.Inv
 	}
 	item.Description = desc
 
-	item.Quantity = c.promptFloat("Množství", 1)
-	item.Unit = c.promptDefault("Jednotka", "ks")
-	item.UnitPrice = c.promptFloat("Cena za jednotku", 0)
-	item.VATRate = c.promptFloat("DPH %", 0)
+	item.Quantity = c.promptFloat(i18n.T("prompt.quantity"), 1)
+	item.Unit = c.promptDefault(i18n.T("prompt.unit"), i18n.T("default.unit_pcs"))
+	item.UnitPrice = c.promptFloat(i18n.T("prompt.unit_price"), 0)
+	item.VATRate = c.promptFloat(i18n.T("prompt.vat_rate"), 0)
 
 	item.Calculate()
 
@@ -320,7 +322,7 @@ func (c *CLI) addInvoiceItemWithBack(invoiceID string, position int) (*model.Inv
 
 func (c *CLI) listInvoices() {
 	c.clearScreen()
-	fmt.Println("=== SEZNAM FAKTUR ===")
+	fmt.Printf("=== %s ===\n", i18n.T("heading.invoice_list"))
 	fmt.Println()
 
 	invoices, err := c.invoices.List("", "")
@@ -331,7 +333,7 @@ func (c *CLI) listInvoices() {
 	}
 
 	if len(invoices) == 0 {
-		fmt.Println("Žádné faktury.")
+		fmt.Println(i18n.T("info.no_invoices"))
 		c.waitEnter()
 		return
 	}
@@ -351,10 +353,10 @@ func (c *CLI) listInvoices() {
 	}
 
 	fmt.Println()
-	fmt.Println("  0) Zpět")
+	fmt.Println("  " + i18n.T("action.back"))
 	fmt.Println()
 
-	choice := c.prompt("Vyberte fakturu pro detail")
+	choice := c.prompt(i18n.T("prompt.select_invoice"))
 	idx := 0
 	fmt.Sscanf(choice, "%d", &idx)
 	if idx > 0 && idx <= len(invoices) {
@@ -364,7 +366,7 @@ func (c *CLI) listInvoices() {
 
 func (c *CLI) listUnpaidInvoices() {
 	c.clearScreen()
-	fmt.Println("=== NEZAPLACENÉ FAKTURY ===")
+	fmt.Printf("=== %s ===\n", i18n.T("heading.unpaid_invoices"))
 	fmt.Println()
 
 	invoices, err := c.invoices.ListUnpaid()
@@ -375,7 +377,7 @@ func (c *CLI) listUnpaidInvoices() {
 	}
 
 	if len(invoices) == 0 {
-		fmt.Println("Všechny faktury jsou zaplaceny!")
+		fmt.Println(i18n.T("info.all_paid"))
 		c.waitEnter()
 		return
 	}
@@ -391,20 +393,20 @@ func (c *CLI) listUnpaidInvoices() {
 		overdue := ""
 		if inv.DueDate.Before(now) {
 			days := int(now.Sub(inv.DueDate).Hours() / 24)
-			overdue = fmt.Sprintf(" [PO SPLATNOSTI %d dní]", days)
+			overdue = fmt.Sprintf(" [%s]", i18n.Tf("label.overdue_days", days))
 		}
 
-		fmt.Printf("  %d) %s | splatnost %s | %-15s | %10.2f %s%s\n",
+		fmt.Printf("  %d) %s | %s %s | %-15s | %10.2f %s%s\n",
 			i+1, inv.InvoiceNumber,
-			inv.DueDate.Format("02.01.2006"),
+			i18n.T("label.due"), inv.DueDate.Format("02.01.2006"),
 			custName, inv.Total, inv.Currency, overdue)
 	}
 
 	fmt.Println()
-	fmt.Println("  0) Zpět")
+	fmt.Println("  " + i18n.T("action.back"))
 	fmt.Println()
 
-	choice := c.prompt("Vyberte fakturu")
+	choice := c.prompt(i18n.T("prompt.select_invoice_short"))
 	idx := 0
 	fmt.Sscanf(choice, "%d", &idx)
 	if idx > 0 && idx <= len(invoices) {
@@ -424,35 +426,35 @@ func (c *CLI) invoiceDetail(inv *model.Invoice) {
 
 		items, _ := c.invItems.GetByInvoice(inv.ID)
 
-		fmt.Printf("=== FAKTURA %s ===\n", inv.InvoiceNumber)
+		fmt.Printf("=== %s ===\n", i18n.Tf("heading.invoice_detail", inv.InvoiceNumber))
 		fmt.Println()
-		fmt.Printf("  Stav:        %s %s\n", c.statusIcon(inv.Status), c.statusName(inv.Status))
-		fmt.Printf("  Odběratel:   %s\n", custName)
-		fmt.Printf("  Vystaveno:   %s\n", inv.IssueDate.Format("02.01.2006"))
-		fmt.Printf("  Splatnost:   %s\n", inv.DueDate.Format("02.01.2006"))
-		fmt.Printf("  VS:          %s\n", inv.VariableSymbol)
+		fmt.Printf("  "+i18n.T("label.status")+"\n", c.statusIcon(inv.Status), c.statusName(inv.Status))
+		fmt.Printf("  "+i18n.T("label.customer")+"\n", custName)
+		fmt.Printf("  "+i18n.T("label.issued")+"\n", inv.IssueDate.Format("02.01.2006"))
+		fmt.Printf("  "+i18n.T("label.due_date")+"\n", inv.DueDate.Format("02.01.2006"))
+		fmt.Printf("  "+i18n.T("label.variable_symbol")+"\n", inv.VariableSymbol)
 		fmt.Println()
 
-		fmt.Println("  Položky:")
+		fmt.Println("  " + i18n.T("label.items"))
 		for _, item := range items {
 			fmt.Printf("    %.0f× %s @ %.2f = %.2f %s\n",
 				item.Quantity, item.Description, item.UnitPrice, item.Total, inv.Currency)
 		}
 		fmt.Println()
-		fmt.Printf("  CELKEM: %.2f %s\n", inv.Total, inv.Currency)
+		fmt.Printf("  %s %.2f %s\n", i18n.T("label.total"), inv.Total, inv.Currency)
 		fmt.Println()
 
-		fmt.Println("  G) Generovat PDF")
+		fmt.Println("  " + i18n.T("action.generate_pdf"))
 		if inv.PDFPath != "" {
-			fmt.Println("  O) Otevřít PDF")
+			fmt.Println("  " + i18n.T("action.open_pdf"))
 		}
-		fmt.Println("  S) Změnit stav")
-		fmt.Println("  P) Označit jako zaplacenou")
-		fmt.Println("  X) Smazat fakturu")
-		fmt.Println("  0) Zpět")
+		fmt.Println("  " + i18n.T("action.change_status"))
+		fmt.Println("  " + i18n.T("action.mark_paid"))
+		fmt.Println("  " + i18n.T("action.delete_invoice"))
+		fmt.Println("  " + i18n.T("action.back"))
 		fmt.Println()
 
-		choice := c.prompt("Volba")
+		choice := c.prompt(i18n.T("prompt.choice"))
 
 		switch choice {
 		case "0", "":
@@ -468,11 +470,11 @@ func (c *CLI) invoiceDetail(inv *model.Invoice) {
 		case "p", "P":
 			c.invoices.UpdateStatus(inv.ID, model.StatusPaid)
 			inv.Status = model.StatusPaid
-			c.printSuccess("Faktura označena jako zaplacená")
+			c.printSuccess(i18n.T("success.invoice_paid"))
 		case "x", "X":
-			if c.confirm("Opravdu smazat fakturu?") {
+			if c.confirm(i18n.T("confirm.delete_invoice")) {
 				c.invoices.Delete(inv.ID)
-				c.printSuccess("Faktura smazána")
+				c.printSuccess(i18n.T("success.invoice_deleted"))
 				c.waitEnter()
 				return
 			}
@@ -483,29 +485,29 @@ func (c *CLI) invoiceDetail(inv *model.Invoice) {
 func (c *CLI) generatePDF(inv *model.Invoice) {
 	supplier, err := c.suppliers.GetByID(inv.SupplierID)
 	if err != nil || supplier == nil {
-		c.printError("Nepodařilo se načíst dodavatele")
+		c.printError(i18n.T("error.load_supplier"))
 		return
 	}
 
 	customer, err := c.customers.GetByID(inv.CustomerID)
 	if err != nil || customer == nil {
-		c.printError("Nepodařilo se načíst odběratele")
+		c.printError(i18n.T("error.load_customer"))
 		return
 	}
 
 	bankAcc, err := c.bankAccs.GetByID(inv.BankAccountID)
 	if err != nil || bankAcc == nil {
-		c.printError("Nepodařilo se načíst bankovní účet")
+		c.printError(i18n.T("error.load_bank_account"))
 		return
 	}
 
 	items, err := c.invItems.GetByInvoice(inv.ID)
 	if err != nil {
-		c.printError("Nepodařilo se načíst položky")
+		c.printError(i18n.T("error.load_items"))
 		return
 	}
 
-	fmt.Println("Generuji PDF...")
+	fmt.Println(i18n.T("info.generating_pdf"))
 
 	data := &service.InvoiceData{
 		Invoice:     inv,
@@ -525,9 +527,9 @@ func (c *CLI) generatePDF(inv *model.Invoice) {
 	inv.PDFPath = pdfPath
 	c.invoices.Update(inv)
 
-	c.printSuccess(fmt.Sprintf("PDF vytvořeno: %s", pdfPath))
+	c.printSuccess(i18n.Tf("success.pdf_created", pdfPath))
 
-	if c.confirm("Otevřít PDF?") {
+	if c.confirm(i18n.T("confirm.open_pdf")) {
 		c.openFile(pdfPath)
 	}
 }
@@ -545,22 +547,22 @@ func (c *CLI) openFile(path string) {
 	}
 
 	if err := cmd.Start(); err != nil {
-		c.printError(fmt.Sprintf("Nepodařilo se otevřít soubor: %v", err))
+		c.printError(i18n.Tf("error.open_file", err))
 	}
 }
 
 func (c *CLI) changeInvoiceStatus(inv *model.Invoice) {
 	fmt.Println()
-	fmt.Println("Vyberte nový stav:")
-	fmt.Println("  1) Koncept")
-	fmt.Println("  2) Vytvořena")
-	fmt.Println("  3) Odeslaná")
-	fmt.Println("  4) Zaplacená")
-	fmt.Println("  5) Po splatnosti")
-	fmt.Println("  6) Zrušená")
+	fmt.Println(i18n.T("prompt.select_status"))
+	fmt.Printf("  1) %s\n", i18n.T("status.draft"))
+	fmt.Printf("  2) %s\n", i18n.T("status.created"))
+	fmt.Printf("  3) %s\n", i18n.T("status.sent"))
+	fmt.Printf("  4) %s\n", i18n.T("status.paid"))
+	fmt.Printf("  5) %s\n", i18n.T("status.overdue"))
+	fmt.Printf("  6) %s\n", i18n.T("status.cancelled"))
 	fmt.Println()
 
-	choice := c.prompt("Volba")
+	choice := c.prompt(i18n.T("prompt.choice"))
 
 	var newStatus model.InvoiceStatus
 	switch choice {
@@ -582,12 +584,12 @@ func (c *CLI) changeInvoiceStatus(inv *model.Invoice) {
 
 	c.invoices.UpdateStatus(inv.ID, newStatus)
 	inv.Status = newStatus
-	c.printSuccess("Stav změněn")
+	c.printSuccess(i18n.T("success.status_changed"))
 }
 
 func (c *CLI) createFromExisting() {
 	// TODO: implement duplicate invoice
-	fmt.Println("Funkce bude brzy dostupná...")
+	fmt.Println(i18n.T("info.coming_soon"))
 	c.waitEnter()
 }
 
@@ -613,17 +615,17 @@ func (c *CLI) statusIcon(status model.InvoiceStatus) string {
 func (c *CLI) statusName(status model.InvoiceStatus) string {
 	switch status {
 	case model.StatusDraft:
-		return "Koncept"
+		return i18n.T("status.draft")
 	case model.StatusCreated:
-		return "Vytvořena"
+		return i18n.T("status.created")
 	case model.StatusSent:
-		return "Odeslaná"
+		return i18n.T("status.sent")
 	case model.StatusPaid:
-		return "Zaplacená"
+		return i18n.T("status.paid")
 	case model.StatusOverdue:
-		return "Po splatnosti"
+		return i18n.T("status.overdue")
 	case model.StatusCancelled:
-		return "Zrušená"
+		return i18n.T("status.cancelled")
 	default:
 		return string(status)
 	}

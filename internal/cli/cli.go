@@ -10,6 +10,7 @@ import (
 	"github.com/adamSHA256/tidybill/internal/config"
 	"github.com/adamSHA256/tidybill/internal/database"
 	"github.com/adamSHA256/tidybill/internal/database/repository"
+	"github.com/adamSHA256/tidybill/internal/i18n"
 	"github.com/adamSHA256/tidybill/internal/service"
 )
 
@@ -22,6 +23,7 @@ type CLI struct {
 	invoices    *repository.InvoiceRepository
 	invItems    *repository.InvoiceItemRepository
 	pdfService  *service.PDFService
+	settings    *repository.SettingsRepository
 	scanner     *bufio.Scanner
 	currentSupp string // Current supplier ID
 }
@@ -36,11 +38,17 @@ func New(db *database.DB, cfg *config.Config) *CLI {
 		invoices:   repository.NewInvoiceRepository(db.DB),
 		invItems:   repository.NewInvoiceItemRepository(db.DB),
 		pdfService: service.NewPDFService(cfg.PDFDir),
+		settings:   repository.NewSettingsRepository(db.DB),
 		scanner:    bufio.NewScanner(os.Stdin),
 	}
 }
 
 func (c *CLI) Run() error {
+	// Load saved language
+	if lang, err := c.settings.Get("language"); err == nil && lang != "" {
+		i18n.SetLang(i18n.Lang(lang))
+	}
+
 	// Check if first run
 	empty, err := c.db.IsEmpty()
 	if err != nil {
@@ -73,29 +81,29 @@ func (c *CLI) mainMenu() error {
 		unpaid, _ := c.invoices.CountUnpaid()
 		overdue, _ := c.invoices.CountOverdue()
 
-		fmt.Println("  1) Vytvořit novou fakturu")
-		fmt.Println("  2) Vytvořit fakturu z existující")
-		fmt.Println("  3) Seznam faktur")
+		fmt.Printf("  1) %s\n", i18n.T("menu.create_invoice"))
+		fmt.Printf("  2) %s\n", i18n.T("menu.create_from_existing"))
+		fmt.Printf("  3) %s\n", i18n.T("menu.list_invoices"))
 		if unpaid > 0 {
-			fmt.Printf("  4) Nezaplacené faktury              [%d nezaplacených", unpaid)
+			fmt.Printf("  4) %s [%s", i18n.T("menu.unpaid_invoices"), i18n.Tf("menu.unpaid_count", unpaid))
 			if overdue > 0 {
-				fmt.Printf(", %d po splatnosti", overdue)
+				fmt.Printf(", %s", i18n.Tf("menu.overdue_count", overdue))
 			}
 			fmt.Println("]")
 		} else {
-			fmt.Println("  4) Nezaplacené faktury")
+			fmt.Printf("  4) %s\n", i18n.T("menu.unpaid_invoices"))
 		}
-		fmt.Println("  5) Odběratelé")
-		fmt.Println("  6) Katalog položek")
-		fmt.Println("  7) Dodavatelé (vaše firmy)")
-		fmt.Println("  8) Sync / Import / Export")
-		fmt.Println("  9) Šablony PDF")
-		fmt.Println("  S) Nastavení")
-		fmt.Println("  W) Přehled")
-		fmt.Println("  0) Ukončit")
+		fmt.Printf("  5) %s\n", i18n.T("menu.customers"))
+		fmt.Printf("  6) %s\n", i18n.T("menu.items_catalog"))
+		fmt.Printf("  7) %s\n", i18n.T("menu.suppliers"))
+		fmt.Printf("  8) %s\n", i18n.T("menu.sync"))
+		fmt.Printf("  9) %s\n", i18n.T("menu.pdf_templates"))
+		fmt.Printf("  S) %s\n", i18n.T("menu.settings"))
+		fmt.Printf("  W) %s\n", i18n.T("menu.overview"))
+		fmt.Printf("  0) %s\n", i18n.T("menu.quit"))
 		fmt.Println()
 
-		choice := c.prompt("Vyberte možnost")
+		choice := c.prompt(i18n.T("prompt.choose_option"))
 
 		switch strings.ToLower(choice) {
 		case "1":
@@ -121,7 +129,7 @@ func (c *CLI) mainMenu() error {
 		case "w":
 			c.showStats()
 		case "0", "q":
-			fmt.Println("Na shledanou!")
+			fmt.Println(i18n.T("app.goodbye"))
 			return nil
 		}
 	}
@@ -129,14 +137,14 @@ func (c *CLI) mainMenu() error {
 
 func (c *CLI) printHeader() {
 	supplier, _ := c.suppliers.GetDefault()
-	name := "Není nastaveno"
+	name := i18n.T("header.no_company")
 	if supplier != nil {
 		name = supplier.Name
 	}
 
 	fmt.Println("╔════════════════════════════════════════════════════════════╗")
 	fmt.Println("║                      TIDYBILL v0.1                         ║")
-	fmt.Printf("║  Firma: %-50s ║\n", name)
+	fmt.Printf("║  %s %-50s ║\n", i18n.T("header.company"), name)
 	fmt.Println("╠════════════════════════════════════════════════════════════╣")
 	fmt.Println("║                                                            ║")
 }
@@ -161,7 +169,7 @@ func (c *CLI) prompt(label string) string {
 
 // promptWithBack returns the input and true if user wants to go back (entered 0 or q)
 func (c *CLI) promptWithBack(label string) (string, bool) {
-	fmt.Printf("%s (0=zpět): ", label)
+	fmt.Printf("%s %s: ", label, i18n.T("prompt.back_hint"))
 	c.scanner.Scan()
 	val := strings.TrimSpace(c.scanner.Text())
 	if val == "0" || strings.ToLower(val) == "q" {
@@ -217,18 +225,19 @@ func (c *CLI) promptInt(label string, defaultVal int) int {
 }
 
 func (c *CLI) confirm(message string) bool {
-	response := c.promptDefault(message+" [A/n]", "a")
-	return strings.ToLower(response) == "a" || strings.ToLower(response) == "y" || response == ""
+	response := c.promptDefault(message+" "+i18n.T("confirm.yes_no"), i18n.T("confirm.yes_default"))
+	lower := strings.ToLower(response)
+	return lower == "a" || lower == "y" || response == ""
 }
 
 func (c *CLI) waitEnter() {
 	fmt.Println()
-	fmt.Print("Stiskněte Enter pro pokračování...")
+	fmt.Print(i18n.T("prompt.press_enter"))
 	c.scanner.Scan()
 }
 
 func (c *CLI) printError(msg string) {
-	fmt.Printf("\n❌ Chyba: %s\n", msg)
+	fmt.Printf("\n❌ %s %s\n", i18n.T("error.prefix"), msg)
 }
 
 func (c *CLI) printSuccess(msg string) {
@@ -238,15 +247,15 @@ func (c *CLI) printSuccess(msg string) {
 func (c *CLI) showStats() {
 	count, err := c.suppliers.Count()
 	if err != nil {
-		fmt.Println("Nelze zobrazit statistiku dodavatelů, %s\n", err)	
+		fmt.Println(i18n.T("error.stats_suppliers"), err)
 	} else {
-		fmt.Printf("Vytvořených dodavatelů: %d\n", count)
+		fmt.Println(i18n.Tf("stats.suppliers_count", count))
 	}
 	invoices, err := c.invoices.CountUnpaid()
 	if err != nil {
-		fmt.Println("Nelze zobrazit statistiku faktur, %s\n", err)	
+		fmt.Println(i18n.T("error.stats_invoices"), err)
 	} else {
-		fmt.Printf("Celkový nezaplacených faktur: %d\n", invoices)
+		fmt.Println(i18n.Tf("stats.unpaid_invoices_count", invoices))
 	}
 	c.waitEnter()
 }

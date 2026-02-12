@@ -3,13 +3,14 @@ package cli
 import (
 	"fmt"
 
+	"github.com/adamSHA256/tidybill/internal/i18n"
 	"github.com/adamSHA256/tidybill/internal/model"
 )
 
 func (c *CLI) customersMenu() {
 	for {
 		c.clearScreen()
-		fmt.Println("=== ODBĚRATELÉ ===")
+		fmt.Printf("=== %s ===\n", i18n.T("heading.customers"))
 		fmt.Println()
 
 		customers, err := c.customers.List()
@@ -20,24 +21,24 @@ func (c *CLI) customersMenu() {
 		}
 
 		if len(customers) == 0 {
-			fmt.Println("  Zatím nemáte žádné odběratele.")
+			fmt.Println("  " + i18n.T("info.no_customers"))
 		} else {
 			for i, cust := range customers {
 				fmt.Printf("  %d) %s", i+1, cust.Name)
 				if cust.ICO != "" {
-					fmt.Printf(" (IČO: %s)", cust.ICO)
+					fmt.Printf(" (%s: %s)", i18n.T("prompt.ico"), cust.ICO)
 				}
 				fmt.Println()
 			}
 		}
 
 		fmt.Println()
-		fmt.Println("  N) Nový odběratel")
-		fmt.Println("  H) Hledat")
-		fmt.Println("  0) Zpět")
+		fmt.Println("  " + i18n.T("action.new_customer"))
+		fmt.Println("  " + i18n.T("action.search"))
+		fmt.Println("  " + i18n.T("action.back"))
 		fmt.Println()
 
-		choice := c.prompt("Vyberte možnost")
+		choice := c.prompt(i18n.T("prompt.choose_option"))
 
 		switch choice {
 		case "0", "":
@@ -58,34 +59,34 @@ func (c *CLI) customersMenu() {
 
 func (c *CLI) createCustomer() *model.Customer {
 	c.clearScreen()
-	fmt.Println("=== NOVÝ ODBĚRATEL ===")
-	fmt.Println("(Zadejte 0 pro návrat zpět)")
+	fmt.Printf("=== %s ===\n", i18n.T("heading.new_customer"))
+	fmt.Println(i18n.T("prompt.enter_0_back"))
 	fmt.Println()
 
 	cust := model.NewCustomer()
 
-	name, goBack := c.promptWithBack("Název firmy / Jméno")
+	name, goBack := c.promptWithBack(i18n.T("prompt.company_name"))
 	if goBack {
 		return nil
 	}
 	if name == "" {
-		c.printError("Název je povinný")
+		c.printError(i18n.T("error.name_required"))
 		c.waitEnter()
 		return nil
 	}
 	cust.Name = name
 
-	cust.Street = c.prompt("Ulice a číslo")
-	cust.City = c.prompt("Město")
-	cust.ZIP = c.prompt("PSČ")
-	cust.Region = c.prompt("Kraj (volitelné)")
-	cust.Country = c.promptDefault("Země", "CZ")
-	cust.ICO = c.prompt("IČO")
-	cust.DIC = c.prompt("DIČ")
-	cust.Email = c.prompt("E-mail")
-	cust.Phone = c.prompt("Telefon")
-	cust.DefaultDueDays = c.promptInt("Výchozí splatnost (dny)", 14)
-	cust.Notes = c.prompt("Poznámky")
+	cust.Street = c.prompt(i18n.T("prompt.street"))
+	cust.City = c.prompt(i18n.T("prompt.city"))
+	cust.ZIP = c.prompt(i18n.T("prompt.zip"))
+	cust.Region = c.prompt(i18n.T("prompt.region"))
+	cust.Country = c.promptDefault(i18n.T("prompt.country"), "CZ")
+	cust.ICO = c.prompt(i18n.T("prompt.ico"))
+	cust.DIC = c.prompt(i18n.T("prompt.dic"))
+	cust.Email = c.prompt(i18n.T("prompt.email"))
+	cust.Phone = c.prompt(i18n.T("prompt.phone"))
+	cust.DefaultDueDays = c.promptInt(i18n.T("prompt.default_due_days"), 14)
+	cust.Notes = c.prompt(i18n.T("prompt.notes"))
 
 	if err := c.customers.Create(cust); err != nil {
 		c.printError(err.Error())
@@ -93,7 +94,7 @@ func (c *CLI) createCustomer() *model.Customer {
 		return nil
 	}
 
-	c.printSuccess("Odběratel byl vytvořen")
+	c.printSuccess(i18n.T("success.customer_created"))
 	c.waitEnter()
 	return cust
 }
@@ -101,29 +102,29 @@ func (c *CLI) createCustomer() *model.Customer {
 func (c *CLI) editCustomer(cust *model.Customer) {
 	for {
 		c.clearScreen()
-		fmt.Printf("=== ODBĚRATEL: %s ===\n", cust.Name)
+		fmt.Printf("=== %s ===\n", i18n.Tf("heading.customer_detail", cust.Name))
 		fmt.Println()
-		fmt.Printf("  Adresa:    %s, %s %s, %s\n", cust.Street, cust.ZIP, cust.City, cust.Country)
+		fmt.Printf("  "+i18n.T("label.address")+"\n", cust.Street, cust.ZIP, cust.City, cust.Country)
 		if cust.Region != "" {
-			fmt.Printf("  Kraj:      %s\n", cust.Region)
+			fmt.Printf("  "+i18n.T("label.region")+"\n", cust.Region)
 		}
-		fmt.Printf("  IČO:       %s\n", cust.ICO)
-		fmt.Printf("  DIČ:       %s\n", cust.DIC)
-		fmt.Printf("  E-mail:    %s\n", cust.Email)
-		fmt.Printf("  Telefon:   %s\n", cust.Phone)
-		fmt.Printf("  Splatnost: %d dní\n", cust.DefaultDueDays)
+		fmt.Printf("  "+i18n.T("label.ico")+"\n", cust.ICO)
+		fmt.Printf("  "+i18n.T("label.dic")+"\n", cust.DIC)
+		fmt.Printf("  "+i18n.T("label.email_full")+"\n", cust.Email)
+		fmt.Printf("  "+i18n.T("label.phone_full")+"\n", cust.Phone)
+		fmt.Printf("  "+i18n.T("label.due_days")+"\n", cust.DefaultDueDays)
 		if cust.Notes != "" {
-			fmt.Printf("  Poznámky:  %s\n", cust.Notes)
+			fmt.Printf("  "+i18n.T("label.notes")+"\n", cust.Notes)
 		}
 		fmt.Println()
 
-		fmt.Println("  E) Upravit údaje")
-		fmt.Println("  F) Zobrazit faktury")
-		fmt.Println("  X) Smazat odběratele")
-		fmt.Println("  0) Zpět")
+		fmt.Println("  " + i18n.T("action.edit_details"))
+		fmt.Println("  " + i18n.T("action.show_invoices"))
+		fmt.Println("  " + i18n.T("action.delete_customer"))
+		fmt.Println("  " + i18n.T("action.back"))
 		fmt.Println()
 
-		choice := c.prompt("Vyberte možnost")
+		choice := c.prompt(i18n.T("prompt.choose_option"))
 
 		switch choice {
 		case "0", "":
@@ -133,12 +134,12 @@ func (c *CLI) editCustomer(cust *model.Customer) {
 		case "f", "F":
 			c.listCustomerInvoices(cust)
 		case "x", "X":
-			if c.confirm("Opravdu smazat odběratele?") {
+			if c.confirm(i18n.T("confirm.delete_customer")) {
 				if err := c.customers.Delete(cust.ID); err != nil {
 					c.printError(err.Error())
 					c.waitEnter()
 				} else {
-					c.printSuccess("Odběratel byl smazán")
+					c.printSuccess(i18n.T("success.customer_deleted"))
 					c.waitEnter()
 					return
 				}
@@ -149,33 +150,33 @@ func (c *CLI) editCustomer(cust *model.Customer) {
 
 func (c *CLI) editCustomerDetails(cust *model.Customer) {
 	c.clearScreen()
-	fmt.Println("=== ÚPRAVA ODBĚRATELE ===")
-	fmt.Println("(Nechte prázdné pro zachování stávající hodnoty)")
+	fmt.Printf("=== %s ===\n", i18n.T("heading.edit_customer"))
+	fmt.Println(i18n.T("prompt.leave_empty_hint"))
 	fmt.Println()
 
-	cust.Name = c.promptDefault("Název", cust.Name)
-	cust.Street = c.promptDefault("Ulice", cust.Street)
-	cust.City = c.promptDefault("Město", cust.City)
-	cust.ZIP = c.promptDefault("PSČ", cust.ZIP)
-	cust.Region = c.promptDefault("Kraj", cust.Region)
-	cust.Country = c.promptDefault("Země", cust.Country)
-	cust.ICO = c.promptDefault("IČO", cust.ICO)
-	cust.DIC = c.promptDefault("DIČ", cust.DIC)
-	cust.Email = c.promptDefault("E-mail", cust.Email)
-	cust.Phone = c.promptDefault("Telefon", cust.Phone)
-	cust.DefaultDueDays = c.promptInt("Splatnost (dny)", cust.DefaultDueDays)
-	cust.Notes = c.promptDefault("Poznámky", cust.Notes)
+	cust.Name = c.promptDefault(i18n.T("prompt.name"), cust.Name)
+	cust.Street = c.promptDefault(i18n.T("prompt.street_short"), cust.Street)
+	cust.City = c.promptDefault(i18n.T("prompt.city"), cust.City)
+	cust.ZIP = c.promptDefault(i18n.T("prompt.zip"), cust.ZIP)
+	cust.Region = c.promptDefault(i18n.T("prompt.region"), cust.Region)
+	cust.Country = c.promptDefault(i18n.T("prompt.country"), cust.Country)
+	cust.ICO = c.promptDefault(i18n.T("prompt.ico"), cust.ICO)
+	cust.DIC = c.promptDefault(i18n.T("prompt.dic"), cust.DIC)
+	cust.Email = c.promptDefault(i18n.T("prompt.email"), cust.Email)
+	cust.Phone = c.promptDefault(i18n.T("prompt.phone"), cust.Phone)
+	cust.DefaultDueDays = c.promptInt(i18n.T("prompt.due_days"), cust.DefaultDueDays)
+	cust.Notes = c.promptDefault(i18n.T("prompt.notes"), cust.Notes)
 
 	if err := c.customers.Update(cust); err != nil {
 		c.printError(err.Error())
 	} else {
-		c.printSuccess("Odběratel byl aktualizován")
+		c.printSuccess(i18n.T("success.customer_updated"))
 	}
 	c.waitEnter()
 }
 
 func (c *CLI) searchCustomers() {
-	query := c.prompt("Hledat (název nebo IČO)")
+	query := c.prompt(i18n.T("prompt.search_name_ico"))
 	if query == "" {
 		return
 	}
@@ -188,7 +189,7 @@ func (c *CLI) searchCustomers() {
 	}
 
 	if len(customers) == 0 {
-		fmt.Println("Nic nenalezeno.")
+		fmt.Println(i18n.T("info.nothing_found"))
 		c.waitEnter()
 		return
 	}
@@ -197,13 +198,13 @@ func (c *CLI) searchCustomers() {
 	for i, cust := range customers {
 		fmt.Printf("  %d) %s", i+1, cust.Name)
 		if cust.ICO != "" {
-			fmt.Printf(" (IČO: %s)", cust.ICO)
+			fmt.Printf(" (%s: %s)", i18n.T("prompt.ico"), cust.ICO)
 		}
 		fmt.Println()
 	}
 
 	fmt.Println()
-	choice := c.prompt("Vyberte číslo pro detail (0 = zpět)")
+	choice := c.prompt(i18n.T("prompt.select_for_detail"))
 	idx := 0
 	fmt.Sscanf(choice, "%d", &idx)
 	if idx > 0 && idx <= len(customers) {
@@ -220,11 +221,11 @@ func (c *CLI) listCustomerInvoices(cust *model.Customer) {
 	}
 
 	c.clearScreen()
-	fmt.Printf("=== FAKTURY: %s ===\n", cust.Name)
+	fmt.Printf("=== %s ===\n", i18n.Tf("heading.customer_invoices", cust.Name))
 	fmt.Println()
 
 	if len(invoices) == 0 {
-		fmt.Println("Žádné faktury.")
+		fmt.Println(i18n.T("info.no_invoices"))
 	} else {
 		for _, inv := range invoices {
 			fmt.Printf("  %s | %s | %.2f %s | %s\n",
@@ -248,21 +249,21 @@ func (c *CLI) selectCustomerWithBack() (*model.Customer, bool) {
 	customers, _ := c.customers.List()
 
 	if len(customers) == 0 {
-		fmt.Println("Nemáte žádné odběratele. Vytvořte nového:")
+		fmt.Println(i18n.T("info.no_customers_create"))
 		cust := c.createCustomer()
 		return cust, cust == nil
 	}
 
 	fmt.Println()
-	fmt.Println("Vyberte odběratele:")
+	fmt.Println(i18n.T("prompt.select_customer"))
 	for i, cust := range customers {
 		fmt.Printf("  %d) %s\n", i+1, cust.Name)
 	}
-	fmt.Println("  N) Nový odběratel")
-	fmt.Println("  0) Zpět")
+	fmt.Println("  " + i18n.T("action.new_customer"))
+	fmt.Println("  " + i18n.T("action.back"))
 	fmt.Println()
 
-	choice := c.prompt("Volba")
+	choice := c.prompt(i18n.T("prompt.choice"))
 
 	if choice == "0" {
 		return nil, true

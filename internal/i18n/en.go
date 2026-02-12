@@ -235,6 +235,11 @@ var messagesEN = map[string]string{
 	"wizard.bank_account":     "Bank account",
 	"wizard.summary":          "Summary",
 
+	// ── Settings ────────────────────────────────────────────────────────
+	"settings.change_language":  "Change application language",
+	"settings.current_language": "Current language:",
+	"success.language_changed":  "Language changed to: %s",
+
 	// ── Defaults ────────────────────────────────────────────────────────
 	"default.main_account": "Main account",
 	"default.unit_pcs":     "pcs",
