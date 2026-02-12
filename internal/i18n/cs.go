@@ -279,4 +279,59 @@ var messagesCS = map[string]string{
 	"pdf.vat_payer":        "Plátce DPH",
 	"pdf.not_vat_payer":    "Nejsem plátce DPH",
 	"pdf.invoice_msg":      "Faktura %s",
+
+	// ── Items Catalog ───────────────────────────────────────────────────
+	"heading.new_item":            "NOVÁ POLOŽKA KATALOGU",
+	"heading.item_detail":         "POLOŽKA: %s",
+	"heading.edit_item":           "ÚPRAVA POLOŽKY",
+	"heading.select_from_catalog": "VYBRAT Z KATALOGU",
+
+	"prompt.default_price":        "Výchozí cena",
+	"prompt.default_unit":         "Výchozí jednotka",
+	"prompt.default_vat":          "Výchozí DPH %",
+	"prompt.category":             "Kategorie",
+	"prompt.search_items":         "Hledat položky (název nebo kategorie)",
+	"prompt.select_category":      "Existující kategorie:",
+	"prompt.create_new_item_yn":   "Vytvořit novou položku?",
+
+	"action.new_item_catalog":     "N) Nová položka",
+	"action.from_catalog":         "K) Z katalogu",
+	"action.search_items":         "H) Hledat",
+	"action.delete_item":          "X) Smazat položku",
+	"action.new_item_inline":      "N) Vytvořit novou položku",
+	"action.new_category":         "  nebo zadejte novou kategorii",
+	"action.next_page":            "> Další strana",
+	"action.prev_page":            "< Předchozí strana",
+
+	"label.description":           "Popis",
+	"label.default_price":         "Výchozí cena",
+	"label.default_unit":          "Jednotka",
+	"label.default_vat":           "DPH",
+	"label.category":              "Kategorie",
+	"label.usage_count":           "Použití",
+	"label.last_price":            "Poslední cena",
+	"label.last_customer":         "Poslední zákazník",
+	"label.deleted_customer":      "(smazaný zákazník)",
+	"label.customer_items":        "Vaše položky u tohoto odběratele:",
+	"label.global_items":          "Nejpoužívanější položky:",
+	"label.from_catalog":          "Z katalogu",
+	"label.catalog_price":         "katalog",
+	"label.global":                "celkem",
+	"label.page":                  "Strana",
+
+	"info.no_items":               "Katalog položek je zatím prázdný.",
+	"info.no_catalog_items":       "Žádné položky v katalogu.",
+	"info.create_item_first":      "Vytvořte první položku.",
+
+	"success.item_created":        "Položka vytvořena",
+	"success.item_updated":        "Položka aktualizována",
+	"success.item_deleted":        "Položka smazána",
+
+	"confirm.delete_item":         "Opravdu smazat položku?",
+	"confirm.create_duplicate":    "Položka s tímto popisem již existuje. Vytvořit duplicitní?",
+
+	"warning.item_exists":         "Existující položka: \"%s\" (cena: %.2f)",
+
+	"error.description_required":  "Popis je povinný",
+	"error.input_too_long":        "Příliš dlouhý vstup (max %d znaků)",
 }

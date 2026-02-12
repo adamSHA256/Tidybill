@@ -279,4 +279,59 @@ var messagesEN = map[string]string{
 	"pdf.vat_payer":        "VAT payer",
 	"pdf.not_vat_payer":    "Not a VAT payer",
 	"pdf.invoice_msg":      "Invoice %s",
+
+	// ── Items Catalog ───────────────────────────────────────────────────
+	"heading.new_item":            "NEW CATALOG ITEM",
+	"heading.item_detail":         "ITEM: %s",
+	"heading.edit_item":           "EDIT ITEM",
+	"heading.select_from_catalog": "SELECT FROM CATALOG",
+
+	"prompt.default_price":        "Default price",
+	"prompt.default_unit":         "Default unit",
+	"prompt.default_vat":          "Default VAT %",
+	"prompt.category":             "Category",
+	"prompt.search_items":         "Search items (name or category)",
+	"prompt.select_category":      "Existing categories:",
+	"prompt.create_new_item_yn":   "Create a new item?",
+
+	"action.new_item_catalog":     "N) New item",
+	"action.from_catalog":         "K) From catalog",
+	"action.search_items":         "H) Search",
+	"action.delete_item":          "X) Delete item",
+	"action.new_item_inline":      "N) Create new item",
+	"action.new_category":         "  or enter a new category",
+	"action.next_page":            "> Next page",
+	"action.prev_page":            "< Previous page",
+
+	"label.description":           "Description",
+	"label.default_price":         "Default price",
+	"label.default_unit":          "Unit",
+	"label.default_vat":           "VAT",
+	"label.category":              "Category",
+	"label.usage_count":           "Usage",
+	"label.last_price":            "Last price",
+	"label.last_customer":         "Last customer",
+	"label.deleted_customer":      "(deleted customer)",
+	"label.customer_items":        "Your items for this customer:",
+	"label.global_items":          "Most used items:",
+	"label.from_catalog":          "From catalog",
+	"label.catalog_price":         "catalog",
+	"label.global":                "total",
+	"label.page":                  "Page",
+
+	"info.no_items":               "Item catalog is empty.",
+	"info.no_catalog_items":       "No items in catalog.",
+	"info.create_item_first":      "Create your first item.",
+
+	"success.item_created":        "Item created",
+	"success.item_updated":        "Item updated",
+	"success.item_deleted":        "Item deleted",
+
+	"confirm.delete_item":         "Really delete item?",
+	"confirm.create_duplicate":    "Item with this description already exists. Create duplicate?",
+
+	"warning.item_exists":         "Existing item: \"%s\" (price: %.2f)",
+
+	"error.description_required":  "Description is required",
+	"error.input_too_long":        "Input too long (max %d characters)",
 }

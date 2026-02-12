@@ -279,4 +279,59 @@ var messagesSK = map[string]string{
 	"pdf.vat_payer":        "Platca DPH",
 	"pdf.not_vat_payer":    "Nie som platca DPH",
 	"pdf.invoice_msg":      "Faktúra %s",
+
+	// ── Items Catalog ───────────────────────────────────────────────────
+	"heading.new_item":            "NOVÁ POLOŽKA KATALÓGU",
+	"heading.item_detail":         "POLOŽKA: %s",
+	"heading.edit_item":           "ÚPRAVA POLOŽKY",
+	"heading.select_from_catalog": "VYBRAŤ Z KATALÓGU",
+
+	"prompt.default_price":        "Predvolená cena",
+	"prompt.default_unit":         "Predvolená jednotka",
+	"prompt.default_vat":          "Predvolené DPH %",
+	"prompt.category":             "Kategória",
+	"prompt.search_items":         "Hľadať položky (názov alebo kategória)",
+	"prompt.select_category":      "Existujúce kategórie:",
+	"prompt.create_new_item_yn":   "Vytvoriť novú položku?",
+
+	"action.new_item_catalog":     "N) Nová položka",
+	"action.from_catalog":         "K) Z katalógu",
+	"action.search_items":         "H) Hľadať",
+	"action.delete_item":          "X) Zmazať položku",
+	"action.new_item_inline":      "N) Vytvoriť novú položku",
+	"action.new_category":         "  alebo zadajte novú kategóriu",
+	"action.next_page":            "> Ďalšia strana",
+	"action.prev_page":            "< Predchádzajúca strana",
+
+	"label.description":           "Popis",
+	"label.default_price":         "Predvolená cena",
+	"label.default_unit":          "Jednotka",
+	"label.default_vat":           "DPH",
+	"label.category":              "Kategória",
+	"label.usage_count":           "Použitie",
+	"label.last_price":            "Posledná cena",
+	"label.last_customer":         "Posledný zákazník",
+	"label.deleted_customer":      "(zmazaný zákazník)",
+	"label.customer_items":        "Vaše položky u tohto odberateľa:",
+	"label.global_items":          "Najpoužívanejšie položky:",
+	"label.from_catalog":          "Z katalógu",
+	"label.catalog_price":         "katalóg",
+	"label.global":                "celkom",
+	"label.page":                  "Strana",
+
+	"info.no_items":               "Katalóg položiek je zatiaľ prázdny.",
+	"info.no_catalog_items":       "Žiadne položky v katalógu.",
+	"info.create_item_first":      "Vytvorte prvú položku.",
+
+	"success.item_created":        "Položka vytvorená",
+	"success.item_updated":        "Položka aktualizovaná",
+	"success.item_deleted":        "Položka zmazaná",
+
+	"confirm.delete_item":         "Naozaj zmazať položku?",
+	"confirm.create_duplicate":    "Položka s týmto popisom už existuje. Vytvoriť duplicitnú?",
+
+	"warning.item_exists":         "Existujúca položka: \"%s\" (cena: %.2f)",
+
+	"error.description_required":  "Popis je povinný",
+	"error.input_too_long":        "Príliš dlhý vstup (max %d znakov)",
 }
