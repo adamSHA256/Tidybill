@@ -164,7 +164,7 @@ func (c *CLI) createInvoice() {
 	fmt.Println("  " + i18n.T("action.cancel"))
 	fmt.Println()
 
-	choice := c.prompt(i18n.T("prompt.choice"))
+	choice := c.promptDefault(i18n.T("prompt.choice"), "u")
 
 	if choice != "u" && choice != "U" {
 		fmt.Println(i18n.T("info.invoice_not_saved"))
@@ -178,19 +178,39 @@ func (c *CLI) createInvoice() {
 			return fmt.Errorf("save invoice: %w", err)
 		}
 
+		// Auto-create catalog entries for manually-added items before saving invoice_items
+		itemRepo := c.items.WithDB(tx)
 		for i := range items {
 			items[i].InvoiceID = invoice.ID
+			if items[i].ItemID == "" {
+				existing, _ := itemRepo.FindByDescription(items[i].Description)
+				if existing != nil {
+					items[i].ItemID = existing.ID
+				} else {
+					catalogItem := &model.Item{
+						Description:    items[i].Description,
+						DefaultPrice:   items[i].UnitPrice,
+						DefaultUnit:    items[i].Unit,
+						DefaultVATRate: items[i].VATRate,
+						LastUsedPrice:  items[i].UnitPrice,
+						LastCustomerID: customer.ID,
+						UsageCount:     0,
+					}
+					if err := itemRepo.Create(catalogItem); err != nil {
+						return fmt.Errorf("create catalog item: %w", err)
+					}
+					items[i].ItemID = catalogItem.ID
+				}
+			}
 		}
+
 		if err := c.invItems.WithDB(tx).CreateBatch(items); err != nil {
 			return fmt.Errorf("save items: %w", err)
 		}
 
-		itemRepo := c.items.WithDB(tx)
+		// Track usage for all items
 		custItemRepo := c.custItems.WithDB(tx)
 		for _, invItem := range items {
-			if invItem.ItemID == "" {
-				continue
-			}
 			if err := itemRepo.IncrementUsage(invItem.ItemID, invItem.UnitPrice, customer.ID); err != nil {
 				return fmt.Errorf("update item usage: %w", err)
 			}
