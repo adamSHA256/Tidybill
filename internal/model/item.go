@@ -1,6 +1,15 @@
 package model
 
-import "time"
+import (
+	"math"
+	"strings"
+	"time"
+)
+
+const (
+	MaxDescriptionLen = 100
+	MaxCategoryLen    = 50
+)
 
 type Item struct {
 	ID             string    `json:"id"`
@@ -18,7 +27,6 @@ type Item struct {
 
 func NewItem() *Item {
 	return &Item{
-		DefaultUnit:    "ks",
 		DefaultVATRate: 0,
 	}
 }
@@ -31,4 +39,18 @@ type CustomerItem struct {
 	LastQuantity float64   `json:"last_quantity"`
 	UsageCount   int       `json:"usage_count"`
 	LastUsedAt   time.Time `json:"last_used_at"`
+
+	// Joined fields (populated by queries with JOIN, not stored in DB)
+	ItemDescription string  `json:"item_description,omitempty"`
+	ItemCategory    string  `json:"item_category,omitempty"`
+	ItemDefaultUnit string  `json:"item_default_unit,omitempty"`
+	ItemDefaultVAT  float64 `json:"item_default_vat,omitempty"`
+}
+
+func RoundMoney(amount float64) float64 {
+	return math.Round(amount*100) / 100
+}
+
+func NormalizeCategory(category string) string {
+	return strings.ToLower(strings.TrimSpace(category))
 }

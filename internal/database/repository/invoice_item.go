@@ -8,10 +8,14 @@ import (
 )
 
 type InvoiceItemRepository struct {
-	db *sql.DB
+	db DBTX
 }
 
-func NewInvoiceItemRepository(db *sql.DB) *InvoiceItemRepository {
+func NewInvoiceItemRepository(db DBTX) *InvoiceItemRepository {
+	return &InvoiceItemRepository{db: db}
+}
+
+func (r *InvoiceItemRepository) WithDB(db DBTX) *InvoiceItemRepository {
 	return &InvoiceItemRepository{db: db}
 }
 
@@ -71,21 +75,6 @@ func (r *InvoiceItemRepository) DeleteByInvoice(invoiceID string) error {
 }
 
 func (r *InvoiceItemRepository) CreateBatch(items []model.InvoiceItem) error {
-	tx, err := r.db.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	stmt, err := tx.Prepare(`
-		INSERT INTO invoice_items (id, invoice_id, item_id, description, quantity, unit,
-			unit_price, vat_rate, subtotal, vat_amount, total, position)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
 	for i := range items {
 		item := &items[i]
 		if item.ID == "" {
@@ -93,7 +82,6 @@ func (r *InvoiceItemRepository) CreateBatch(items []model.InvoiceItem) error {
 		}
 		item.Calculate()
 
-		// Convert empty string to NULL for foreign key
 		var itemID interface{}
 		if item.ItemID == "" {
 			itemID = nil
@@ -101,12 +89,15 @@ func (r *InvoiceItemRepository) CreateBatch(items []model.InvoiceItem) error {
 			itemID = item.ItemID
 		}
 
-		if _, err := stmt.Exec(item.ID, item.InvoiceID, itemID, item.Description, item.Quantity,
+		if _, err := r.db.Exec(`
+			INSERT INTO invoice_items (id, invoice_id, item_id, description, quantity, unit,
+				unit_price, vat_rate, subtotal, vat_amount, total, position)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			item.ID, item.InvoiceID, itemID, item.Description, item.Quantity,
 			item.Unit, item.UnitPrice, item.VATRate, item.Subtotal, item.VATAmount,
 			item.Total, item.Position); err != nil {
 			return err
 		}
 	}
-
-	return tx.Commit()
+	return nil
 }

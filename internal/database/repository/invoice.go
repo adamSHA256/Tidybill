@@ -11,10 +11,14 @@ import (
 )
 
 type InvoiceRepository struct {
-	db *sql.DB
+	db DBTX
 }
 
-func NewInvoiceRepository(db *sql.DB) *InvoiceRepository {
+func NewInvoiceRepository(db DBTX) *InvoiceRepository {
+	return &InvoiceRepository{db: db}
+}
+
+func (r *InvoiceRepository) WithDB(db DBTX) *InvoiceRepository {
 	return &InvoiceRepository{db: db}
 }
 
