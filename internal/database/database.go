@@ -19,13 +19,10 @@ type DB struct {
 }
 
 func New(dbPath string) (*DB, error) {
-	sqlDB, err := sql.Open("sqlite", dbPath)
+	dsn := dbPath + "?_pragma=foreign_keys(1)"
+	sqlDB, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
-	}
-
-	if _, err := sqlDB.Exec("PRAGMA foreign_keys = ON"); err != nil {
-		return nil, fmt.Errorf("failed to enable foreign keys: %w", err)
 	}
 
 	db := &DB{DB: sqlDB}

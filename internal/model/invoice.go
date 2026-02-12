@@ -87,9 +87,9 @@ func NewInvoiceItem(invoiceID string) *InvoiceItem {
 }
 
 func (i *InvoiceItem) Calculate() {
-	i.Subtotal = i.Quantity * i.UnitPrice
-	i.VATAmount = i.Subtotal * i.VATRate / 100
-	i.Total = i.Subtotal + i.VATAmount
+	i.Subtotal = RoundMoney(i.Quantity * i.UnitPrice)
+	i.VATAmount = RoundMoney(i.Subtotal * i.VATRate / 100)
+	i.Total = RoundMoney(i.Subtotal + i.VATAmount)
 }
 
 func (i *Invoice) IsOverdue() bool {
