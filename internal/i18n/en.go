@@ -94,6 +94,7 @@ var messagesEN = map[string]string{
 	"prompt.select_for_detail":   "Select number for details (0 = back)",
 	"prompt.search_name_ico":     "Search (name or company ID)",
 	"prompt.add_item":            "Add item:",
+	"prompt.invoice_notes":       "Invoice notes (printed on PDF)",
 
 	// ── Labels ──────────────────────────────────────────────────────────
 	"label.address":              "Address: %s, %s %s, %s",
@@ -116,6 +117,7 @@ var messagesEN = map[string]string{
 	"label.region":               "Region:    %s",
 	"label.due_days":             "Due:       %d days",
 	"label.notes":                "Notes:     %s",
+	"label.internal_notes":       "Internal notes: %s",
 	"label.invoice_number":       "Invoice: %s",
 	"label.invoice_number_full":  "Invoice number: %s",
 	"label.customer":             "Customer:      %s",
@@ -145,6 +147,8 @@ var messagesEN = map[string]string{
 	"action.add_bank_account": "B) Add bank account",
 	"action.set_default":      "D) Set as default",
 	"action.show_invoices":    "F) Show invoices",
+	"action.notes":            "N) Notes",
+	"action.internal_notes":   "N) Internal notes",
 	"action.delete_customer":  "X) Delete customer",
 	"action.done":             "D) Done",
 	"action.cancel_invoice":   "0) Cancel invoice",
@@ -179,6 +183,7 @@ var messagesEN = map[string]string{
 	"success.account_added":     "Account added",
 	"success.customer_created":  "Customer created",
 	"success.customer_updated":  "Customer updated",
+	"success.notes_saved":       "Notes saved",
 	"success.customer_deleted":  "Customer deleted",
 	"success.invoice_created":   "Invoice %s created!",
 	"success.invoice_paid":      "Invoice marked as paid",

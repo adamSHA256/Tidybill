@@ -114,11 +114,12 @@ func (c *CLI) editCustomer(cust *model.Customer) {
 		fmt.Printf("  "+i18n.T("label.phone_full")+"\n", cust.Phone)
 		fmt.Printf("  "+i18n.T("label.due_days")+"\n", cust.DefaultDueDays)
 		if cust.Notes != "" {
-			fmt.Printf("  "+i18n.T("label.notes")+"\n", cust.Notes)
+			c.printMultiline("  ", i18n.T("label.notes"), cust.Notes)
 		}
 		fmt.Println()
 
 		fmt.Println("  " + i18n.T("action.edit_details"))
+		fmt.Println("  " + i18n.T("action.notes"))
 		fmt.Println("  " + i18n.T("action.show_invoices"))
 		fmt.Println("  " + i18n.T("action.delete_customer"))
 		fmt.Println("  " + i18n.T("action.back"))
@@ -131,6 +132,8 @@ func (c *CLI) editCustomer(cust *model.Customer) {
 			return
 		case "e", "E":
 			c.editCustomerDetails(cust)
+		case "n", "N":
+			c.editCustomerNotes(cust)
 		case "f", "F":
 			c.listCustomerInvoices(cust)
 		case "x", "X":
@@ -281,4 +284,19 @@ func (c *CLI) selectCustomerWithBack() (*model.Customer, bool) {
 	}
 
 	return nil, false
+}
+
+func (c *CLI) editCustomerNotes(cust *model.Customer) {
+	c.clearScreen()
+	fmt.Printf("=== %s ===\n", i18n.Tf("heading.customer_detail", cust.Name))
+	fmt.Printf("\n  %s\n\n", i18n.T("prompt.notes"))
+
+	cust.Notes = c.editNotes(cust.Notes)
+
+	if err := c.customers.Update(cust); err != nil {
+		c.printError(err.Error())
+	} else {
+		c.printSuccess(i18n.T("success.notes_saved"))
+	}
+	c.waitEnter()
 }

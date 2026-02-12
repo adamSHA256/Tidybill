@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -242,6 +244,85 @@ func (c *CLI) printError(msg string) {
 
 func (c *CLI) printSuccess(msg string) {
 	fmt.Printf("\n✓ %s\n", msg)
+}
+
+// printMultiline prints a label+value where continuation lines align under the first.
+// prefix is the indent before the label (e.g. "  "), label is the i18n format like "Poznámky:  %s".
+func (c *CLI) printMultiline(prefix, label, value string) {
+	// Find where %s sits in the label to compute padding width
+	idx := strings.Index(label, "%s")
+	if idx < 0 {
+		fmt.Printf(prefix+label+"\n", value)
+		return
+	}
+	pad := strings.Repeat(" ", len(prefix)+idx)
+	aligned := strings.ReplaceAll(value, "\n", "\n"+pad)
+	fmt.Printf(prefix+label+"\n", aligned)
+}
+
+// editNotes opens the current notes in $EDITOR so the user can freely modify them.
+// Returns the updated notes string.
+func (c *CLI) editNotes(current string) string {
+	// Create temp file with current content
+	tmpFile, err := os.CreateTemp("", "tidybill-notes-*.txt")
+	if err != nil {
+		c.printError(err.Error())
+		return current
+	}
+	tmpPath := tmpFile.Name()
+	defer os.Remove(tmpPath)
+
+	if _, err := tmpFile.WriteString(current); err != nil {
+		tmpFile.Close()
+		c.printError(err.Error())
+		return current
+	}
+	tmpFile.Close()
+
+	// Find editor
+	editor := os.Getenv("EDITOR")
+	if editor == "" {
+		editor = os.Getenv("VISUAL")
+	}
+	if editor == "" {
+		// Try common editors
+		for _, e := range []string{"nano", "vim", "vi"} {
+			if p, err := exec.LookPath(e); err == nil {
+				editor = p
+				break
+			}
+		}
+	}
+	if editor == "" {
+		c.printError("no editor found, set $EDITOR")
+		return current
+	}
+
+	// Resolve editor path for exec
+	editorPath, err := exec.LookPath(filepath.Base(editor))
+	if err != nil {
+		editorPath = editor
+	}
+
+	// Open editor
+	cmd := exec.Command(editorPath, tmpPath)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		c.printError(err.Error())
+		return current
+	}
+
+	// Read back
+	content, err := os.ReadFile(tmpPath)
+	if err != nil {
+		c.printError(err.Error())
+		return current
+	}
+
+	return strings.TrimRight(string(content), "\n\r ")
 }
 
 func (c *CLI) showStats() {

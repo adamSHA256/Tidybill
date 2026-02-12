@@ -106,6 +106,9 @@ func (c *CLI) createInvoice() {
 		return
 	}
 
+	// Invoice notes (printed on PDF)
+	invoice.Notes = c.prompt(i18n.T("prompt.invoice_notes"))
+
 	// Calculate totals
 	for _, item := range items {
 		invoice.Subtotal += item.Subtotal
@@ -435,6 +438,14 @@ func (c *CLI) invoiceDetail(inv *model.Invoice) {
 		fmt.Printf("  "+i18n.T("label.variable_symbol")+"\n", inv.VariableSymbol)
 		fmt.Println()
 
+		if inv.Notes != "" {
+			c.printMultiline("  ", i18n.T("label.notes"), inv.Notes)
+		}
+		if inv.InternalNotes != "" {
+			c.printMultiline("  ", i18n.T("label.internal_notes"), inv.InternalNotes)
+		}
+		fmt.Println()
+
 		fmt.Println("  " + i18n.T("label.items"))
 		for _, item := range items {
 			fmt.Printf("    %.0f× %s @ %.2f = %.2f %s\n",
@@ -448,6 +459,7 @@ func (c *CLI) invoiceDetail(inv *model.Invoice) {
 		if inv.PDFPath != "" {
 			fmt.Println("  " + i18n.T("action.open_pdf"))
 		}
+		fmt.Println("  " + i18n.T("action.internal_notes"))
 		fmt.Println("  " + i18n.T("action.change_status"))
 		fmt.Println("  " + i18n.T("action.mark_paid"))
 		fmt.Println("  " + i18n.T("action.delete_invoice"))
@@ -459,6 +471,8 @@ func (c *CLI) invoiceDetail(inv *model.Invoice) {
 		switch choice {
 		case "0", "":
 			return
+		case "n", "N":
+			c.editInvoiceInternalNotes(inv)
 		case "g", "G":
 			c.generatePDF(inv)
 		case "o", "O":
@@ -585,6 +599,21 @@ func (c *CLI) changeInvoiceStatus(inv *model.Invoice) {
 	c.invoices.UpdateStatus(inv.ID, newStatus)
 	inv.Status = newStatus
 	c.printSuccess(i18n.T("success.status_changed"))
+}
+
+func (c *CLI) editInvoiceInternalNotes(inv *model.Invoice) {
+	c.clearScreen()
+	fmt.Printf("=== %s ===\n", i18n.Tf("heading.invoice_detail", inv.InvoiceNumber))
+	fmt.Printf("\n  %s\n\n", i18n.T("action.internal_notes"))
+
+	inv.InternalNotes = c.editNotes(inv.InternalNotes)
+
+	if err := c.invoices.Update(inv); err != nil {
+		c.printError(err.Error())
+	} else {
+		c.printSuccess(i18n.T("success.notes_saved"))
+	}
+	c.waitEnter()
 }
 
 func (c *CLI) createFromExisting() {

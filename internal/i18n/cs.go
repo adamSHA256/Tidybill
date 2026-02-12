@@ -94,6 +94,7 @@ var messagesCS = map[string]string{
 	"prompt.select_for_detail":   "Vyberte číslo pro detail (0 = zpět)",
 	"prompt.search_name_ico":     "Hledat (název nebo IČO)",
 	"prompt.add_item":            "Přidat položku:",
+	"prompt.invoice_notes":       "Poznámky k faktuře (tisknou se na PDF)",
 
 	// ── Labels ──────────────────────────────────────────────────────────
 	"label.address":              "Adresa:  %s, %s %s, %s",
@@ -116,6 +117,7 @@ var messagesCS = map[string]string{
 	"label.region":               "Kraj:      %s",
 	"label.due_days":             "Splatnost: %d dní",
 	"label.notes":                "Poznámky:  %s",
+	"label.internal_notes":       "Interní poznámky: %s",
 	"label.invoice_number":       "Faktura: %s",
 	"label.invoice_number_full":  "Číslo faktury: %s",
 	"label.customer":             "Odběratel:     %s",
@@ -145,6 +147,8 @@ var messagesCS = map[string]string{
 	"action.add_bank_account": "B) Přidat bankovní účet",
 	"action.set_default":      "D) Nastavit jako výchozí",
 	"action.show_invoices":    "F) Zobrazit faktury",
+	"action.notes":            "N) Poznámky",
+	"action.internal_notes":   "N) Interní poznámky",
 	"action.delete_customer":  "X) Smazat odběratele",
 	"action.done":             "D) Hotovo",
 	"action.cancel_invoice":   "0) Zrušit fakturu",
@@ -179,6 +183,7 @@ var messagesCS = map[string]string{
 	"success.account_added":     "Účet byl přidán",
 	"success.customer_created":  "Odběratel byl vytvořen",
 	"success.customer_updated":  "Odběratel byl aktualizován",
+	"success.notes_saved":       "Poznámky uloženy",
 	"success.customer_deleted":  "Odběratel byl smazán",
 	"success.invoice_created":   "Faktura %s byla vytvořena!",
 	"success.invoice_paid":      "Faktura označena jako zaplacená",
