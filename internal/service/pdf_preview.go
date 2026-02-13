@@ -1,6 +1,7 @@
 package service
 
 import (
+	"embed"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,6 +13,22 @@ import (
 
 	"github.com/adamSHA256/tidybill/internal/model"
 )
+
+//go:embed assets/default_logo.png
+var defaultLogoFS embed.FS
+
+// getDefaultLogoPath extracts the embedded logo to a temp file and returns its path.
+func getDefaultLogoPath() string {
+	data, err := defaultLogoFS.ReadFile("assets/default_logo.png")
+	if err != nil {
+		return ""
+	}
+	tmp := filepath.Join(os.TempDir(), "tidybill_default_logo.png")
+	if err := os.WriteFile(tmp, data, 0644); err != nil {
+		return ""
+	}
+	return tmp
+}
 
 // GeneratePreview generates a preview PDF with sample data for a given template
 func (s *PDFService) GeneratePreview(templateCode string, opts *TemplateOptions) (string, error) {
@@ -80,6 +97,9 @@ func (s *PDFService) generateToPath(data *InvoiceData, templateCode string, opts
 
 func buildSampleInvoiceData() *InvoiceData {
 	now := time.Now()
+
+	logoPath := getDefaultLogoPath()
+
 	return &InvoiceData{
 		Invoice: &model.Invoice{
 			InvoiceNumber:  "VF99-00042",
@@ -106,6 +126,7 @@ func buildSampleInvoiceData() *InvoiceData {
 			Phone:      "+420 123 456 789",
 			Email:      "info@ukazka.cz",
 			IsVATPayer: false,
+			LogoPath:   logoPath,
 		},
 		Customer: &model.Customer{
 			Name:    "Testovaci Zakaznik a.s.",
