@@ -50,6 +50,7 @@ func (s *Server) Router() http.Handler {
 	mux.HandleFunc("PUT /api/invoices/{id}", s.updateInvoice)
 	mux.HandleFunc("DELETE /api/invoices/{id}", s.deleteInvoice)
 	mux.HandleFunc("PUT /api/invoices/{id}/status", s.updateInvoiceStatus)
+	mux.HandleFunc("PUT /api/invoices/{id}/notes", s.updateInvoiceNotes)
 	mux.HandleFunc("POST /api/invoices/{id}/pdf", s.generateInvoicePDF)
 
 	// Customers

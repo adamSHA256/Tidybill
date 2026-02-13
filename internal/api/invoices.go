@@ -336,6 +336,28 @@ func (s *Server) updateInvoiceStatus(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, inv)
 }
 
+type UpdateNotesRequest struct {
+	InternalNotes string `json:"internal_notes"`
+}
+
+func (s *Server) updateInvoiceNotes(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	var req UpdateNotesRequest
+	if err := readJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON: "+err.Error())
+		return
+	}
+
+	if err := s.invoices.UpdateInternalNotes(id, req.InternalNotes); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	inv, _ := s.invoices.GetByID(id)
+	writeJSON(w, http.StatusOK, inv)
+}
+
 func (s *Server) generateInvoicePDF(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 

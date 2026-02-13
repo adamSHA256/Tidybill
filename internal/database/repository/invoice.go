@@ -204,6 +204,11 @@ func (r *InvoiceRepository) UpdateStatus(id string, status model.InvoiceStatus) 
 	return err
 }
 
+func (r *InvoiceRepository) UpdateInternalNotes(id string, notes string) error {
+	_, err := r.db.Exec("UPDATE invoices SET internal_notes = ?, updated_at = ? WHERE id = ?", notes, time.Now(), id)
+	return err
+}
+
 func (r *InvoiceRepository) Delete(id string) error {
 	_, err := r.db.Exec("DELETE FROM invoices WHERE id = ?", id)
 	return err
