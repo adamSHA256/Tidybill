@@ -16,6 +16,8 @@ type Server struct {
 	suppliers    *repository.SupplierRepository
 	bankAccounts *repository.BankAccountRepository
 	settings     *repository.SettingsRepository
+	items        *repository.ItemRepository
+	custItems    *repository.CustomerItemRepository
 	pdf          *service.PDFService
 	cfg          *config.Config
 }
@@ -28,6 +30,8 @@ func NewServer(db *sql.DB, cfg *config.Config) *Server {
 		suppliers:    repository.NewSupplierRepository(db),
 		bankAccounts: repository.NewBankAccountRepository(db),
 		settings:     repository.NewSettingsRepository(db),
+		items:        repository.NewItemRepository(db),
+		custItems:    repository.NewCustomerItemRepository(db),
 		pdf:          service.NewPDFService(cfg.PDFDir),
 		cfg:          cfg,
 	}
@@ -54,6 +58,7 @@ func (s *Server) Router() http.Handler {
 	mux.HandleFunc("GET /api/customers/{id}", s.getCustomer)
 	mux.HandleFunc("PUT /api/customers/{id}", s.updateCustomer)
 	mux.HandleFunc("DELETE /api/customers/{id}", s.deleteCustomer)
+	mux.HandleFunc("GET /api/customers/{id}/items", s.getCustomerItems)
 
 	// Suppliers
 	mux.HandleFunc("GET /api/suppliers", s.listSuppliers)
@@ -65,6 +70,15 @@ func (s *Server) Router() http.Handler {
 	// Bank accounts
 	mux.HandleFunc("GET /api/suppliers/{id}/bank-accounts", s.listBankAccounts)
 	mux.HandleFunc("POST /api/suppliers/{id}/bank-accounts", s.createBankAccount)
+
+	// Items catalog
+	mux.HandleFunc("GET /api/items", s.listItems)
+	mux.HandleFunc("POST /api/items", s.createItem)
+	mux.HandleFunc("GET /api/items/most-used", s.getMostUsedItems)
+	mux.HandleFunc("GET /api/items/categories", s.getItemCategories)
+	mux.HandleFunc("GET /api/items/{id}", s.getItem)
+	mux.HandleFunc("PUT /api/items/{id}", s.updateItem)
+	mux.HandleFunc("DELETE /api/items/{id}", s.deleteItem)
 
 	// Settings
 	mux.HandleFunc("GET /api/settings", s.getSettings)

@@ -80,6 +80,7 @@ type CreateInvoiceRequest struct {
 }
 
 type CreateItemRequest struct {
+	ItemID      string  `json:"item_id"`
 	Description string  `json:"description"`
 	Quantity    float64 `json:"quantity"`
 	Unit        string  `json:"unit"`
@@ -147,6 +148,7 @@ func (s *Server) createInvoice(w http.ResponseWriter, r *http.Request) {
 	for i, itemReq := range req.Items {
 		item := model.InvoiceItem{
 			InvoiceID:   inv.ID,
+			ItemID:      itemReq.ItemID,
 			Description: itemReq.Description,
 			Quantity:    itemReq.Quantity,
 			Unit:        itemReq.Unit,
@@ -160,10 +162,39 @@ func (s *Server) createInvoice(w http.ResponseWriter, r *http.Request) {
 		items[i] = item
 	}
 
+	// Auto-create catalog entries for items without item_id
+	for i := range items {
+		if items[i].ItemID == "" && items[i].Description != "" {
+			existing, _ := s.items.FindByDescription(items[i].Description)
+			if existing != nil {
+				items[i].ItemID = existing.ID
+			} else {
+				catalogItem := model.NewItem()
+				catalogItem.Description = items[i].Description
+				catalogItem.DefaultPrice = items[i].UnitPrice
+				catalogItem.DefaultUnit = items[i].Unit
+				catalogItem.DefaultVATRate = items[i].VATRate
+				catalogItem.LastUsedPrice = items[i].UnitPrice
+				catalogItem.LastCustomerID = req.CustomerID
+				if err := s.items.Create(catalogItem); err == nil {
+					items[i].ItemID = catalogItem.ID
+				}
+			}
+		}
+	}
+
 	if len(items) > 0 {
 		if err := s.invoiceItems.CreateBatch(items); err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
+		}
+	}
+
+	// Track usage for catalog items
+	for _, item := range items {
+		if item.ItemID != "" {
+			s.items.IncrementUsage(item.ItemID, item.UnitPrice, req.CustomerID)
+			s.custItems.Upsert(req.CustomerID, item.ItemID, item.UnitPrice, item.Quantity)
 		}
 	}
 
@@ -234,6 +265,7 @@ func (s *Server) updateInvoice(w http.ResponseWriter, r *http.Request) {
 		for i, itemReq := range req.Items {
 			item := model.InvoiceItem{
 				InvoiceID:   id,
+				ItemID:      itemReq.ItemID,
 				Description: itemReq.Description,
 				Quantity:    itemReq.Quantity,
 				Unit:        itemReq.Unit,
