@@ -36,6 +36,7 @@ type Invoice struct {
 	InternalNotes  string        `json:"internal_notes"`
 	Language       string        `json:"language"`
 	PDFPath        string        `json:"pdf_path"`
+	TemplateID     string        `json:"template_id"`
 	CreatedAt      time.Time     `json:"created_at"`
 	UpdatedAt      time.Time     `json:"updated_at"`
 

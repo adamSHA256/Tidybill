@@ -28,6 +28,7 @@ type CLI struct {
 	settings    *repository.SettingsRepository
 	items       *repository.ItemRepository
 	custItems   *repository.CustomerItemRepository
+	templates   *repository.PDFTemplateRepository
 	scanner     *bufio.Scanner
 	currentSupp string // Current supplier ID
 }
@@ -41,10 +42,11 @@ func New(db *database.DB, cfg *config.Config) *CLI {
 		bankAccs:   repository.NewBankAccountRepository(db.DB),
 		invoices:   repository.NewInvoiceRepository(db.DB),
 		invItems:   repository.NewInvoiceItemRepository(db.DB),
-		pdfService: service.NewPDFService(cfg.PDFDir),
+		pdfService: service.NewPDFService(cfg.PDFDir, cfg.PreviewDir),
 		settings:   repository.NewSettingsRepository(db.DB),
 		items:      repository.NewItemRepository(db.DB),
 		custItems:  repository.NewCustomerItemRepository(db.DB),
+		templates:  repository.NewPDFTemplateRepository(db.DB),
 		scanner:    bufio.NewScanner(os.Stdin),
 	}
 }

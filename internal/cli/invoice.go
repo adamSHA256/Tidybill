@@ -867,7 +867,14 @@ func (c *CLI) generatePDF(inv *model.Invoice) {
 		Items:       items,
 	}
 
-	pdfPath, err := c.pdfService.GenerateInvoice(data)
+	opts := &service.TemplateOptions{
+		ShowLogo:  true,
+		ShowQR:    true,
+		ShowNotes: true,
+		QRType:    bankAcc.QRType,
+	}
+
+	pdfPath, err := c.pdfService.GenerateInvoice(data, inv.TemplateID, opts)
 	if err != nil {
 		c.printError(err.Error())
 		return

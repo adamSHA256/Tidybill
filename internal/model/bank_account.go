@@ -11,6 +11,7 @@ type BankAccount struct {
 	SWIFT         string    `json:"swift"`
 	Currency      string    `json:"currency"`
 	IsDefault     bool      `json:"is_default"`
+	QRType        string    `json:"qr_type"` // "spayd", "pay_by_square", "epc", "none"
 	CreatedAt     time.Time `json:"created_at"`
 }
 
@@ -19,5 +20,6 @@ func NewBankAccount(supplierID string) *BankAccount {
 		SupplierID: supplierID,
 		Currency:   "CZK",
 		IsDefault:  true,
+		QRType:     "spayd",
 	}
 }
