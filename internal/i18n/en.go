@@ -371,6 +371,7 @@ var messagesEN = map[string]string{
 	"action.edit_items":           "I) Edit items",
 	"action.add_item_edit":        "A) Add item",
 	"action.remove_item":          "X) Remove item",
+	"label.remove":                "Remove",
 	"prompt.item_number":          "Item number to remove",
 	"prompt.new_due_date":         "New due date (DD.MM.YYYY)",
 	"confirm.remove_item":         "Remove this item?",
@@ -379,6 +380,7 @@ var messagesEN = map[string]string{
 
 	// ── Bank Account Management ─────────────────────────────────────────
 	"action.manage_accounts":      "A) Manage bank accounts",
+	"info.no_bank_accounts":       "No bank accounts.",
 	"heading.bank_accounts_mgmt":  "BANK ACCOUNTS",
 	"heading.edit_bank_account":   "EDIT BANK ACCOUNT: %s",
 	"action.edit_account_details": "E) Edit details",

@@ -518,7 +518,7 @@ func (c *CLI) invoiceFilterMenu(status *model.InvoiceStatus, customerID *string,
 		default:
 			return
 		}
-		c.updateFilterLabel(status, customerID, label)
+		c.updateFilterLabel(status, customerID, from, to, label)
 
 	case "c":
 		customer, goBack := c.selectCustomerWithBack()
@@ -526,7 +526,7 @@ func (c *CLI) invoiceFilterMenu(status *model.InvoiceStatus, customerID *string,
 			return
 		}
 		*customerID = customer.ID
-		c.updateFilterLabel(status, customerID, label)
+		c.updateFilterLabel(status, customerID, from, to, label)
 
 	case "d":
 		fromStr := c.promptDefault(i18n.T("prompt.date_from"), "")
@@ -541,7 +541,7 @@ func (c *CLI) invoiceFilterMenu(status *model.InvoiceStatus, customerID *string,
 				*to = t
 			}
 		}
-		c.updateFilterLabel(status, customerID, label)
+		c.updateFilterLabel(status, customerID, from, to, label)
 
 	case "r":
 		*status = ""
@@ -552,7 +552,7 @@ func (c *CLI) invoiceFilterMenu(status *model.InvoiceStatus, customerID *string,
 	}
 }
 
-func (c *CLI) updateFilterLabel(status *model.InvoiceStatus, customerID *string, label *string) {
+func (c *CLI) updateFilterLabel(status *model.InvoiceStatus, customerID *string, from, to *time.Time, label *string) {
 	var parts []string
 	if *status != "" {
 		parts = append(parts, c.statusName(*status))
@@ -562,6 +562,17 @@ func (c *CLI) updateFilterLabel(status *model.InvoiceStatus, customerID *string,
 		if customer != nil {
 			parts = append(parts, customer.Name)
 		}
+	}
+	if !from.IsZero() || !to.IsZero() {
+		dateRange := ""
+		if !from.IsZero() && !to.IsZero() {
+			dateRange = from.Format("02.01.2006") + " - " + to.Format("02.01.2006")
+		} else if !from.IsZero() {
+			dateRange = from.Format("02.01.2006") + " →"
+		} else {
+			dateRange = "→ " + to.Format("02.01.2006")
+		}
+		parts = append(parts, dateRange)
 	}
 	if len(parts) > 0 {
 		*label = strings.Join(parts, ", ")
@@ -718,10 +729,10 @@ func (c *CLI) editDraftInvoice(inv *model.Invoice) {
 			custName = customer.Name
 		}
 
-		fmt.Printf("  %s: %s\n", i18n.T("label.customer_short"), custName)
-		fmt.Printf("  %s: %s\n", i18n.T("label.due_date_short"), inv.DueDate.Format("02.01.2006"))
+		fmt.Printf("  "+i18n.T("label.customer_short")+"\n", custName)
+		fmt.Printf("  "+i18n.T("label.due_date_short")+"\n", inv.DueDate.Format("02.01.2006"))
 		if inv.Notes != "" {
-			fmt.Printf("  %s: %s\n", i18n.T("label.notes"), inv.Notes)
+			c.printMultiline("  ", i18n.T("label.notes"), inv.Notes)
 		}
 		fmt.Println()
 
@@ -757,8 +768,7 @@ func (c *CLI) editDraftInvoice(inv *model.Invoice) {
 			c.printSuccess(i18n.T("success.invoice_updated"))
 		case "i":
 			items, _ := c.invItems.GetByInvoice(inv.ID)
-			customer, _ := c.customers.GetByID(inv.CustomerID)
-			c.editItemsList(inv, &items, customer)
+			c.editItemsList(&items)
 
 			// Recalculate and save atomically
 			if err := repository.WithTx(c.db.DB, func(tx *sql.Tx) error {
@@ -796,6 +806,20 @@ func (c *CLI) editDraftInvoice(inv *model.Invoice) {
 				if err := c.invItems.WithDB(tx).CreateBatch(items); err != nil {
 					return err
 				}
+
+				// Update invoice totals inside transaction
+				inv.Subtotal = 0
+				inv.VATTotal = 0
+				inv.Total = 0
+				for _, item := range items {
+					inv.Subtotal += item.Subtotal
+					inv.VATTotal += item.VATAmount
+					inv.Total += item.Total
+				}
+				if err := c.invoices.WithDB(tx).Update(inv); err != nil {
+					return err
+				}
+
 				return nil
 			}); err != nil {
 				c.printError(err.Error())
@@ -803,16 +827,6 @@ func (c *CLI) editDraftInvoice(inv *model.Invoice) {
 				continue
 			}
 
-			// Update invoice totals
-			inv.Subtotal = 0
-			inv.VATTotal = 0
-			inv.Total = 0
-			for _, item := range items {
-				inv.Subtotal += item.Subtotal
-				inv.VATTotal += item.VATAmount
-				inv.Total += item.Total
-			}
-			c.invoices.Update(inv)
 			c.printSuccess(i18n.T("success.invoice_updated"))
 		}
 	}
@@ -1043,6 +1057,11 @@ func (c *CLI) createFromExisting() {
 
 	if mode == "q" {
 		// Quick duplicate — save immediately
+		if len(newItems) == 0 {
+			c.printError(i18n.T("error.invoice_no_items"))
+			c.waitEnter()
+			return
+		}
 		c.saveInvoiceWithSummary(newInv, newItems, customer)
 		return
 	}
@@ -1072,7 +1091,7 @@ func (c *CLI) createFromExisting() {
 		newInv.Notes = c.promptDefault(i18n.T("prompt.invoice_notes"), newInv.Notes)
 
 		// Edit items
-		c.editItemsList(newInv, &newItems, customer)
+		c.editItemsList(&newItems)
 
 		if len(newItems) == 0 {
 			c.printError(i18n.T("error.invoice_no_items"))
@@ -1084,7 +1103,7 @@ func (c *CLI) createFromExisting() {
 	}
 }
 
-func (c *CLI) editItemsList(inv *model.Invoice, items *[]model.InvoiceItem, customer *model.Customer) {
+func (c *CLI) editItemsList(items *[]model.InvoiceItem) {
 	for {
 		c.clearScreen()
 		fmt.Printf("--- %s (%d) ---\n", i18n.T("label.items"), len(*items))
@@ -1096,7 +1115,7 @@ func (c *CLI) editItemsList(inv *model.Invoice, items *[]model.InvoiceItem, cust
 			for i, item := range *items {
 				fmt.Printf("  e%d) %.0fx %s @ %.2f = %.2f    x%d) %s\n",
 					i+1, item.Quantity, item.Description, item.UnitPrice, item.Total,
-					i+1, i18n.T("action.remove_item"))
+					i+1, i18n.T("label.remove"))
 			}
 		}
 
