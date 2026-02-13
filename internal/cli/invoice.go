@@ -14,6 +14,126 @@ import (
 	"github.com/adamSHA256/tidybill/internal/service"
 )
 
+// saveInvoiceWithSummary displays invoice summary, prompts for save, and saves atomically.
+// Returns true if saved successfully.
+func (c *CLI) saveInvoiceWithSummary(invoice *model.Invoice, items []model.InvoiceItem, customer *model.Customer) bool {
+	// Calculate totals
+	invoice.Subtotal = 0
+	invoice.VATTotal = 0
+	invoice.Total = 0
+	for _, item := range items {
+		invoice.Subtotal += item.Subtotal
+		invoice.VATTotal += item.VATAmount
+		invoice.Total += item.Total
+	}
+
+	// Show summary
+	c.clearScreen()
+	fmt.Println("═══════════════════════════════════════════════════════════")
+	fmt.Printf("                    %s\n", i18n.T("heading.invoice_summary"))
+	fmt.Println("═══════════════════════════════════════════════════════════")
+	fmt.Println(i18n.Tf("label.invoice_number_full", invoice.InvoiceNumber))
+	fmt.Println(i18n.Tf("label.customer", customer.Name))
+	fmt.Println(i18n.Tf("label.date", invoice.IssueDate.Format("02.01.2006")))
+	fmt.Println(i18n.Tf("label.due_date", invoice.DueDate.Format("02.01.2006")))
+	fmt.Println()
+	fmt.Println(i18n.T("label.items"))
+	for _, item := range items {
+		fmt.Printf("  %.0fx %s @ %.2f %s = %.2f %s\n",
+			item.Quantity, item.Description, item.UnitPrice,
+			invoice.Currency, item.Total, invoice.Currency)
+	}
+	fmt.Println()
+	fmt.Printf("                              %-10s %10.2f %s\n", i18n.T("label.subtotal"), invoice.Subtotal, invoice.Currency)
+	fmt.Printf("                              %-10s %10.2f %s\n", i18n.T("label.vat"), invoice.VATTotal, invoice.Currency)
+	fmt.Println("                              ─────────────────────")
+	fmt.Printf("                              %-10s %10.2f %s\n", i18n.T("label.total"), invoice.Total, invoice.Currency)
+	fmt.Println("═══════════════════════════════════════════════════════════")
+	fmt.Println()
+
+	fmt.Println("  " + i18n.T("action.save_invoice"))
+	fmt.Println("  " + i18n.T("action.cancel"))
+	fmt.Println()
+
+	choice := c.promptDefault(i18n.T("prompt.choice"), "u")
+
+	if choice != "u" && choice != "U" {
+		fmt.Println(i18n.T("info.invoice_not_saved"))
+		c.waitEnter()
+		return false
+	}
+
+	// Save invoice + items + usage tracking atomically
+	if err := repository.WithTx(c.db.DB, func(tx *sql.Tx) error {
+		if err := c.invoices.WithDB(tx).Create(invoice); err != nil {
+			return fmt.Errorf("save invoice: %w", err)
+		}
+
+		// Auto-create catalog entries for manually-added items
+		itemRepo := c.items.WithDB(tx)
+		for i := range items {
+			items[i].InvoiceID = invoice.ID
+			if items[i].ItemID == "" {
+				existing, _ := itemRepo.FindByDescription(items[i].Description)
+				if existing != nil {
+					items[i].ItemID = existing.ID
+				} else {
+					catalogItem := &model.Item{
+						Description:    items[i].Description,
+						DefaultPrice:   items[i].UnitPrice,
+						DefaultUnit:    items[i].Unit,
+						DefaultVATRate: items[i].VATRate,
+						LastUsedPrice:  items[i].UnitPrice,
+						LastCustomerID: customer.ID,
+						UsageCount:     0,
+					}
+					if err := itemRepo.Create(catalogItem); err != nil {
+						return fmt.Errorf("create catalog item: %w", err)
+					}
+					items[i].ItemID = catalogItem.ID
+				}
+			}
+		}
+
+		if err := c.invItems.WithDB(tx).CreateBatch(items); err != nil {
+			return fmt.Errorf("save items: %w", err)
+		}
+
+		// Track usage for all items
+		custItemRepo := c.custItems.WithDB(tx)
+		for _, invItem := range items {
+			if err := itemRepo.IncrementUsage(invItem.ItemID, invItem.UnitPrice, customer.ID); err != nil {
+				return fmt.Errorf("update item usage: %w", err)
+			}
+			if err := custItemRepo.Upsert(customer.ID, invItem.ItemID, invItem.UnitPrice, invItem.Quantity); err != nil {
+				return fmt.Errorf("update customer item: %w", err)
+			}
+		}
+
+		return nil
+	}); err != nil {
+		c.printError(err.Error())
+		c.waitEnter()
+		return false
+	}
+
+	c.printSuccess(i18n.Tf("success.invoice_created", invoice.InvoiceNumber))
+
+	// Ask to generate PDF
+	if c.confirm(i18n.T("confirm.generate_pdf")) {
+		c.generatePDF(invoice)
+	}
+
+	// Ask to change status
+	if c.confirm(i18n.T("confirm.mark_as_sent")) {
+		c.invoices.UpdateStatus(invoice.ID, model.StatusSent)
+		invoice.Status = model.StatusSent
+	}
+
+	c.waitEnter()
+	return true
+}
+
 func (c *CLI) createInvoice() {
 	c.clearScreen()
 	fmt.Printf("=== %s ===\n", i18n.T("heading.new_invoice"))
@@ -129,117 +249,7 @@ func (c *CLI) createInvoice() {
 	// Invoice notes (printed on PDF)
 	invoice.Notes = c.prompt(i18n.T("prompt.invoice_notes"))
 
-	// Calculate totals
-	for _, item := range items {
-		invoice.Subtotal += item.Subtotal
-		invoice.VATTotal += item.VATAmount
-		invoice.Total += item.Total
-	}
-
-	// Show summary
-	c.clearScreen()
-	fmt.Println("═══════════════════════════════════════════════════════════")
-	fmt.Printf("                    %s\n", i18n.T("heading.invoice_summary"))
-	fmt.Println("═══════════════════════════════════════════════════════════")
-	fmt.Println(i18n.Tf("label.invoice_number_full", invoice.InvoiceNumber))
-	fmt.Println(i18n.Tf("label.customer", customer.Name))
-	fmt.Println(i18n.Tf("label.date", invoice.IssueDate.Format("02.01.2006")))
-	fmt.Println(i18n.Tf("label.due_date", invoice.DueDate.Format("02.01.2006")))
-	fmt.Println()
-	fmt.Println(i18n.T("label.items"))
-	for _, item := range items {
-		fmt.Printf("  %.0fx %s @ %.2f %s = %.2f %s\n",
-			item.Quantity, item.Description, item.UnitPrice,
-			invoice.Currency, item.Total, invoice.Currency)
-	}
-	fmt.Println()
-	fmt.Printf("                              %-10s %10.2f %s\n", i18n.T("label.subtotal"), invoice.Subtotal, invoice.Currency)
-	fmt.Printf("                              %-10s %10.2f %s\n", i18n.T("label.vat"), invoice.VATTotal, invoice.Currency)
-	fmt.Println("                              ─────────────────────")
-	fmt.Printf("                              %-10s %10.2f %s\n", i18n.T("label.total"), invoice.Total, invoice.Currency)
-	fmt.Println("═══════════════════════════════════════════════════════════")
-	fmt.Println()
-
-	fmt.Println("  " + i18n.T("action.save_invoice"))
-	fmt.Println("  " + i18n.T("action.cancel"))
-	fmt.Println()
-
-	choice := c.promptDefault(i18n.T("prompt.choice"), "u")
-
-	if choice != "u" && choice != "U" {
-		fmt.Println(i18n.T("info.invoice_not_saved"))
-		c.waitEnter()
-		return
-	}
-
-	// Save invoice + items + usage tracking atomically
-	if err := repository.WithTx(c.db.DB, func(tx *sql.Tx) error {
-		if err := c.invoices.WithDB(tx).Create(invoice); err != nil {
-			return fmt.Errorf("save invoice: %w", err)
-		}
-
-		// Auto-create catalog entries for manually-added items before saving invoice_items
-		itemRepo := c.items.WithDB(tx)
-		for i := range items {
-			items[i].InvoiceID = invoice.ID
-			if items[i].ItemID == "" {
-				existing, _ := itemRepo.FindByDescription(items[i].Description)
-				if existing != nil {
-					items[i].ItemID = existing.ID
-				} else {
-					catalogItem := &model.Item{
-						Description:    items[i].Description,
-						DefaultPrice:   items[i].UnitPrice,
-						DefaultUnit:    items[i].Unit,
-						DefaultVATRate: items[i].VATRate,
-						LastUsedPrice:  items[i].UnitPrice,
-						LastCustomerID: customer.ID,
-						UsageCount:     0,
-					}
-					if err := itemRepo.Create(catalogItem); err != nil {
-						return fmt.Errorf("create catalog item: %w", err)
-					}
-					items[i].ItemID = catalogItem.ID
-				}
-			}
-		}
-
-		if err := c.invItems.WithDB(tx).CreateBatch(items); err != nil {
-			return fmt.Errorf("save items: %w", err)
-		}
-
-		// Track usage for all items
-		custItemRepo := c.custItems.WithDB(tx)
-		for _, invItem := range items {
-			if err := itemRepo.IncrementUsage(invItem.ItemID, invItem.UnitPrice, customer.ID); err != nil {
-				return fmt.Errorf("update item usage: %w", err)
-			}
-			if err := custItemRepo.Upsert(customer.ID, invItem.ItemID, invItem.UnitPrice, invItem.Quantity); err != nil {
-				return fmt.Errorf("update customer item: %w", err)
-			}
-		}
-
-		return nil
-	}); err != nil {
-		c.printError(err.Error())
-		c.waitEnter()
-		return
-	}
-
-	c.printSuccess(i18n.Tf("success.invoice_created", invoice.InvoiceNumber))
-
-	// Ask to generate PDF
-	if c.confirm(i18n.T("confirm.generate_pdf")) {
-		c.generatePDF(invoice)
-	}
-
-	// Ask to change status
-	if c.confirm(i18n.T("confirm.mark_as_sent")) {
-		c.invoices.UpdateStatus(invoice.ID, model.StatusSent)
-		invoice.Status = model.StatusSent
-	}
-
-	c.waitEnter()
+	c.saveInvoiceWithSummary(invoice, items, customer)
 }
 
 func (c *CLI) selectSupplierForInvoice() (*model.Supplier, bool) {
@@ -655,6 +665,9 @@ func (c *CLI) invoiceDetail(inv *model.Invoice) {
 		fmt.Println("  " + i18n.T("action.internal_notes"))
 		fmt.Println("  " + i18n.T("action.change_status"))
 		fmt.Println("  " + i18n.T("action.mark_paid"))
+		if inv.Status == model.StatusDraft {
+			fmt.Println("  " + i18n.T("action.edit_invoice"))
+		}
 		fmt.Println("  " + i18n.T("action.delete_invoice"))
 		fmt.Println("  " + i18n.T("action.back"))
 		fmt.Println()
@@ -664,6 +677,10 @@ func (c *CLI) invoiceDetail(inv *model.Invoice) {
 		switch choice {
 		case "0", "":
 			return
+		case "e", "E":
+			if inv.Status == model.StatusDraft {
+				c.editDraftInvoice(inv)
+			}
 		case "n", "N":
 			c.editInvoiceInternalNotes(inv)
 		case "g", "G":
@@ -685,6 +702,118 @@ func (c *CLI) invoiceDetail(inv *model.Invoice) {
 				c.waitEnter()
 				return
 			}
+		}
+	}
+}
+
+func (c *CLI) editDraftInvoice(inv *model.Invoice) {
+	for {
+		c.clearScreen()
+		fmt.Printf("=== %s ===\n", i18n.Tf("heading.edit_invoice", inv.InvoiceNumber))
+		fmt.Println()
+
+		customer, _ := c.customers.GetByID(inv.CustomerID)
+		custName := "?"
+		if customer != nil {
+			custName = customer.Name
+		}
+
+		fmt.Printf("  %s: %s\n", i18n.T("label.customer_short"), custName)
+		fmt.Printf("  %s: %s\n", i18n.T("label.due_date_short"), inv.DueDate.Format("02.01.2006"))
+		if inv.Notes != "" {
+			fmt.Printf("  %s: %s\n", i18n.T("label.notes"), inv.Notes)
+		}
+		fmt.Println()
+
+		fmt.Println("  " + i18n.T("action.change_customer"))
+		fmt.Println("  " + i18n.T("action.change_due_date"))
+		fmt.Println("  " + i18n.T("action.change_notes"))
+		fmt.Println("  " + i18n.T("action.edit_items"))
+		fmt.Println("  " + i18n.T("action.back"))
+		fmt.Println()
+
+		choice := strings.ToLower(c.prompt(i18n.T("prompt.choice")))
+
+		switch choice {
+		case "0", "":
+			return
+		case "c":
+			newCust, goBack := c.selectCustomerWithBack()
+			if !goBack && newCust != nil {
+				inv.CustomerID = newCust.ID
+				c.invoices.Update(inv)
+				c.printSuccess(i18n.T("success.invoice_updated"))
+			}
+		case "d":
+			dueDateStr := c.promptDefault(i18n.T("prompt.new_due_date"), inv.DueDate.Format("02.01.2006"))
+			if t, err := time.Parse("02.01.2006", dueDateStr); err == nil {
+				inv.DueDate = t
+				c.invoices.Update(inv)
+				c.printSuccess(i18n.T("success.invoice_updated"))
+			}
+		case "n":
+			inv.Notes = c.promptDefault(i18n.T("prompt.invoice_notes"), inv.Notes)
+			c.invoices.Update(inv)
+			c.printSuccess(i18n.T("success.invoice_updated"))
+		case "i":
+			items, _ := c.invItems.GetByInvoice(inv.ID)
+			customer, _ := c.customers.GetByID(inv.CustomerID)
+			c.editItemsList(inv, &items, customer)
+
+			// Recalculate and save atomically
+			if err := repository.WithTx(c.db.DB, func(tx *sql.Tx) error {
+				// Delete old items
+				if err := c.invItems.WithDB(tx).DeleteByInvoice(inv.ID); err != nil {
+					return err
+				}
+				// Re-assign invoice ID and create catalog entries
+				itemRepo := c.items.WithDB(tx)
+				for i := range items {
+					items[i].InvoiceID = inv.ID
+					items[i].ID = "" // force new UUIDs
+					if items[i].ItemID == "" {
+						existing, _ := itemRepo.FindByDescription(items[i].Description)
+						if existing != nil {
+							items[i].ItemID = existing.ID
+						} else {
+							catalogItem := &model.Item{
+								Description:    items[i].Description,
+								DefaultPrice:   items[i].UnitPrice,
+								DefaultUnit:    items[i].Unit,
+								DefaultVATRate: items[i].VATRate,
+								LastUsedPrice:  items[i].UnitPrice,
+								LastCustomerID: inv.CustomerID,
+								UsageCount:     0,
+							}
+							if err := itemRepo.Create(catalogItem); err != nil {
+								return err
+							}
+							items[i].ItemID = catalogItem.ID
+						}
+					}
+				}
+				// Re-insert items
+				if err := c.invItems.WithDB(tx).CreateBatch(items); err != nil {
+					return err
+				}
+				return nil
+			}); err != nil {
+				c.printError(err.Error())
+				c.waitEnter()
+				continue
+			}
+
+			// Update invoice totals
+			inv.Subtotal = 0
+			inv.VATTotal = 0
+			inv.Total = 0
+			for _, item := range items {
+				inv.Subtotal += item.Subtotal
+				inv.VATTotal += item.VATAmount
+				inv.Total += item.Total
+			}
+			c.invoices.Update(inv)
+			c.printSuccess(i18n.T("success.invoice_updated"))
 		}
 	}
 }
@@ -810,9 +939,240 @@ func (c *CLI) editInvoiceInternalNotes(inv *model.Invoice) {
 }
 
 func (c *CLI) createFromExisting() {
-	// TODO: implement duplicate invoice
-	fmt.Println(i18n.T("info.coming_soon"))
-	c.waitEnter()
+	c.clearScreen()
+	fmt.Printf("=== %s ===\n", i18n.T("heading.duplicate_invoice"))
+	fmt.Println()
+
+	// List invoices to pick from
+	invoices, err := c.invoices.List("", "")
+	if err != nil || len(invoices) == 0 {
+		fmt.Println(i18n.T("info.no_invoices"))
+		c.waitEnter()
+		return
+	}
+
+	for i, inv := range invoices {
+		customer, _ := c.customers.GetByID(inv.CustomerID)
+		custName := "?"
+		if customer != nil {
+			custName = customer.Name
+		}
+		fmt.Printf("  %d) %s %s | %s | %10.2f %s\n",
+			i+1, c.statusIcon(inv.Status), inv.InvoiceNumber, custName, inv.Total, inv.Currency)
+	}
+	fmt.Println()
+	fmt.Println("  " + i18n.T("action.back"))
+	fmt.Println()
+
+	choice := c.prompt(i18n.T("prompt.select_invoice"))
+	if choice == "0" || choice == "" {
+		return
+	}
+
+	idx := 0
+	fmt.Sscanf(choice, "%d", &idx)
+	if idx < 1 || idx > len(invoices) {
+		return
+	}
+
+	sourceInv := invoices[idx-1]
+	sourceItems, _ := c.invItems.GetByInvoice(sourceInv.ID)
+
+	// Load related data
+	customer, _ := c.customers.GetByID(sourceInv.CustomerID)
+	if customer == nil {
+		c.printError(i18n.T("error.load_customer"))
+		c.waitEnter()
+		return
+	}
+
+	supplier, _ := c.suppliers.GetByID(sourceInv.SupplierID)
+	if supplier == nil {
+		c.printError(i18n.T("error.load_supplier"))
+		c.waitEnter()
+		return
+	}
+
+	// Show source info
+	fmt.Println()
+	itemDescs := make([]string, 0, len(sourceItems))
+	for _, it := range sourceItems {
+		itemDescs = append(itemDescs, fmt.Sprintf("%s (%.2f)", it.Description, it.UnitPrice))
+	}
+	fmt.Println(i18n.Tf("label.source_invoice", sourceInv.InvoiceNumber, customer.Name, sourceInv.Total, sourceInv.Currency))
+	fmt.Println(i18n.Tf("label.source_items", len(sourceItems), strings.Join(itemDescs, ", ")))
+	fmt.Println()
+
+	fmt.Println("  " + i18n.T("action.quick_duplicate"))
+	fmt.Println("  " + i18n.T("action.edit_before_save"))
+	fmt.Println("  " + i18n.T("action.back"))
+	fmt.Println()
+
+	mode := strings.ToLower(c.prompt(i18n.T("prompt.choice")))
+
+	if mode == "0" || mode == "" {
+		return
+	}
+
+	// Generate new invoice number
+	invNumber, err := c.invoices.GetNextNumber(supplier.ID, supplier.InvoicePrefix)
+	if err != nil {
+		c.printError(err.Error())
+		c.waitEnter()
+		return
+	}
+
+	// Create new invoice copying fields from source
+	newInv := model.NewInvoice(sourceInv.SupplierID, sourceInv.CustomerID, sourceInv.BankAccountID)
+	newInv.InvoiceNumber = invNumber
+	newInv.VariableSymbol = repository.GenerateVariableSymbol(invNumber)
+	newInv.Currency = sourceInv.Currency
+	newInv.PaymentMethod = sourceInv.PaymentMethod
+	newInv.ExchangeRate = sourceInv.ExchangeRate
+	newInv.Language = sourceInv.Language
+	newInv.DueDate = time.Now().AddDate(0, 0, customer.DefaultDueDays)
+	newInv.Notes = sourceInv.Notes
+
+	// Deep-copy items (clear IDs for new UUIDs)
+	newItems := make([]model.InvoiceItem, len(sourceItems))
+	for i, src := range sourceItems {
+		newItems[i] = src
+		newItems[i].ID = ""
+		newItems[i].InvoiceID = ""
+	}
+
+	if mode == "q" {
+		// Quick duplicate — save immediately
+		c.saveInvoiceWithSummary(newInv, newItems, customer)
+		return
+	}
+
+	if mode == "e" {
+		// Edit mode — review each field
+		c.clearScreen()
+		fmt.Printf("=== %s ===\n", i18n.T("heading.duplicate_invoice"))
+		fmt.Println()
+
+		// Edit invoice details with defaults from source
+		newCust, goBack := c.selectCustomerWithBack()
+		if goBack {
+			return
+		}
+		if newCust != nil {
+			newInv.CustomerID = newCust.ID
+			customer = newCust
+			newInv.DueDate = time.Now().AddDate(0, 0, customer.DefaultDueDays)
+		}
+
+		dueDateStr := c.promptDefault(i18n.T("prompt.new_due_date"), newInv.DueDate.Format("02.01.2006"))
+		if t, err := time.Parse("02.01.2006", dueDateStr); err == nil {
+			newInv.DueDate = t
+		}
+
+		newInv.Notes = c.promptDefault(i18n.T("prompt.invoice_notes"), newInv.Notes)
+
+		// Edit items
+		c.editItemsList(newInv, &newItems, customer)
+
+		if len(newItems) == 0 {
+			c.printError(i18n.T("error.invoice_no_items"))
+			c.waitEnter()
+			return
+		}
+
+		c.saveInvoiceWithSummary(newInv, newItems, customer)
+	}
+}
+
+func (c *CLI) editItemsList(inv *model.Invoice, items *[]model.InvoiceItem, customer *model.Customer) {
+	for {
+		c.clearScreen()
+		fmt.Printf("--- %s (%d) ---\n", i18n.T("label.items"), len(*items))
+		fmt.Println()
+
+		if len(*items) == 0 {
+			fmt.Println("  " + i18n.T("info.no_items"))
+		} else {
+			for i, item := range *items {
+				fmt.Printf("  e%d) %.0fx %s @ %.2f = %.2f    x%d) %s\n",
+					i+1, item.Quantity, item.Description, item.UnitPrice, item.Total,
+					i+1, i18n.T("action.remove_item"))
+			}
+		}
+
+		fmt.Println()
+		fmt.Println("  " + i18n.T("action.remove_all_items"))
+		fmt.Println("  " + i18n.T("action.add_item_edit"))
+		fmt.Println("  " + i18n.T("action.continue"))
+		fmt.Println("  " + i18n.T("action.back"))
+		fmt.Println()
+
+		choice := strings.ToLower(c.prompt(i18n.T("prompt.choice")))
+
+		if choice == "c" {
+			return
+		}
+		if choice == "0" {
+			return
+		}
+
+		if choice == "r" {
+			if c.confirm(i18n.T("confirm.remove_all_items")) {
+				*items = nil
+			}
+			continue
+		}
+
+		if choice == "n" || choice == "a" {
+			item, _ := c.addInvoiceItemWithBack("", len(*items), nil)
+			if item != nil {
+				*items = append(*items, *item)
+			}
+			continue
+		}
+
+		// Handle e/eN (edit) and x/xN (remove)
+		if strings.HasPrefix(choice, "e") {
+			numStr := choice[1:]
+			if numStr == "" {
+				numStr = c.prompt(i18n.T("prompt.which_item"))
+			}
+			idx := 0
+			fmt.Sscanf(numStr, "%d", &idx)
+			if idx > 0 && idx <= len(*items) {
+				c.editSingleItem(&(*items)[idx-1])
+			}
+			continue
+		}
+
+		if strings.HasPrefix(choice, "x") {
+			numStr := choice[1:]
+			if numStr == "" {
+				numStr = c.prompt(i18n.T("prompt.which_item"))
+			}
+			idx := 0
+			fmt.Sscanf(numStr, "%d", &idx)
+			if idx > 0 && idx <= len(*items) {
+				if c.confirm(i18n.T("confirm.remove_item")) {
+					*items = append((*items)[:idx-1], (*items)[idx:]...)
+				}
+			}
+			continue
+		}
+	}
+}
+
+func (c *CLI) editSingleItem(item *model.InvoiceItem) {
+	fmt.Println()
+	item.Description = c.promptDefaultMaxLen(i18n.T("prompt.item_description"), item.Description, model.MaxDescriptionLen)
+	item.Quantity = c.promptFloat(i18n.T("prompt.quantity"), item.Quantity)
+	item.Unit = c.promptDefault(i18n.T("prompt.unit"), item.Unit)
+	item.UnitPrice = c.promptFloat(i18n.T("prompt.unit_price"), item.UnitPrice)
+	item.VATRate = c.promptFloat(i18n.T("prompt.vat_rate"), item.VATRate)
+	item.Calculate()
+
+	fmt.Printf("  → %.0f %s × %.2f = %.2f\n",
+		item.Quantity, item.Unit, item.UnitPrice, item.Total)
 }
 
 func (c *CLI) statusIcon(status model.InvoiceStatus) string {
