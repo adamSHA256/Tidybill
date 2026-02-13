@@ -403,46 +403,160 @@ func (c *CLI) addInvoiceItemWithBack(invoiceID string, position int, catalogItem
 }
 
 func (c *CLI) listInvoices() {
-	c.clearScreen()
-	fmt.Printf("=== %s ===\n", i18n.T("heading.invoice_list"))
-	fmt.Println()
+	var filterStatus model.InvoiceStatus
+	var filterCustomerID string
+	var filterFrom, filterTo time.Time
+	var filterLabel string
 
-	invoices, err := c.invoices.List("", "")
-	if err != nil {
-		c.printError(err.Error())
-		c.waitEnter()
-		return
-	}
+	for {
+		c.clearScreen()
 
-	if len(invoices) == 0 {
-		fmt.Println(i18n.T("info.no_invoices"))
-		c.waitEnter()
-		return
-	}
+		header := i18n.T("heading.invoice_list")
+		if filterLabel != "" {
+			header += " " + i18n.Tf("label.active_filter", filterLabel)
+		}
+		fmt.Printf("=== %s ===\n", header)
+		fmt.Println()
 
-	for i, inv := range invoices {
-		customer, _ := c.customers.GetByID(inv.CustomerID)
-		custName := "?"
-		if customer != nil {
-			custName = customer.Name
+		invoices, err := c.invoices.ListFiltered(filterStatus, filterCustomerID, filterFrom, filterTo)
+		if err != nil {
+			c.printError(err.Error())
+			c.waitEnter()
+			return
 		}
 
-		statusIcon := c.statusIcon(inv.Status)
-		fmt.Printf("  %d) %s %s | %s | %-20s | %10.2f %s\n",
-			i+1, statusIcon, inv.InvoiceNumber,
-			inv.IssueDate.Format("02.01.2006"),
-			custName, inv.Total, inv.Currency)
-	}
+		if len(invoices) == 0 {
+			if filterLabel != "" {
+				fmt.Println(i18n.T("info.no_invoices_filter"))
+			} else {
+				fmt.Println(i18n.T("info.no_invoices"))
+			}
+		} else {
+			for i, inv := range invoices {
+				customer, _ := c.customers.GetByID(inv.CustomerID)
+				custName := "?"
+				if customer != nil {
+					custName = customer.Name
+				}
 
+				statusIcon := c.statusIcon(inv.Status)
+				fmt.Printf("  %d) %s %s | %s | %-20s | %10.2f %s\n",
+					i+1, statusIcon, inv.InvoiceNumber,
+					inv.IssueDate.Format("02.01.2006"),
+					custName, inv.Total, inv.Currency)
+			}
+		}
+
+		fmt.Println()
+		fmt.Println("  " + i18n.T("action.filter"))
+		fmt.Println("  " + i18n.T("action.back"))
+		fmt.Println()
+
+		choice := c.prompt(i18n.T("prompt.select_invoice"))
+
+		switch strings.ToLower(choice) {
+		case "0", "":
+			return
+		case "f":
+			c.invoiceFilterMenu(&filterStatus, &filterCustomerID, &filterFrom, &filterTo, &filterLabel)
+		default:
+			idx := 0
+			fmt.Sscanf(choice, "%d", &idx)
+			if idx > 0 && idx <= len(invoices) {
+				c.invoiceDetail(invoices[idx-1])
+			}
+		}
+	}
+}
+
+func (c *CLI) invoiceFilterMenu(status *model.InvoiceStatus, customerID *string, from, to *time.Time, label *string) {
 	fmt.Println()
+	fmt.Println(i18n.T("prompt.filter_by"))
+	fmt.Println("  " + i18n.T("action.filter_status"))
+	fmt.Println("  " + i18n.T("action.filter_customer"))
+	fmt.Println("  " + i18n.T("action.filter_date"))
+	fmt.Println("  " + i18n.T("action.reset_filter"))
 	fmt.Println("  " + i18n.T("action.back"))
 	fmt.Println()
 
-	choice := c.prompt(i18n.T("prompt.select_invoice"))
-	idx := 0
-	fmt.Sscanf(choice, "%d", &idx)
-	if idx > 0 && idx <= len(invoices) {
-		c.invoiceDetail(invoices[idx-1])
+	choice := c.prompt(i18n.T("prompt.choice"))
+
+	switch strings.ToLower(choice) {
+	case "s":
+		fmt.Println()
+		fmt.Printf("  1) %s\n", i18n.T("status.draft"))
+		fmt.Printf("  2) %s\n", i18n.T("status.created"))
+		fmt.Printf("  3) %s\n", i18n.T("status.sent"))
+		fmt.Printf("  4) %s\n", i18n.T("status.paid"))
+		fmt.Printf("  5) %s\n", i18n.T("status.overdue"))
+		fmt.Printf("  6) %s\n", i18n.T("status.cancelled"))
+		fmt.Println()
+		ch := c.prompt(i18n.T("prompt.choice"))
+		switch ch {
+		case "1":
+			*status = model.StatusDraft
+		case "2":
+			*status = model.StatusCreated
+		case "3":
+			*status = model.StatusSent
+		case "4":
+			*status = model.StatusPaid
+		case "5":
+			*status = model.StatusOverdue
+		case "6":
+			*status = model.StatusCancelled
+		default:
+			return
+		}
+		c.updateFilterLabel(status, customerID, label)
+
+	case "c":
+		customer, goBack := c.selectCustomerWithBack()
+		if goBack || customer == nil {
+			return
+		}
+		*customerID = customer.ID
+		c.updateFilterLabel(status, customerID, label)
+
+	case "d":
+		fromStr := c.promptDefault(i18n.T("prompt.date_from"), "")
+		if fromStr != "" {
+			if t, err := time.Parse("02.01.2006", fromStr); err == nil {
+				*from = t
+			}
+		}
+		toStr := c.promptDefault(i18n.T("prompt.date_to"), "")
+		if toStr != "" {
+			if t, err := time.Parse("02.01.2006", toStr); err == nil {
+				*to = t
+			}
+		}
+		c.updateFilterLabel(status, customerID, label)
+
+	case "r":
+		*status = ""
+		*customerID = ""
+		*from = time.Time{}
+		*to = time.Time{}
+		*label = ""
+	}
+}
+
+func (c *CLI) updateFilterLabel(status *model.InvoiceStatus, customerID *string, label *string) {
+	var parts []string
+	if *status != "" {
+		parts = append(parts, c.statusName(*status))
+	}
+	if *customerID != "" {
+		customer, _ := c.customers.GetByID(*customerID)
+		if customer != nil {
+			parts = append(parts, customer.Name)
+		}
+	}
+	if len(parts) > 0 {
+		*label = strings.Join(parts, ", ")
+	} else {
+		*label = ""
 	}
 }
 
@@ -753,11 +867,18 @@ func (c *CLI) selectFromCatalog(customerID string) *model.Item {
 		custCount int
 	}
 
+	type sectionInfo struct {
+		label string
+		start int
+	}
+
 	var entries []catalogEntry
+	var sections []sectionInfo
 	seen := make(map[string]bool)
 
+	// Customer items section
 	if len(customerItems) > 0 {
-		fmt.Println("  " + i18n.T("label.customer_items"))
+		sections = append(sections, sectionInfo{i18n.T("label.customer_items"), len(entries)})
 		for _, ci := range customerItems {
 			fullItem, _ := c.items.GetByID(ci.ItemID)
 			if fullItem == nil {
@@ -772,6 +893,22 @@ func (c *CLI) selectFromCatalog(customerID string) *model.Item {
 		}
 	}
 
+	// Recently used items section
+	recentItems, _ := c.items.GetRecentlyUsed(5)
+	var recentEntries []catalogEntry
+	for _, item := range recentItems {
+		if seen[item.ID] {
+			continue
+		}
+		seen[item.ID] = true
+		recentEntries = append(recentEntries, catalogEntry{item: item})
+	}
+	if len(recentEntries) > 0 {
+		sections = append(sections, sectionInfo{i18n.T("label.recent_items"), len(entries)})
+		entries = append(entries, recentEntries...)
+	}
+
+	// Global most-used items section
 	var globalEntries []catalogEntry
 	for _, item := range globalItems {
 		if seen[item.ID] {
@@ -779,12 +916,8 @@ func (c *CLI) selectFromCatalog(customerID string) *model.Item {
 		}
 		globalEntries = append(globalEntries, catalogEntry{item: item})
 	}
-
 	if len(globalEntries) > 0 {
-		if len(customerItems) > 0 {
-			fmt.Println()
-		}
-		fmt.Println("  " + i18n.T("label.global_items"))
+		sections = append(sections, sectionInfo{i18n.T("label.global_items"), len(entries)})
 		entries = append(entries, globalEntries...)
 	}
 
@@ -799,7 +932,17 @@ func (c *CLI) selectFromCatalog(customerID string) *model.Item {
 		return nil
 	}
 
+	sectionIdx := 0
 	for i, entry := range entries {
+		// Check if we need to print a section header
+		if sectionIdx < len(sections) && sections[sectionIdx].start == i {
+			if i > 0 {
+				fmt.Println()
+			}
+			fmt.Println("  " + sections[sectionIdx].label)
+			sectionIdx++
+		}
+
 		priceInfo := fmt.Sprintf("%.2f", entry.item.DefaultPrice)
 		if entry.custPrice > 0 && entry.custPrice != entry.item.DefaultPrice {
 			priceInfo = fmt.Sprintf("%.2f (%s: %.2f)",
