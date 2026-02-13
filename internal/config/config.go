@@ -8,11 +8,12 @@ import (
 )
 
 type Config struct {
-	DataDir   string
-	DBPath    string
-	PDFDir    string
-	LogoDir   string
-	ExportDir string
+	DataDir    string
+	DBPath     string
+	PDFDir     string
+	LogoDir    string
+	ExportDir  string
+	PreviewDir string
 }
 
 func New() (*Config, error) {
@@ -22,14 +23,15 @@ func New() (*Config, error) {
 	}
 
 	cfg := &Config{
-		DataDir:   dataDir,
-		DBPath:    filepath.Join(dataDir, "invoices.db"),
-		PDFDir:    filepath.Join(dataDir, "pdfs"),
-		LogoDir:   filepath.Join(dataDir, "logos"),
-		ExportDir: filepath.Join(dataDir, "exports"),
+		DataDir:    dataDir,
+		DBPath:     filepath.Join(dataDir, "invoices.db"),
+		PDFDir:     filepath.Join(dataDir, "pdfs"),
+		LogoDir:    filepath.Join(dataDir, "logos"),
+		ExportDir:  filepath.Join(dataDir, "exports"),
+		PreviewDir: filepath.Join(dataDir, "previews"),
 	}
 
-	dirs := []string{cfg.DataDir, cfg.PDFDir, cfg.LogoDir, cfg.ExportDir}
+	dirs := []string{cfg.DataDir, cfg.PDFDir, cfg.LogoDir, cfg.ExportDir, cfg.PreviewDir}
 	for _, dir := range dirs {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return nil, err

@@ -27,26 +27,26 @@ func (r *BankAccountRepository) Create(ba *model.BankAccount) error {
 	ba.CreatedAt = time.Now()
 
 	_, err := r.db.Exec(`
-		INSERT INTO bank_accounts (id, supplier_id, name, account_number, iban, swift, currency, is_default, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		ba.ID, ba.SupplierID, ba.Name, ba.AccountNumber, ba.IBAN, ba.SWIFT, ba.Currency, ba.IsDefault, ba.CreatedAt)
+		INSERT INTO bank_accounts (id, supplier_id, name, account_number, iban, swift, currency, is_default, qr_type, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		ba.ID, ba.SupplierID, ba.Name, ba.AccountNumber, ba.IBAN, ba.SWIFT, ba.Currency, ba.IsDefault, ba.QRType, ba.CreatedAt)
 	return err
 }
 
 func (r *BankAccountRepository) Update(ba *model.BankAccount) error {
 	_, err := r.db.Exec(`
-		UPDATE bank_accounts SET name=?, account_number=?, iban=?, swift=?, currency=?, is_default=?
+		UPDATE bank_accounts SET name=?, account_number=?, iban=?, swift=?, currency=?, is_default=?, qr_type=?
 		WHERE id=?`,
-		ba.Name, ba.AccountNumber, ba.IBAN, ba.SWIFT, ba.Currency, ba.IsDefault, ba.ID)
+		ba.Name, ba.AccountNumber, ba.IBAN, ba.SWIFT, ba.Currency, ba.IsDefault, ba.QRType, ba.ID)
 	return err
 }
 
 func (r *BankAccountRepository) GetByID(id string) (*model.BankAccount, error) {
 	ba := &model.BankAccount{}
 	err := r.db.QueryRow(`
-		SELECT id, supplier_id, name, account_number, iban, swift, currency, is_default, created_at
+		SELECT id, supplier_id, name, account_number, iban, swift, currency, is_default, qr_type, created_at
 		FROM bank_accounts WHERE id = ?`, id).Scan(
-		&ba.ID, &ba.SupplierID, &ba.Name, &ba.AccountNumber, &ba.IBAN, &ba.SWIFT, &ba.Currency, &ba.IsDefault, &ba.CreatedAt)
+		&ba.ID, &ba.SupplierID, &ba.Name, &ba.AccountNumber, &ba.IBAN, &ba.SWIFT, &ba.Currency, &ba.IsDefault, &ba.QRType, &ba.CreatedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -55,7 +55,7 @@ func (r *BankAccountRepository) GetByID(id string) (*model.BankAccount, error) {
 
 func (r *BankAccountRepository) GetBySupplier(supplierID string) ([]*model.BankAccount, error) {
 	rows, err := r.db.Query(`
-		SELECT id, supplier_id, name, account_number, iban, swift, currency, is_default, created_at
+		SELECT id, supplier_id, name, account_number, iban, swift, currency, is_default, qr_type, created_at
 		FROM bank_accounts WHERE supplier_id = ? ORDER BY is_default DESC, currency ASC`, supplierID)
 	if err != nil {
 		return nil, err
@@ -66,7 +66,7 @@ func (r *BankAccountRepository) GetBySupplier(supplierID string) ([]*model.BankA
 	for rows.Next() {
 		ba := &model.BankAccount{}
 		if err := rows.Scan(&ba.ID, &ba.SupplierID, &ba.Name, &ba.AccountNumber, &ba.IBAN,
-			&ba.SWIFT, &ba.Currency, &ba.IsDefault, &ba.CreatedAt); err != nil {
+			&ba.SWIFT, &ba.Currency, &ba.IsDefault, &ba.QRType, &ba.CreatedAt); err != nil {
 			return nil, err
 		}
 		accounts = append(accounts, ba)
@@ -77,9 +77,9 @@ func (r *BankAccountRepository) GetBySupplier(supplierID string) ([]*model.BankA
 func (r *BankAccountRepository) GetDefaultForSupplier(supplierID string) (*model.BankAccount, error) {
 	ba := &model.BankAccount{}
 	err := r.db.QueryRow(`
-		SELECT id, supplier_id, name, account_number, iban, swift, currency, is_default, created_at
+		SELECT id, supplier_id, name, account_number, iban, swift, currency, is_default, qr_type, created_at
 		FROM bank_accounts WHERE supplier_id = ? AND is_default = 1 LIMIT 1`, supplierID).Scan(
-		&ba.ID, &ba.SupplierID, &ba.Name, &ba.AccountNumber, &ba.IBAN, &ba.SWIFT, &ba.Currency, &ba.IsDefault, &ba.CreatedAt)
+		&ba.ID, &ba.SupplierID, &ba.Name, &ba.AccountNumber, &ba.IBAN, &ba.SWIFT, &ba.Currency, &ba.IsDefault, &ba.QRType, &ba.CreatedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
