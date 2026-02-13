@@ -160,6 +160,22 @@ func (r *ItemRepository) GetMostUsed(limit int) ([]*model.Item, error) {
 	return scanItems(rows)
 }
 
+func (r *ItemRepository) GetRecentlyUsed(limit int) ([]*model.Item, error) {
+	rows, err := r.db.Query(`
+		SELECT id, description, default_price, default_unit, default_vat_rate,
+			category, last_used_price, last_customer_id, usage_count, created_at, updated_at
+		FROM items
+		WHERE usage_count > 0
+		ORDER BY updated_at DESC
+		LIMIT ?`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return scanItems(rows)
+}
+
 func (r *ItemRepository) IncrementUsage(id string, price float64, customerID string) error {
 	_, err := r.db.Exec(`
 		UPDATE items
