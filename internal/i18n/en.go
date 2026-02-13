@@ -334,4 +334,60 @@ var messagesEN = map[string]string{
 
 	"error.description_required":  "Description is required",
 	"error.input_too_long":        "Input too long (max %d characters)",
+
+	// ── Recent Items ────────────────────────────────────────────────────
+	"label.recent_items":          "Recently used:",
+
+	// ── Invoice Filters ─────────────────────────────────────────────────
+	"action.filter":               "F) Filter",
+	"prompt.filter_by":            "Filter by:",
+	"action.filter_status":        "S) By status",
+	"action.filter_customer":      "C) By customer",
+	"action.filter_date":          "D) By date range",
+	"action.reset_filter":         "R) Reset filters",
+	"prompt.date_from":            "From date (DD.MM.YYYY)",
+	"prompt.date_to":              "To date (DD.MM.YYYY)",
+	"label.active_filter":         "[Filter: %s]",
+	"info.no_invoices_filter":     "No invoices match the filter.",
+
+	// ── Duplicate Invoice ───────────────────────────────────────────────
+	"heading.duplicate_invoice":   "DUPLICATE INVOICE",
+	"label.source_invoice":        "Source: %s | %s | %.2f %s",
+	"label.source_items":          "  %d items: %s",
+	"action.quick_duplicate":      "Q) Quick duplicate (new number + dates, everything else same)",
+	"action.edit_before_save":     "E) Edit before saving",
+	"action.edit_item":            "E) Edit item",
+	"action.remove_all_items":     "R) Remove all items",
+	"action.continue":             "C) Continue",
+	"prompt.which_item":           "Which item?",
+	"confirm.remove_all_items":    "Remove all items?",
+
+	// ── Edit Draft Invoice ──────────────────────────────────────────────
+	"action.edit_invoice":         "E) Edit invoice",
+	"heading.edit_invoice":        "EDIT INVOICE %s",
+	"action.change_customer":      "C) Change customer",
+	"action.change_due_date":      "D) Change due date",
+	"action.change_notes":         "N) Change notes",
+	"action.edit_items":           "I) Edit items",
+	"action.add_item_edit":        "A) Add item",
+	"action.remove_item":          "X) Remove item",
+	"prompt.item_number":          "Item number to remove",
+	"prompt.new_due_date":         "New due date (DD.MM.YYYY)",
+	"confirm.remove_item":         "Remove this item?",
+	"success.invoice_updated":     "Invoice updated",
+	"info.draft_only":             "Only draft invoices can be edited.",
+
+	// ── Bank Account Management ─────────────────────────────────────────
+	"action.manage_accounts":      "A) Manage bank accounts",
+	"heading.bank_accounts_mgmt":  "BANK ACCOUNTS",
+	"heading.edit_bank_account":   "EDIT BANK ACCOUNT: %s",
+	"action.edit_account_details": "E) Edit details",
+	"action.set_account_default":  "D) Set as default",
+	"action.delete_account":       "X) Delete account",
+	"confirm.delete_account":      "Really delete this account?",
+	"success.account_updated":     "Account updated",
+	"success.account_deleted":     "Account deleted",
+	"error.last_account":          "Cannot delete the last account",
+	"error.account_in_use":        "Account is used by %d invoices, cannot delete",
+	"prompt.select_account":       "Select account to edit",
 }
