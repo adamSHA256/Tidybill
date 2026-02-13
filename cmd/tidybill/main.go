@@ -11,6 +11,7 @@ import (
 	"github.com/adamSHA256/tidybill/internal/cli"
 	"github.com/adamSHA256/tidybill/internal/config"
 	"github.com/adamSHA256/tidybill/internal/database"
+	"github.com/adamSHA256/tidybill/internal/database/repository"
 	"github.com/adamSHA256/tidybill/internal/i18n"
 )
 
@@ -33,6 +34,12 @@ func main() {
 		os.Exit(1)
 	}
 	defer db.Close()
+
+	// Apply directory settings from DB
+	settings := repository.NewSettingsRepository(db.DB)
+	if err := cfg.ApplySettings(settings.Get); err != nil {
+		log.Printf("Warning: failed to apply settings: %v", err)
+	}
 
 	if *gui {
 		// Web UI mode

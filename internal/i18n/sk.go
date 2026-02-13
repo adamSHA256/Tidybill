@@ -434,6 +434,31 @@ var messagesSK = map[string]string{
 	"templates.select_qr_type":  "Vyberte typ QR kódu",
 	"templates.qr_updated":      "Typ QR kódu aktualizovaný",
 
+	// ── Logo & Directories ─────────────────────────────────────────────
+	"action.set_logo":            "L) Nastaviť logo",
+	"prompt.logo_path":           "Cesta k súboru s logom (PNG/JPG)",
+	"success.logo_uploaded":      "Logo bolo nahrané",
+	"success.logo_deleted":       "Logo bolo zmazané",
+	"error.logo_upload":          "Nepodarilo sa nahrať logo: %v",
+	"error.logo_invalid_type":    "Nepodporovaný typ súboru (iba PNG a JPG)",
+	"error.logo_too_large":       "Súbor je príliš veľký (max 2 MB)",
+	"error.logo_not_found":       "Logo nebolo nájdené",
+	"label.logo":                 "Logo:    %s",
+	"label.logo_set":             "nastavené",
+	"label.logo_not_set":         "nenastavené",
+	"confirm.delete_logo":        "Zmazať aktuálne logo?",
+
+	"action.change_directories":  "D) Zmeniť adresáre",
+	"heading.directories":        "NASTAVENIE ADRESÁROV",
+	"label.dir_logos":            "Adresár lôg:       %s",
+	"label.dir_pdfs":             "Adresár PDF:       %s",
+	"label.dir_previews":         "Adresár náhľadov:  %s",
+	"prompt.dir_logos":           "Adresár lôg",
+	"prompt.dir_pdfs":            "Adresár PDF",
+	"prompt.dir_previews":        "Adresár náhľadov",
+	"success.directories_updated": "Adresáre aktualizované",
+	"error.directory_invalid":    "Adresár nie je možné vytvoriť: %v",
+
 	// ── Errors (new) ────────────────────────────────────────────────────
 	"error.invalid_option":  "Neplatná voľba",
 	"error.no_bank_accounts": "Žiadne bankové účty",

@@ -78,6 +78,35 @@ func getDataDir() (string, error) {
 	return baseDir, nil
 }
 
+// ApplySettings reads directory overrides from the settings table and applies them.
+// It creates directories if they don't exist.
+func (c *Config) ApplySettings(get func(key string) (string, error)) error {
+	dirKeys := map[string]*string{
+		"dir.logos":    &c.LogoDir,
+		"dir.pdfs":     &c.PDFDir,
+		"dir.previews": &c.PreviewDir,
+	}
+
+	for key, field := range dirKeys {
+		val, err := get(key)
+		if err != nil {
+			return fmt.Errorf("reading setting %s: %w", key, err)
+		}
+		if val != "" {
+			*field = val
+		}
+	}
+
+	// Ensure all directories exist
+	for _, dir := range []string{c.LogoDir, c.PDFDir, c.PreviewDir} {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return fmt.Errorf("creating directory %s: %w", dir, err)
+		}
+	}
+
+	return nil
+}
+
 func (c *Config) GetPDFPath(invoiceNumber string, year int) string {
 	yearDir := filepath.Join(c.PDFDir, fmt.Sprintf("%d", year))
 	os.MkdirAll(yearDir, 0755)

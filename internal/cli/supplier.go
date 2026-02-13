@@ -2,6 +2,10 @@ package cli
 
 import (
 	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/adamSHA256/tidybill/internal/i18n"
@@ -105,6 +109,11 @@ func (c *CLI) editSupplier(s *model.Supplier) {
 		fmt.Printf("  "+i18n.T("label.email")+"\n", s.Email)
 		fmt.Printf("  "+i18n.T("label.website")+"\n", s.Website)
 		fmt.Printf("  "+i18n.T("label.prefix")+"\n", s.InvoicePrefix)
+		logoStatus := i18n.T("label.logo_not_set")
+		if s.LogoPath != "" {
+			logoStatus = i18n.T("label.logo_set")
+		}
+		fmt.Printf("  "+i18n.T("label.logo")+"\n", logoStatus)
 		fmt.Printf("  "+i18n.T("label.is_default")+"\n", s.IsDefault)
 		fmt.Println()
 
@@ -123,6 +132,7 @@ func (c *CLI) editSupplier(s *model.Supplier) {
 		}
 
 		fmt.Println("  " + i18n.T("action.edit_details"))
+		fmt.Println("  " + i18n.T("action.set_logo"))
 		fmt.Println("  " + i18n.T("action.add_bank_account"))
 		if len(accounts) > 0 {
 			fmt.Println("  " + i18n.T("action.manage_accounts"))
@@ -140,6 +150,8 @@ func (c *CLI) editSupplier(s *model.Supplier) {
 			return
 		case "e", "E":
 			c.editSupplierDetails(s)
+		case "l", "L":
+			c.setSupplierLogo(s)
 		case "b", "B":
 			c.addBankAccount(s.ID)
 		case "a", "A":
@@ -179,6 +191,108 @@ func (c *CLI) editSupplierDetails(s *model.Supplier) {
 		c.printError(err.Error())
 	} else {
 		c.printSuccess(i18n.T("success.supplier_updated"))
+	}
+	c.waitEnter()
+}
+
+func (c *CLI) setSupplierLogo(s *model.Supplier) {
+	fmt.Println()
+
+	// If logo already set, offer to delete
+	if s.LogoPath != "" {
+		if c.confirm(i18n.T("confirm.delete_logo")) {
+			os.Remove(s.LogoPath)
+			s.LogoPath = ""
+			if err := c.suppliers.Update(s); err != nil {
+				c.printError(err.Error())
+			} else {
+				c.printSuccess(i18n.T("success.logo_deleted"))
+			}
+			c.waitEnter()
+			return
+		}
+	}
+
+	path := c.prompt(i18n.T("prompt.logo_path"))
+	if path == "" {
+		return
+	}
+
+	// Expand ~ if used
+	if strings.HasPrefix(path, "~/") {
+		home, _ := os.UserHomeDir()
+		path = filepath.Join(home, path[2:])
+	}
+
+	// Validate file exists
+	info, err := os.Stat(path)
+	if err != nil {
+		c.printError(i18n.Tf("error.logo_upload", err))
+		c.waitEnter()
+		return
+	}
+
+	// Check size
+	if info.Size() > 2<<20 {
+		c.printError(i18n.T("error.logo_too_large"))
+		c.waitEnter()
+		return
+	}
+
+	// Check type
+	f, err := os.Open(path)
+	if err != nil {
+		c.printError(i18n.Tf("error.logo_upload", err))
+		c.waitEnter()
+		return
+	}
+	defer f.Close()
+
+	buf := make([]byte, 512)
+	n, _ := f.Read(buf)
+	contentType := http.DetectContentType(buf[:n])
+
+	validTypes := map[string]string{
+		"image/png":  ".png",
+		"image/jpeg": ".jpg",
+	}
+	ext, ok := validTypes[contentType]
+	if !ok {
+		c.printError(i18n.T("error.logo_invalid_type"))
+		c.waitEnter()
+		return
+	}
+
+	// Seek back
+	f.Seek(0, io.SeekStart)
+
+	// Remove old logo
+	if s.LogoPath != "" {
+		os.Remove(s.LogoPath)
+	}
+
+	// Copy to logo dir
+	destPath := filepath.Join(c.cfg.LogoDir, s.ID+ext)
+	dst, err := os.Create(destPath)
+	if err != nil {
+		c.printError(i18n.Tf("error.logo_upload", err))
+		c.waitEnter()
+		return
+	}
+	defer dst.Close()
+
+	if _, err := io.Copy(dst, f); err != nil {
+		os.Remove(destPath)
+		c.printError(i18n.Tf("error.logo_upload", err))
+		c.waitEnter()
+		return
+	}
+
+	s.LogoPath = destPath
+	if err := c.suppliers.Update(s); err != nil {
+		c.printError(err.Error())
+	} else {
+		c.printSuccess(i18n.T("success.logo_uploaded"))
 	}
 	c.waitEnter()
 }
