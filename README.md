@@ -10,10 +10,17 @@ Single binary. No cloud. No subscription. Just your invoices, tidy and organized
 
 - **Full CLI interface** — create invoices, manage customers & suppliers from terminal
 - **PDF generation** — professional invoices with QR payment codes (SPAYD format)
+- **Items catalog** — reusable items with smart suggestions, customer price history, recent items
+- **Duplicate invoice** — quick-copy or edit-before-save with e1/x1 item shortcuts
+- **Edit draft invoices** — change customer, dates, notes, items before sending
+- **Invoice filters** — filter by status, customer, or date range
+- **Multi-language** — Czech, Slovak, and English (CLI + PDF output)
 - **SQLite database** — single-file storage, fast and portable
 - **Multi-supplier** — manage multiple companies from one installation
 - **Multi-currency** — CZK, EUR, and others with per-supplier bank accounts
+- **Bank account management** — add, edit, delete accounts with safety guards
 - **Smart numbering** — automatic invoice numbers (VF26-00001 format)
+- **Status tracking** — draft, sent, paid, overdue, cancelled with unpaid overview
 - **Cross-platform** — runs on Linux and Windows
 
 ## 🛠 Tech Stack
@@ -85,8 +92,8 @@ TidyBill uses an interactive terminal menu:
 
 - [x] **Phase 1** — CLI core (suppliers, customers, invoices, database)
 - [x] **Phase 2** — PDF generation with Maroto + QR codes
-- [ ] **Phase 3** — Full CLI features (items catalog, search, bulk operations)
-- [ ] **Phase 4** — Internationalization (CS/SK/EN)
+- [x] **Phase 3** — Full CLI features (items catalog, duplicate, edit draft, filters, bank account mgmt)
+- [x] **Phase 4** — Internationalization (CS/SK/EN) — locale-specific formatting still WIP
 - [ ] **Phase 5** — Encrypted export/import for device sync
 - [ ] **Phase 6** — React web frontend (embedded in binary, `tidybill --gui`)
 - [ ] **Phase 7** — Polish & release (installers, templates)
