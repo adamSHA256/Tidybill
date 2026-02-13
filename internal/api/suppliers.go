@@ -132,3 +132,39 @@ func (s *Server) createBankAccount(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusCreated, ba)
 }
+
+var validQRTypes = map[string]bool{
+	"spayd": true, "pay_by_square": true, "epc": true, "none": true,
+}
+
+func (s *Server) updateBankAccount(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	existing, err := s.bankAccounts.GetByID(id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if existing == nil {
+		writeError(w, http.StatusNotFound, "bank account not found")
+		return
+	}
+
+	if err := readJSON(r, existing); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON: "+err.Error())
+		return
+	}
+	existing.ID = id
+
+	if existing.QRType != "" && !validQRTypes[existing.QRType] {
+		writeError(w, http.StatusBadRequest, "invalid qr_type, must be one of: spayd, pay_by_square, epc, none")
+		return
+	}
+
+	if err := s.bankAccounts.Update(existing); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, existing)
+}

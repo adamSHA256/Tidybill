@@ -399,7 +399,32 @@ func (s *Server) generateInvoicePDF(w http.ResponseWriter, r *http.Request) {
 		Items:       items,
 	}
 
-	pdfPath, err := s.pdf.GenerateInvoice(data)
+	// Determine template: use request body override or invoice's template_id
+	templateCode := inv.TemplateID
+	var req struct {
+		TemplateID string `json:"template_id"`
+	}
+	// Ignore errors - body is optional
+	readJSON(r, &req)
+	if req.TemplateID != "" {
+		templateCode = req.TemplateID
+	}
+
+	// Look up template settings from DB
+	opts := &service.TemplateOptions{
+		ShowLogo:  true,
+		ShowQR:    true,
+		ShowNotes: true,
+		QRType:    bankAccount.QRType,
+	}
+	if tmpl, err := s.templates.GetByID(templateCode); err == nil && tmpl != nil {
+		opts.ShowLogo = tmpl.ShowLogo
+		opts.ShowQR = tmpl.ShowQR
+		opts.ShowNotes = tmpl.ShowNotes
+		templateCode = tmpl.TemplateCode
+	}
+
+	pdfPath, err := s.pdf.GenerateInvoice(data, templateCode, opts)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "PDF generation failed: "+err.Error())
 		return

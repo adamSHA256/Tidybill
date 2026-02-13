@@ -18,6 +18,7 @@ type Server struct {
 	settings     *repository.SettingsRepository
 	items        *repository.ItemRepository
 	custItems    *repository.CustomerItemRepository
+	templates    *repository.PDFTemplateRepository
 	pdf          *service.PDFService
 	cfg          *config.Config
 }
@@ -32,7 +33,8 @@ func NewServer(db *sql.DB, cfg *config.Config) *Server {
 		settings:     repository.NewSettingsRepository(db),
 		items:        repository.NewItemRepository(db),
 		custItems:    repository.NewCustomerItemRepository(db),
-		pdf:          service.NewPDFService(cfg.PDFDir),
+		templates:    repository.NewPDFTemplateRepository(db),
+		pdf:          service.NewPDFService(cfg.PDFDir, cfg.PreviewDir),
 		cfg:          cfg,
 	}
 }
@@ -71,6 +73,7 @@ func (s *Server) Router() http.Handler {
 	// Bank accounts
 	mux.HandleFunc("GET /api/suppliers/{id}/bank-accounts", s.listBankAccounts)
 	mux.HandleFunc("POST /api/suppliers/{id}/bank-accounts", s.createBankAccount)
+	mux.HandleFunc("PUT /api/bank-accounts/{id}", s.updateBankAccount)
 
 	// Items catalog
 	mux.HandleFunc("GET /api/items", s.listItems)
@@ -80,6 +83,15 @@ func (s *Server) Router() http.Handler {
 	mux.HandleFunc("GET /api/items/{id}", s.getItem)
 	mux.HandleFunc("PUT /api/items/{id}", s.updateItem)
 	mux.HandleFunc("DELETE /api/items/{id}", s.deleteItem)
+
+	// Templates
+	mux.HandleFunc("GET /api/templates", s.listTemplates)
+	mux.HandleFunc("POST /api/templates/preview-all", s.generateAllPreviews)
+	mux.HandleFunc("GET /api/templates/{id}", s.getTemplate)
+	mux.HandleFunc("PUT /api/templates/{id}", s.updateTemplate)
+	mux.HandleFunc("PUT /api/templates/{id}/default", s.setDefaultTemplate)
+	mux.HandleFunc("POST /api/templates/{id}/preview", s.generateTemplatePreview)
+	mux.HandleFunc("GET /api/templates/{id}/preview-pdf", s.servePreviewPDF)
 
 	// Settings
 	mux.HandleFunc("GET /api/settings", s.getSettings)
