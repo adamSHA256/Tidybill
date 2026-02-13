@@ -223,7 +223,7 @@ func (c *CLI) manageBankAccounts(supplierID string) {
 
 		accounts, _ := c.bankAccs.GetBySupplier(supplierID)
 		if len(accounts) == 0 {
-			fmt.Println("  " + i18n.T("info.no_items"))
+			fmt.Println("  " + i18n.T("info.no_bank_accounts"))
 			c.waitEnter()
 			return
 		}

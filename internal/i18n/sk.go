@@ -371,6 +371,7 @@ var messagesSK = map[string]string{
 	"action.edit_items":           "I) Upraviť položky",
 	"action.add_item_edit":        "A) Pridať položku",
 	"action.remove_item":          "X) Odstrániť položku",
+	"label.remove":                "Odstrániť",
 	"prompt.item_number":          "Číslo položky na odstránenie",
 	"prompt.new_due_date":         "Nová splatnosť (DD.MM.RRRR)",
 	"confirm.remove_item":         "Odstrániť túto položku?",
@@ -379,6 +380,7 @@ var messagesSK = map[string]string{
 
 	// ── Bank Account Management ─────────────────────────────────────────
 	"action.manage_accounts":      "A) Spravovať bankové účty",
+	"info.no_bank_accounts":       "Žiadne bankové účty.",
 	"heading.bank_accounts_mgmt":  "BANKOVÉ ÚČTY",
 	"heading.edit_bank_account":   "ÚPRAVA BANKOVÉHO ÚČTU: %s",
 	"action.edit_account_details": "E) Upraviť údaje",
