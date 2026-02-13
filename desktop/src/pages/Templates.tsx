@@ -1,0 +1,234 @@
+import {
+  Title,
+  Text,
+  Paper,
+  Stack,
+  Group,
+  Badge,
+  Button,
+  Switch,
+  Loader,
+  Center,
+  SimpleGrid,
+  TextInput,
+} from '@mantine/core'
+import { notifications } from '@mantine/notifications'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { IconEye, IconEyeCheck, IconStar, IconStarFilled } from '@tabler/icons-react'
+import { useState } from 'react'
+import { api, type PDFTemplate } from '../api/client'
+import { useT } from '../i18n'
+
+export function Templates() {
+  const queryClient = useQueryClient()
+  const [generatingAll, setGeneratingAll] = useState(false)
+  const [generatingId, setGeneratingId] = useState<string | null>(null)
+  const { t } = useT()
+
+  const { data: templates, isLoading } = useQuery({
+    queryKey: ['templates'],
+    queryFn: api.getTemplates,
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<PDFTemplate> }) =>
+      api.updateTemplate(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['templates'] })
+    },
+    onError: (err: Error) => {
+      notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
+    },
+  })
+
+  const setDefaultMutation = useMutation({
+    mutationFn: api.setDefaultTemplate,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['templates'] })
+      notifications.show({ title: t('notify.template_default_set'), message: t('notify.template_default_msg'), color: 'green' })
+    },
+    onError: (err: Error) => {
+      notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
+    },
+  })
+
+  const handleGeneratePreview = async (id: string) => {
+    setGeneratingId(id)
+    try {
+      await api.generatePreview(id)
+      queryClient.invalidateQueries({ queryKey: ['templates'] })
+      notifications.show({ title: t('notify.preview_generated'), message: t('notify.preview_generated_msg'), color: 'green' })
+      window.open(`/api/templates/${id}/preview-pdf`, '_blank')
+    } catch (err) {
+      notifications.show({ title: t('common.error'), message: (err as Error).message, color: 'red' })
+    } finally {
+      setGeneratingId(null)
+    }
+  }
+
+  const handleGenerateAll = async () => {
+    setGeneratingAll(true)
+    try {
+      await api.generateAllPreviews()
+      queryClient.invalidateQueries({ queryKey: ['templates'] })
+      notifications.show({ title: t('notify.all_previews_generated'), message: t('notify.all_previews_msg'), color: 'green' })
+    } catch (err) {
+      notifications.show({ title: t('common.error'), message: (err as Error).message, color: 'red' })
+    } finally {
+      setGeneratingAll(false)
+    }
+  }
+
+  const openPreview = (id: string) => {
+    window.open(`/api/templates/${id}/preview-pdf`, '_blank')
+  }
+
+  if (isLoading) {
+    return <Center h={300}><Loader /></Center>
+  }
+
+  return (
+    <Stack gap="lg">
+      <Group justify="space-between">
+        <div>
+          <Title order={2}>{t('template.title')}</Title>
+          <Text c="dimmed" size="sm">{t('template.subtitle')}</Text>
+        </div>
+        <Button
+          onClick={handleGenerateAll}
+          loading={generatingAll}
+          variant="light"
+        >
+          {t('template.generate_all')}
+        </Button>
+      </Group>
+
+      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
+        {templates?.map((tmpl) => (
+          <TemplateCard
+            key={tmpl.id}
+            template={tmpl}
+            t={t}
+            onUpdate={(data) => updateMutation.mutate({ id: tmpl.id, data })}
+            onSetDefault={() => setDefaultMutation.mutate(tmpl.id)}
+            onGeneratePreview={() => handleGeneratePreview(tmpl.id)}
+            onOpenPreview={() => openPreview(tmpl.id)}
+            generating={generatingId === tmpl.id}
+          />
+        ))}
+      </SimpleGrid>
+    </Stack>
+  )
+}
+
+function TemplateCard({
+  template: tmpl,
+  t,
+  onUpdate,
+  onSetDefault,
+  onGeneratePreview,
+  onOpenPreview,
+  generating,
+}: {
+  template: PDFTemplate
+  t: (key: string) => string
+  onUpdate: (data: Partial<PDFTemplate>) => void
+  onSetDefault: () => void
+  onGeneratePreview: () => void
+  onOpenPreview: () => void
+  generating: boolean
+}) {
+  const [editing, setEditing] = useState(false)
+  const [name, setName] = useState(tmpl.name)
+
+  const handleNameSave = () => {
+    if (name !== tmpl.name) {
+      onUpdate({ name })
+    }
+    setEditing(false)
+  }
+
+  return (
+    <Paper p="md" radius="md" withBorder>
+      <Stack gap="sm">
+        <Group justify="space-between">
+          {editing ? (
+            <TextInput
+              size="sm"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onBlur={handleNameSave}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleNameSave() }}
+              autoFocus
+              styles={{ input: { fontWeight: 600 } }}
+            />
+          ) : (
+            <Text fw={600} size="lg" onClick={() => setEditing(true)} style={{ cursor: 'pointer' }}>
+              {tmpl.name}
+            </Text>
+          )}
+          {tmpl.is_default && (
+            <Badge color="blue" variant="light">{t('template.default')}</Badge>
+          )}
+        </Group>
+
+        <Text c="dimmed" size="sm">{tmpl.description}</Text>
+        <Text c="dimmed" size="xs">{t('template.code').replace('{code}', tmpl.template_code)}</Text>
+
+        <Group gap="lg">
+          <Switch
+            label={t('template.logo')}
+            checked={tmpl.show_logo}
+            onChange={(e) => onUpdate({ show_logo: e.currentTarget.checked })}
+            size="sm"
+          />
+          <Switch
+            label={t('template.qr_code')}
+            checked={tmpl.show_qr}
+            onChange={(e) => onUpdate({ show_qr: e.currentTarget.checked })}
+            size="sm"
+          />
+          <Switch
+            label={t('template.notes')}
+            checked={tmpl.show_notes}
+            onChange={(e) => onUpdate({ show_notes: e.currentTarget.checked })}
+            size="sm"
+          />
+        </Group>
+
+        <Group gap="xs" mt="xs">
+          {!tmpl.is_default && (
+            <Button
+              size="xs"
+              variant="light"
+              leftSection={tmpl.is_default ? <IconStarFilled size={14} /> : <IconStar size={14} />}
+              onClick={onSetDefault}
+            >
+              {t('template.set_default')}
+            </Button>
+          )}
+          <Button
+            size="xs"
+            variant="light"
+            color="teal"
+            leftSection={<IconEye size={14} />}
+            onClick={onGeneratePreview}
+            loading={generating}
+          >
+            {t('template.generate_preview')}
+          </Button>
+          {tmpl.preview_path && (
+            <Button
+              size="xs"
+              variant="subtle"
+              leftSection={<IconEyeCheck size={14} />}
+              onClick={onOpenPreview}
+            >
+              {t('template.view_preview')}
+            </Button>
+          )}
+        </Group>
+      </Stack>
+    </Paper>
+  )
+}

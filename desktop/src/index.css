@@ -1,0 +1,4 @@
+/* Mantine handles all styling — minimal global overrides */
+body {
+  margin: 0;
+}
