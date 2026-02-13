@@ -78,11 +78,14 @@ func (c *CLI) Run() error {
 		c.currentSupp = supplier.ID
 	}
 
+	c.invoices.MarkOverdue()
+
 	return c.mainMenu()
 }
 
 func (c *CLI) mainMenu() error {
 	for {
+		c.invoices.MarkOverdue()
 		c.clearScreen()
 		c.printHeader()
 

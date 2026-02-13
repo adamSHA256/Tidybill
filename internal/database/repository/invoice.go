@@ -247,6 +247,14 @@ func (r *InvoiceRepository) CountOverdue() (int, error) {
 	return count, err
 }
 
+func (r *InvoiceRepository) MarkOverdue() error {
+	_, err := r.db.Exec(`
+		UPDATE invoices SET status = 'overdue', updated_at = ?
+		WHERE status IN ('created', 'sent') AND due_date < DATE('now')`,
+		time.Now())
+	return err
+}
+
 func (r *InvoiceRepository) CountByBankAccount(bankAccountID string) (int, error) {
 	var count int
 	err := r.db.QueryRow("SELECT COUNT(*) FROM invoices WHERE bank_account_id = ?", bankAccountID).Scan(&count)
