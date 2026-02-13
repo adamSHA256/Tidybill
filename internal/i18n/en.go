@@ -434,6 +434,31 @@ var messagesEN = map[string]string{
 	"templates.select_qr_type":  "Select QR code type",
 	"templates.qr_updated":      "QR code type updated",
 
+	// ── Logo & Directories ─────────────────────────────────────────────
+	"action.set_logo":            "L) Set logo",
+	"prompt.logo_path":           "Path to logo file (PNG/JPG)",
+	"success.logo_uploaded":      "Logo uploaded",
+	"success.logo_deleted":       "Logo deleted",
+	"error.logo_upload":          "Failed to upload logo: %v",
+	"error.logo_invalid_type":    "Unsupported file type (PNG and JPG only)",
+	"error.logo_too_large":       "File is too large (max 2 MB)",
+	"error.logo_not_found":       "Logo not found",
+	"label.logo":                 "Logo:    %s",
+	"label.logo_set":             "set",
+	"label.logo_not_set":         "not set",
+	"confirm.delete_logo":        "Delete current logo?",
+
+	"action.change_directories":  "D) Change directories",
+	"heading.directories":        "DIRECTORY SETTINGS",
+	"label.dir_logos":            "Logo directory:     %s",
+	"label.dir_pdfs":             "PDF directory:      %s",
+	"label.dir_previews":         "Preview directory:  %s",
+	"prompt.dir_logos":           "Logo directory",
+	"prompt.dir_pdfs":            "PDF directory",
+	"prompt.dir_previews":        "Preview directory",
+	"success.directories_updated": "Directories updated",
+	"error.directory_invalid":    "Cannot create directory: %v",
+
 	// ── Errors (new) ────────────────────────────────────────────────────
 	"error.invalid_option":  "Invalid option",
 	"error.no_bank_accounts": "No bank accounts",

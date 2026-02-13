@@ -434,6 +434,31 @@ var messagesCS = map[string]string{
 	"templates.select_qr_type":  "Vyberte typ QR kódu",
 	"templates.qr_updated":      "Typ QR kódu aktualizován",
 
+	// ── Logo & Directories ─────────────────────────────────────────────
+	"action.set_logo":            "L) Nastavit logo",
+	"prompt.logo_path":           "Cesta k souboru s logem (PNG/JPG)",
+	"success.logo_uploaded":      "Logo bylo nahráno",
+	"success.logo_deleted":       "Logo bylo smazáno",
+	"error.logo_upload":          "Nepodařilo se nahrát logo: %v",
+	"error.logo_invalid_type":    "Nepodporovaný typ souboru (pouze PNG a JPG)",
+	"error.logo_too_large":       "Soubor je příliš velký (max 2 MB)",
+	"error.logo_not_found":       "Logo nebylo nalezeno",
+	"label.logo":                 "Logo:    %s",
+	"label.logo_set":             "nastaveno",
+	"label.logo_not_set":         "nenastaveno",
+	"confirm.delete_logo":        "Smazat aktuální logo?",
+
+	"action.change_directories":  "D) Změnit adresáře",
+	"heading.directories":        "NASTAVENÍ ADRESÁŘŮ",
+	"label.dir_logos":            "Adresář log:       %s",
+	"label.dir_pdfs":             "Adresář PDF:       %s",
+	"label.dir_previews":         "Adresář náhledů:   %s",
+	"prompt.dir_logos":           "Adresář log",
+	"prompt.dir_pdfs":            "Adresář PDF",
+	"prompt.dir_previews":        "Adresář náhledů",
+	"success.directories_updated": "Adresáře aktualizovány",
+	"error.directory_invalid":    "Adresář nelze vytvořit: %v",
+
 	// ── Errors (new) ────────────────────────────────────────────────────
 	"error.invalid_option":  "Neplatná volba",
 	"error.no_bank_accounts": "Žádné bankovní účty",

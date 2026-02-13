@@ -69,6 +69,9 @@ func (s *Server) Router() http.Handler {
 	mux.HandleFunc("GET /api/suppliers/{id}", s.getSupplier)
 	mux.HandleFunc("PUT /api/suppliers/{id}", s.updateSupplier)
 	mux.HandleFunc("DELETE /api/suppliers/{id}", s.deleteSupplier)
+	mux.HandleFunc("POST /api/suppliers/{id}/logo", s.uploadLogo)
+	mux.HandleFunc("GET /api/suppliers/{id}/logo", s.serveLogo)
+	mux.HandleFunc("DELETE /api/suppliers/{id}/logo", s.deleteLogo)
 
 	// Bank accounts
 	mux.HandleFunc("GET /api/suppliers/{id}/bank-accounts", s.listBankAccounts)
