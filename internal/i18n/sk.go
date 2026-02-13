@@ -69,6 +69,7 @@ var messagesSK = map[string]string{
 	"prompt.phone":               "Telefón",
 	"prompt.email":               "E-mail",
 	"prompt.website":             "Website",
+	"prompt.invoice_number":      "Číslo faktúry",
 	"prompt.invoice_prefix":      "Prefix čísel faktúr",
 	"prompt.invoice_prefix_short": "Prefix faktúr",
 	"prompt.account_name":        "Názov účtu",

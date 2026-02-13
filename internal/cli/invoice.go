@@ -158,13 +158,14 @@ func (c *CLI) createInvoice() {
 		return
 	}
 
-	// Generate invoice number
+	// Generate invoice number (user can override)
 	invNumber, err := c.invoices.GetNextNumber(supplier.ID, supplier.InvoicePrefix)
 	if err != nil {
 		c.printError(err.Error())
 		c.waitEnter()
 		return
 	}
+	invNumber = c.promptDefault(i18n.T("prompt.invoice_number"), invNumber)
 
 	// Create invoice
 	invoice := model.NewInvoice(supplier.ID, customer.ID, bankAcc.ID)
@@ -1035,13 +1036,14 @@ func (c *CLI) createFromExisting() {
 		return
 	}
 
-	// Generate new invoice number
+	// Generate new invoice number (user can override)
 	invNumber, err := c.invoices.GetNextNumber(supplier.ID, supplier.InvoicePrefix)
 	if err != nil {
 		c.printError(err.Error())
 		c.waitEnter()
 		return
 	}
+	invNumber = c.promptDefault(i18n.T("prompt.invoice_number"), invNumber)
 
 	// Create new invoice copying fields from source
 	newInv := model.NewInvoice(sourceInv.SupplierID, sourceInv.CustomerID, sourceInv.BankAccountID)

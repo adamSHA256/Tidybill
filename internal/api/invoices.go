@@ -72,6 +72,7 @@ type CreateInvoiceRequest struct {
 	CustomerID    string               `json:"customer_id"`
 	SupplierID    string               `json:"supplier_id"`
 	BankAccountID string               `json:"bank_account_id"`
+	InvoiceNumber string               `json:"invoice_number"`
 	IssueDate     string               `json:"issue_date"`
 	DueDate       string               `json:"due_date"`
 	Currency      string               `json:"currency"`
@@ -108,11 +109,15 @@ func (s *Server) createInvoice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate invoice number
-	invNumber, err := s.invoices.GetNextNumber(supplier.ID, supplier.InvoicePrefix)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
-		return
+	// Use provided invoice number or auto-generate
+	invNumber := req.InvoiceNumber
+	if invNumber == "" {
+		var err error
+		invNumber, err = s.invoices.GetNextNumber(supplier.ID, supplier.InvoicePrefix)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
 	}
 
 	inv := model.NewInvoice(req.SupplierID, req.CustomerID, req.BankAccountID)

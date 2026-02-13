@@ -69,6 +69,7 @@ var messagesEN = map[string]string{
 	"prompt.phone":               "Phone",
 	"prompt.email":               "E-mail",
 	"prompt.website":             "Website",
+	"prompt.invoice_number":      "Invoice number",
 	"prompt.invoice_prefix":      "Invoice number prefix",
 	"prompt.invoice_prefix_short": "Invoice prefix",
 	"prompt.account_name":        "Account name",

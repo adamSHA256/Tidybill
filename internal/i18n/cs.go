@@ -69,6 +69,7 @@ var messagesCS = map[string]string{
 	"prompt.phone":               "Telefon",
 	"prompt.email":               "E-mail",
 	"prompt.website":             "Website",
+	"prompt.invoice_number":      "Číslo faktury",
 	"prompt.invoice_prefix":      "Prefix čísel faktur",
 	"prompt.invoice_prefix_short": "Prefix faktur",
 	"prompt.account_name":        "Název účtu",
