@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/adamSHA256/tidybill/internal/i18n"
 	"github.com/adamSHA256/tidybill/internal/model"
@@ -123,6 +124,9 @@ func (c *CLI) editSupplier(s *model.Supplier) {
 
 		fmt.Println("  " + i18n.T("action.edit_details"))
 		fmt.Println("  " + i18n.T("action.add_bank_account"))
+		if len(accounts) > 0 {
+			fmt.Println("  " + i18n.T("action.manage_accounts"))
+		}
 		if !s.IsDefault {
 			fmt.Println("  " + i18n.T("action.set_default"))
 		}
@@ -138,6 +142,10 @@ func (c *CLI) editSupplier(s *model.Supplier) {
 			c.editSupplierDetails(s)
 		case "b", "B":
 			c.addBankAccount(s.ID)
+		case "a", "A":
+			if len(accounts) > 0 {
+				c.manageBankAccounts(s.ID)
+			}
 		case "d", "D":
 			if !s.IsDefault {
 				c.suppliers.SetDefault(s.ID)
@@ -196,9 +204,131 @@ func (c *CLI) addBankAccount(supplierID string) {
 		acc.IsDefault = c.confirm(i18n.T("confirm.set_as_default"))
 	}
 
+	if acc.IsDefault && len(existing) > 0 {
+		c.bankAccs.ClearDefaultsForCurrency(supplierID, acc.Currency)
+	}
+
 	if err := c.bankAccs.Create(acc); err != nil {
 		c.printError(err.Error())
 	} else {
 		c.printSuccess(i18n.T("success.account_added"))
 	}
+}
+
+func (c *CLI) manageBankAccounts(supplierID string) {
+	for {
+		c.clearScreen()
+		fmt.Printf("=== %s ===\n", i18n.T("heading.bank_accounts_mgmt"))
+		fmt.Println()
+
+		accounts, _ := c.bankAccs.GetBySupplier(supplierID)
+		if len(accounts) == 0 {
+			fmt.Println("  " + i18n.T("info.no_items"))
+			c.waitEnter()
+			return
+		}
+
+		for i, acc := range accounts {
+			def := ""
+			if acc.IsDefault {
+				def = " " + i18n.T("label.default_lower")
+			}
+			fmt.Printf("  %d) %s: %s (%s)%s\n", i+1, acc.Name, acc.AccountNumber, acc.Currency, def)
+		}
+
+		fmt.Println()
+		fmt.Println("  " + i18n.T("action.back"))
+		fmt.Println()
+
+		choice := c.prompt(i18n.T("prompt.select_account"))
+		if choice == "0" || choice == "" {
+			return
+		}
+
+		idx := 0
+		fmt.Sscanf(choice, "%d", &idx)
+		if idx > 0 && idx <= len(accounts) {
+			c.editBankAccount(accounts[idx-1])
+		}
+	}
+}
+
+func (c *CLI) editBankAccount(acc *model.BankAccount) {
+	for {
+		c.clearScreen()
+		fmt.Printf("=== %s ===\n", i18n.Tf("heading.edit_bank_account", acc.Name))
+		fmt.Println()
+		fmt.Printf("  %s: %s\n", i18n.T("prompt.account_name"), acc.Name)
+		fmt.Printf("  %s: %s\n", i18n.T("prompt.account_number"), acc.AccountNumber)
+		fmt.Printf("  IBAN: %s\n", acc.IBAN)
+		fmt.Printf("  SWIFT: %s\n", acc.SWIFT)
+		fmt.Printf("  %s: %s\n", i18n.T("prompt.currency"), acc.Currency)
+		if acc.IsDefault {
+			fmt.Printf("  %s\n", i18n.T("label.default_upper"))
+		}
+		fmt.Println()
+
+		fmt.Println("  " + i18n.T("action.edit_account_details"))
+		if !acc.IsDefault {
+			fmt.Println("  " + i18n.T("action.set_account_default"))
+		}
+		fmt.Println("  " + i18n.T("action.delete_account"))
+		fmt.Println("  " + i18n.T("action.back"))
+		fmt.Println()
+
+		choice := c.prompt(i18n.T("prompt.choice"))
+
+		switch strings.ToLower(choice) {
+		case "0", "":
+			return
+		case "e":
+			c.editBankAccountDetails(acc)
+		case "d":
+			if !acc.IsDefault {
+				c.bankAccs.ClearDefaultsForCurrency(acc.SupplierID, acc.Currency)
+				acc.IsDefault = true
+				c.bankAccs.Update(acc)
+				c.printSuccess(i18n.T("success.set_as_default"))
+			}
+		case "x":
+			count, _ := c.bankAccs.CountBySupplier(acc.SupplierID)
+			if count <= 1 {
+				c.printError(i18n.T("error.last_account"))
+				c.waitEnter()
+				continue
+			}
+			invCount, _ := c.invoices.CountByBankAccount(acc.ID)
+			if invCount > 0 {
+				c.printError(i18n.Tf("error.account_in_use", invCount))
+				c.waitEnter()
+				continue
+			}
+			if c.confirm(i18n.T("confirm.delete_account")) {
+				c.bankAccs.Delete(acc.ID)
+				c.printSuccess(i18n.T("success.account_deleted"))
+				c.waitEnter()
+				return
+			}
+		}
+	}
+}
+
+func (c *CLI) editBankAccountDetails(acc *model.BankAccount) {
+	c.clearScreen()
+	fmt.Printf("=== %s ===\n", i18n.Tf("heading.edit_bank_account", acc.Name))
+	fmt.Println(i18n.T("prompt.leave_empty_hint"))
+	fmt.Println()
+
+	acc.Name = c.promptDefault(i18n.T("prompt.account_name"), acc.Name)
+	acc.AccountNumber = c.promptDefault(i18n.T("prompt.account_number"), acc.AccountNumber)
+	acc.IBAN = c.promptDefault(i18n.T("prompt.iban"), acc.IBAN)
+	acc.SWIFT = c.promptDefault(i18n.T("prompt.swift"), acc.SWIFT)
+	acc.Currency = c.promptDefault(i18n.T("prompt.currency"), acc.Currency)
+
+	if err := c.bankAccs.Update(acc); err != nil {
+		c.printError(err.Error())
+	} else {
+		c.printSuccess(i18n.T("success.account_updated"))
+	}
+	c.waitEnter()
 }

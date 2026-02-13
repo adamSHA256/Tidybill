@@ -119,6 +119,55 @@ func (r *InvoiceRepository) List(status model.InvoiceStatus, customerID string) 
 	return invoices, rows.Err()
 }
 
+func (r *InvoiceRepository) ListFiltered(status model.InvoiceStatus, customerID string, from, to time.Time) ([]*model.Invoice, error) {
+	query := `SELECT id, invoice_number, supplier_id, customer_id, bank_account_id, status,
+		issue_date, due_date, paid_date, taxable_date, payment_method, variable_symbol,
+		currency, exchange_rate, subtotal, vat_total, total, notes, internal_notes,
+		language, pdf_path, created_at, updated_at FROM invoices WHERE 1=1`
+	var args []interface{}
+
+	if status != "" {
+		query += " AND status = ?"
+		args = append(args, status)
+	}
+	if customerID != "" {
+		query += " AND customer_id = ?"
+		args = append(args, customerID)
+	}
+	if !from.IsZero() {
+		query += " AND issue_date >= ?"
+		args = append(args, from)
+	}
+	if !to.IsZero() {
+		query += " AND issue_date <= ?"
+		args = append(args, to)
+	}
+	query += " ORDER BY issue_date DESC, invoice_number DESC"
+
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var invoices []*model.Invoice
+	for rows.Next() {
+		inv := &model.Invoice{}
+		var paidDate sql.NullTime
+		if err := rows.Scan(&inv.ID, &inv.InvoiceNumber, &inv.SupplierID, &inv.CustomerID, &inv.BankAccountID,
+			&inv.Status, &inv.IssueDate, &inv.DueDate, &paidDate, &inv.TaxableDate, &inv.PaymentMethod,
+			&inv.VariableSymbol, &inv.Currency, &inv.ExchangeRate, &inv.Subtotal, &inv.VATTotal, &inv.Total,
+			&inv.Notes, &inv.InternalNotes, &inv.Language, &inv.PDFPath, &inv.CreatedAt, &inv.UpdatedAt); err != nil {
+			return nil, err
+		}
+		if paidDate.Valid {
+			inv.PaidDate = &paidDate.Time
+		}
+		invoices = append(invoices, inv)
+	}
+	return invoices, rows.Err()
+}
+
 func (r *InvoiceRepository) ListUnpaid() ([]*model.Invoice, error) {
 	rows, err := r.db.Query(`
 		SELECT id, invoice_number, supplier_id, customer_id, bank_account_id, status,
@@ -190,5 +239,11 @@ func (r *InvoiceRepository) CountUnpaid() (int, error) {
 func (r *InvoiceRepository) CountOverdue() (int, error) {
 	var count int
 	err := r.db.QueryRow(`SELECT COUNT(*) FROM invoices WHERE status NOT IN ('paid', 'cancelled') AND due_date < DATE('now')`).Scan(&count)
+	return count, err
+}
+
+func (r *InvoiceRepository) CountByBankAccount(bankAccountID string) (int, error) {
+	var count int
+	err := r.db.QueryRow("SELECT COUNT(*) FROM invoices WHERE bank_account_id = ?", bankAccountID).Scan(&count)
 	return count, err
 }

@@ -334,4 +334,60 @@ var messagesCS = map[string]string{
 
 	"error.description_required":  "Popis je povinný",
 	"error.input_too_long":        "Příliš dlouhý vstup (max %d znaků)",
+
+	// ── Recent Items ────────────────────────────────────────────────────
+	"label.recent_items":          "Naposledy použité:",
+
+	// ── Invoice Filters ─────────────────────────────────────────────────
+	"action.filter":               "F) Filtrovat",
+	"prompt.filter_by":            "Filtrovat podle:",
+	"action.filter_status":        "S) Podle stavu",
+	"action.filter_customer":      "C) Podle zákazníka",
+	"action.filter_date":          "D) Podle období",
+	"action.reset_filter":         "R) Zrušit filtry",
+	"prompt.date_from":            "Od data (DD.MM.RRRR)",
+	"prompt.date_to":              "Do data (DD.MM.RRRR)",
+	"label.active_filter":         "[Filtr: %s]",
+	"info.no_invoices_filter":     "Žádné faktury neodpovídají filtru.",
+
+	// ── Duplicate Invoice ───────────────────────────────────────────────
+	"heading.duplicate_invoice":   "DUPLIKOVAT FAKTURU",
+	"label.source_invoice":        "Zdroj: %s | %s | %.2f %s",
+	"label.source_items":          "  %d položek: %s",
+	"action.quick_duplicate":      "Q) Rychlá kopie (nové číslo + data, ostatní beze změn)",
+	"action.edit_before_save":     "E) Upravit před uložením",
+	"action.edit_item":            "E) Upravit položku",
+	"action.remove_all_items":     "R) Odebrat všechny položky",
+	"action.continue":             "C) Pokračovat",
+	"prompt.which_item":           "Která položka?",
+	"confirm.remove_all_items":    "Odebrat všechny položky?",
+
+	// ── Edit Draft Invoice ──────────────────────────────────────────────
+	"action.edit_invoice":         "E) Upravit fakturu",
+	"heading.edit_invoice":        "ÚPRAVA FAKTURY %s",
+	"action.change_customer":      "C) Změnit zákazníka",
+	"action.change_due_date":      "D) Změnit splatnost",
+	"action.change_notes":         "N) Změnit poznámky",
+	"action.edit_items":           "I) Upravit položky",
+	"action.add_item_edit":        "A) Přidat položku",
+	"action.remove_item":          "X) Odebrat položku",
+	"prompt.item_number":          "Číslo položky k odebrání",
+	"prompt.new_due_date":         "Nová splatnost (DD.MM.RRRR)",
+	"confirm.remove_item":         "Odebrat tuto položku?",
+	"success.invoice_updated":     "Faktura aktualizována",
+	"info.draft_only":             "Upravit lze pouze faktury ve stavu koncept.",
+
+	// ── Bank Account Management ─────────────────────────────────────────
+	"action.manage_accounts":      "A) Spravovat bankovní účty",
+	"heading.bank_accounts_mgmt":  "BANKOVNÍ ÚČTY",
+	"heading.edit_bank_account":   "ÚPRAVA BANKOVNÍHO ÚČTU: %s",
+	"action.edit_account_details": "E) Upravit údaje",
+	"action.set_account_default":  "D) Nastavit jako výchozí",
+	"action.delete_account":       "X) Smazat účet",
+	"confirm.delete_account":      "Opravdu smazat tento účet?",
+	"success.account_updated":     "Účet aktualizován",
+	"success.account_deleted":     "Účet smazán",
+	"error.last_account":          "Nelze smazat poslední účet",
+	"error.account_in_use":        "Účet je použit v %d fakturách, nelze smazat",
+	"prompt.select_account":       "Vyberte účet k úpravě",
 }

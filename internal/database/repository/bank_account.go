@@ -9,10 +9,14 @@ import (
 )
 
 type BankAccountRepository struct {
-	db *sql.DB
+	db DBTX
 }
 
-func NewBankAccountRepository(db *sql.DB) *BankAccountRepository {
+func NewBankAccountRepository(db DBTX) *BankAccountRepository {
+	return &BankAccountRepository{db: db}
+}
+
+func (r *BankAccountRepository) WithDB(db DBTX) *BankAccountRepository {
 	return &BankAccountRepository{db: db}
 }
 
@@ -85,4 +89,15 @@ func (r *BankAccountRepository) GetDefaultForSupplier(supplierID string) (*model
 func (r *BankAccountRepository) Delete(id string) error {
 	_, err := r.db.Exec("DELETE FROM bank_accounts WHERE id = ?", id)
 	return err
+}
+
+func (r *BankAccountRepository) ClearDefaultsForCurrency(supplierID, currency string) error {
+	_, err := r.db.Exec("UPDATE bank_accounts SET is_default = 0 WHERE supplier_id = ? AND currency = ?", supplierID, currency)
+	return err
+}
+
+func (r *BankAccountRepository) CountBySupplier(supplierID string) (int, error) {
+	var count int
+	err := r.db.QueryRow("SELECT COUNT(*) FROM bank_accounts WHERE supplier_id = ?", supplierID).Scan(&count)
+	return count, err
 }
