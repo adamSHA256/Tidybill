@@ -76,6 +76,7 @@ type CreateInvoiceRequest struct {
 	DueDate       string               `json:"due_date"`
 	Currency      string               `json:"currency"`
 	Notes         string               `json:"notes"`
+	InternalNotes string               `json:"internal_notes"`
 	Items         []CreateItemRequest   `json:"items"`
 }
 
@@ -240,6 +241,7 @@ func (s *Server) updateInvoice(w http.ResponseWriter, r *http.Request) {
 		existing.Currency = req.Currency
 	}
 	existing.Notes = req.Notes
+	existing.InternalNotes = req.InternalNotes
 
 	if req.IssueDate != "" {
 		if t, err := time.Parse("2006-01-02", req.IssueDate); err == nil {
