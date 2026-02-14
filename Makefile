@@ -42,6 +42,9 @@ build-windows:
 build-all: build-linux build-windows
 
 # === Desktop app (Go + React + Tauri) ===
+export APPIMAGE_EXTRACT_AND_RUN := 1
+export NO_STRIP := true
+
 desktop: desktop-sidecar
 	cd desktop && pnpm install && pnpm tauri build
 
