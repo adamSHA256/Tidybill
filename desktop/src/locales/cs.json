@@ -278,5 +278,8 @@
   "notify.preview_generated": "Náhled vygenerován",
   "notify.preview_generated_msg": "PDF náhled je připraven",
   "notify.all_previews_generated": "Všechny náhledy vygenerovány",
-  "notify.all_previews_msg": "Všechny náhledy šablon jsou připraveny"
+  "notify.all_previews_msg": "Všechny náhledy šablon jsou připraveny",
+
+  "health.disconnected_title": "Spojení ztraceno",
+  "health.disconnected_message": "Backend neodpovídá. Restartujte prosím TidyBill."
 }

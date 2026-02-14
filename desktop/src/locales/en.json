@@ -278,5 +278,8 @@
   "notify.preview_generated": "Preview generated",
   "notify.preview_generated_msg": "PDF preview is ready",
   "notify.all_previews_generated": "All previews generated",
-  "notify.all_previews_msg": "All template previews are ready"
+  "notify.all_previews_msg": "All template previews are ready",
+
+  "health.disconnected_title": "Connection Lost",
+  "health.disconnected_message": "The backend is not responding. Please restart TidyBill."
 }

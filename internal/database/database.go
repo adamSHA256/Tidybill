@@ -19,7 +19,7 @@ type DB struct {
 }
 
 func New(dbPath string) (*DB, error) {
-	dsn := dbPath + "?_pragma=foreign_keys(1)"
+	dsn := dbPath + "?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)"
 	sqlDB, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)

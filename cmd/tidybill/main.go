@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 
@@ -44,12 +45,18 @@ func main() {
 	if *gui {
 		// Web UI mode
 		srv := api.NewServer(db.DB, cfg)
-		addr := ":" + *port
 
-		log.Printf("TidyBill API server running on http://localhost%s", addr)
+		listener, err := net.Listen("tcp", ":"+*port)
+		if err != nil {
+			log.Fatalf("Failed to listen: %v", err)
+		}
+		actualPort := listener.Addr().(*net.TCPAddr).Port
+		fmt.Printf("TIDYBILL_PORT=%d\n", actualPort)
+
+		log.Printf("TidyBill API server running on http://localhost:%d", actualPort)
 		log.Println("  Press Ctrl+C to stop")
 
-		if err := http.ListenAndServe(addr, srv.Router()); err != nil {
+		if err := http.Serve(listener, srv.Router()); err != nil {
 			log.Fatalf("Server failed: %v", err)
 		}
 	} else {

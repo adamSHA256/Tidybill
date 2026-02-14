@@ -16,7 +16,7 @@ import { notifications } from '@mantine/notifications'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { IconEye, IconEyeCheck, IconStar, IconStarFilled } from '@tabler/icons-react'
 import { useState } from 'react'
-import { api, type PDFTemplate } from '../api/client'
+import { api, getApiBase, type PDFTemplate } from '../api/client'
 import { useT } from '../i18n'
 
 export function Templates() {
@@ -58,7 +58,7 @@ export function Templates() {
       await api.generatePreview(id)
       queryClient.invalidateQueries({ queryKey: ['templates'] })
       notifications.show({ title: t('notify.preview_generated'), message: t('notify.preview_generated_msg'), color: 'green' })
-      window.open(`/api/templates/${id}/preview-pdf`, '_blank')
+      window.open(`${getApiBase()}/templates/${id}/preview-pdf`, '_blank')
     } catch (err) {
       notifications.show({ title: t('common.error'), message: (err as Error).message, color: 'red' })
     } finally {
@@ -80,7 +80,7 @@ export function Templates() {
   }
 
   const openPreview = (id: string) => {
-    window.open(`/api/templates/${id}/preview-pdf`, '_blank')
+    window.open(`${getApiBase()}/templates/${id}/preview-pdf`, '_blank')
   }
 
   if (isLoading) {

@@ -1,7 +1,46 @@
-const API_BASE = '/api'
+let resolvedApiBase: string | null = null
+
+function isTauri(): boolean {
+  return '__TAURI_INTERNALS__' in window
+}
+
+export async function initApiBase(): Promise<void> {
+  if (!isTauri()) {
+    resolvedApiBase = '/api'
+    return
+  }
+
+  const { invoke } = await import('@tauri-apps/api/core')
+  const maxAttempts = 50
+  for (let i = 0; i < maxAttempts; i++) {
+    const port = await invoke<number>('get_api_port')
+    if (port > 0) {
+      resolvedApiBase = `http://localhost:${port}/api`
+      return
+    }
+    await new Promise((r) => setTimeout(r, 200))
+  }
+  throw new Error('Backend did not start in time')
+}
+
+export function getApiBase(): string {
+  return resolvedApiBase ?? '/api'
+}
+
+export async function checkHealth(): Promise<boolean> {
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 3000)
+    const res = await fetch(`${getApiBase()}/health`, { signal: controller.signal })
+    clearTimeout(timeout)
+    return res.ok
+  } catch {
+    return false
+  }
+}
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
+  const response = await fetch(`${getApiBase()}${path}`, {
     headers: {
       'Content-Type': 'application/json',
       ...options?.headers,
@@ -70,7 +109,7 @@ export const api = {
   uploadLogo: async (supplierId: string, file: File): Promise<Supplier> => {
     const formData = new FormData()
     formData.append('logo', file)
-    const response = await fetch(`${API_BASE}/suppliers/${supplierId}/logo`, {
+    const response = await fetch(`${getApiBase()}/suppliers/${supplierId}/logo`, {
       method: 'POST',
       body: formData,
     })
@@ -80,7 +119,7 @@ export const api = {
     }
     return response.json()
   },
-  getLogoUrl: (supplierId: string) => `${API_BASE}/suppliers/${supplierId}/logo`,
+  getLogoUrl: (supplierId: string) => `${getApiBase()}/suppliers/${supplierId}/logo`,
   deleteLogo: (supplierId: string) =>
     request<void>(`/suppliers/${supplierId}/logo`, { method: 'DELETE' }),
 

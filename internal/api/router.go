@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"encoding/json"
 	"net/http"
 
 	"github.com/adamSHA256/tidybill/internal/config"
@@ -41,6 +42,12 @@ func NewServer(db *sql.DB, cfg *config.Config) *Server {
 
 func (s *Server) Router() http.Handler {
 	mux := http.NewServeMux()
+
+	// Health
+	mux.HandleFunc("GET /api/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+	})
 
 	// Dashboard
 	mux.HandleFunc("GET /api/dashboard/stats", s.getDashboardStats)
@@ -103,9 +110,18 @@ func (s *Server) Router() http.Handler {
 	return corsMiddleware(mux)
 }
 
+var allowedOrigins = map[string]bool{
+	"http://localhost:5173": true,
+	"tauri://localhost":     true,
+	"https://tauri.localhost": true,
+}
+
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+		origin := r.Header.Get("Origin")
+		if allowedOrigins[origin] {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
