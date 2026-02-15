@@ -1,6 +1,8 @@
-# 🧾 TidyBill
+<p align="center">
+  <img src="../logos_styles/tidybill_logo.svg" alt="TidyBill" width="320" />
+</p>
 
-**Clean invoices, zero clutter.** A local-first invoice manager for Czech and Slovak freelancers.
+<p align="center"><strong>Clean invoices, zero clutter.</strong> A local-first invoice manager for Czech and Slovak freelancers.</p>
 
 Single binary. No cloud. No subscription. Just your invoices, tidy and organized.
 
@@ -21,30 +23,42 @@ Single binary. No cloud. No subscription. Just your invoices, tidy and organized
 - **Bank account management** — add, edit, delete accounts with safety guards
 - **Smart numbering** — automatic invoice numbers (VF26-00001 format)
 - **Status tracking** — draft, sent, paid, overdue, cancelled with unpaid overview
+- **Desktop app** — Tauri-based GUI with dashboard, template management, and health monitoring
+- **Multiple PDF templates** — classic, modern, minimal with live preview
 - **Cross-platform** — runs on Linux and Windows
 
 ## 🛠 Tech Stack
 
 | Component | Technology |
 |-----------|-----------|
-| Language | Go |
+| Backend | Go |
 | Database | SQLite (pure Go, `modernc.org/sqlite`) |
 | PDF | Maroto v2 (pure Go, built-in QR codes) |
-| Distribution | Single binary, no dependencies |
+| Desktop | Tauri 2 (Rust shell + webview) |
+| Frontend | React 19, TypeScript, Mantine 8 |
+| Distribution | CLI: single binary / Desktop: AppImage, deb, rpm |
 
 ## 🚀 Quick Start
 
-```bash
-# Build
-make build
+### CLI
 
-# Run
+```bash
+make build
 ./tidybill
 ```
 
 On first run, TidyBill walks you through setting up your company profile and bank account.
 
-### Build for other platforms
+### Desktop app
+
+```bash
+make desktop         # Build AppImage, deb, rpm
+make desktop-dev     # Run in dev mode (hot-reload)
+```
+
+Requires: Go, Node.js, pnpm, Rust toolchain, Tauri 2 CLI.
+
+### Cross-compile CLI
 
 ```bash
 make build-linux     # Linux amd64
@@ -95,8 +109,8 @@ TidyBill uses an interactive terminal menu:
 - [x] **Phase 3** — Full CLI features (items catalog, duplicate, edit draft, filters, bank account mgmt)
 - [x] **Phase 4** — Internationalization (CS/SK/EN) — locale-specific formatting still WIP
 - [ ] **Phase 5** — Encrypted export/import for device sync
-- [ ] **Phase 6** — React web frontend (embedded in binary, `tidybill --gui`)
-- [ ] **Phase 7** — Polish & release (installers, templates)
+- [x] **Phase 6** — Desktop app (Tauri 2 + React GUI with Go sidecar)
+- [x] **Phase 7** — PDF templates (classic, modern, minimal, default) & Linux packages (AppImage, deb, rpm)
 
 ## 📄 License
 
