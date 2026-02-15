@@ -1,20 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 160" width="400" height="160">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 100" width="330" height="100">
   <!-- Receipt icon -->
-  <g transform="translate(40, 28)">
-    <!-- Receipt body -->
-    <path d="M0 8 C0 3.58 3.58 0 8 0 L52 0 C56.42 0 60 3.58 60 8 L60 92 L50 84 L40 92 L30 84 L20 92 L10 84 L0 92 Z"
+  <g transform="translate(0, 2)">
+    <path d="M0 6 C0 2.69 2.69 0 6 0 L40 0 C43.31 0 46 2.69 46 6 L46 70 L38.5 63.5 L31 70 L23 63.5 L15.5 70 L8 63.5 L0 70 Z"
           fill="#1B2B3A" />
-    <!-- Lines on receipt -->
-    <line x1="12" y1="22" x2="48" y2="22" stroke="#4A9E8E" stroke-width="3" stroke-linecap="round"/>
-    <line x1="12" y1="36" x2="40" y2="36" stroke="#4A9E8E" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
-    <line x1="12" y1="50" x2="44" y2="50" stroke="#4A9E8E" stroke-width="3" stroke-linecap="round" opacity="0.35"/>
-    <!-- Checkmark circle -->
-    <circle cx="48" cy="68" r="14" fill="#4A9E8E"/>
-    <polyline points="41,68 46,73 56,62" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="9" y1="16" x2="37" y2="16" stroke="#4A9E8E" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="9" y1="27" x2="31" y2="27" stroke="#4A9E8E" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
+    <line x1="9" y1="38" x2="34" y2="38" stroke="#4A9E8E" stroke-width="2.5" stroke-linecap="round" opacity="0.35"/>
+    <circle cx="37" cy="52" r="10.5" fill="#4A9E8E"/>
+    <polyline points="31.5,52 35,55.5 43,47.5" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 
   <!-- Wordmark -->
-  <text x="120" y="92" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-weight="700" font-size="48" fill="#1B2B3A" letter-spacing="-1">
+  <text x="60" y="52" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-weight="700" font-size="42" fill="#1B2B3A" letter-spacing="-1">
     Tidy<tspan fill="#4A9E8E">Bill</tspan>
   </text>
 </svg>
