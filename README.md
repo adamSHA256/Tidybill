@@ -1,8 +1,10 @@
+# TidyBill
+
 <p align="center">
-  <img src="../logos_styles/tidybill_logo.svg" alt="TidyBill" width="320" />
+  <img src="../logos_styles/tidybill_logo.png" alt="TidyBill" width="320" />
 </p>
 
-<p align="center"><strong>Clean invoices, zero clutter.</strong> A local-first invoice manager for Czech and Slovak freelancers.</p>
+**Clean invoices, zero clutter.** A local-first invoice manager for Czech and Slovak freelancers.
 
 Single binary. No cloud. No subscription. Just your invoices, tidy and organized.
 
