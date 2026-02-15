@@ -1,12 +1,6 @@
-# TidyBill
+<img src="desktop/src/assets/tidybill_logo.png" alt="TidyBill" width="280" />
 
-<p align="center">
-  <img src="../logos_styles/tidybill_logo.png" alt="TidyBill" width="320" />
-</p>
-
-**Clean invoices, zero clutter.** A local-first invoice manager for Czech and Slovak freelancers.
-
-Single binary. No cloud. No subscription. Just your invoices, tidy and organized.
+**Clean invoices, zero clutter.** A local-first invoice manager for freelancers supports 3 languages.
 
 ---
 

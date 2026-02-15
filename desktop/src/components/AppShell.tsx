@@ -50,8 +50,8 @@ export function AppShell({ children }: { children: ReactNode }) {
     >
       <MantineAppShell.Navbar p="md">
         <MantineAppShell.Section>
-          <Group justify="space-between" mb="md">
-            <img src={tidybillLogo} alt="TidyBill" height={36} />
+          <Group justify="space-between" wrap="nowrap" mb="md" px={10}>
+            <img src={tidybillLogo} alt="TidyBill" style={{ height: 56 }} />
             <ActionIcon
               variant="subtle"
               onClick={toggleColorScheme}
