@@ -81,6 +81,12 @@
   "invoice.create_button": "Create Invoice",
   "invoice.catalog": "catalog",
 
+  "invoice.create_new_supplier": "Create new...",
+  "invoice.create_new_customer": "Create new...",
+  "invoice.create_new_bank_account": "Create new...",
+  "invoice.create_first_bank_account": "Create Bank Account",
+  "invoice.no_suppliers_create": "No suppliers yet — click to create one",
+
   "invoice.missing_fields_title": "Missing fields",
   "invoice.missing_fields_msg": "Select supplier, customer and bank account",
   "invoice.missing_items_title": "Missing items",
@@ -279,6 +285,18 @@
   "notify.preview_generated_msg": "PDF preview is ready",
   "notify.all_previews_generated": "All previews generated",
   "notify.all_previews_msg": "All template previews are ready",
+
+  "bank_account.new_title": "New Bank Account",
+  "bank_account.name_label": "Account Name",
+  "bank_account.account_number_label": "Account Number",
+  "bank_account.iban_label": "IBAN",
+  "bank_account.swift_label": "SWIFT",
+  "bank_account.currency_label": "Currency",
+  "bank_account.missing_fields_title": "Missing fields",
+  "bank_account.missing_fields_msg": "Account name or number is required",
+
+  "notify.bank_account_created": "Bank account created",
+  "notify.bank_account_created_msg": "Bank account was created successfully",
 
   "health.disconnected_title": "Connection Lost",
   "health.disconnected_message": "The backend is not responding. Please restart TidyBill."

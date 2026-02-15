@@ -81,6 +81,12 @@
   "invoice.create_button": "Vytvoriť faktúru",
   "invoice.catalog": "katalóg",
 
+  "invoice.create_new_supplier": "Vytvoriť nového...",
+  "invoice.create_new_customer": "Vytvoriť nového...",
+  "invoice.create_new_bank_account": "Vytvoriť nový...",
+  "invoice.create_first_bank_account": "Vytvoriť bankový účet",
+  "invoice.no_suppliers_create": "Zatiaľ žiadni dodávatelia — kliknite pre vytvorenie",
+
   "invoice.missing_fields_title": "Chýbajúce údaje",
   "invoice.missing_fields_msg": "Vyberte dodávateľa, odberateľa a bankový účet",
   "invoice.missing_items_title": "Chýbajúce položky",
@@ -279,6 +285,18 @@
   "notify.preview_generated_msg": "PDF náhľad je pripravený",
   "notify.all_previews_generated": "Všetky náhľady vygenerované",
   "notify.all_previews_msg": "Všetky náhľady šablón sú pripravené",
+
+  "bank_account.new_title": "Nový bankový účet",
+  "bank_account.name_label": "Názov účtu",
+  "bank_account.account_number_label": "Číslo účtu",
+  "bank_account.iban_label": "IBAN",
+  "bank_account.swift_label": "SWIFT",
+  "bank_account.currency_label": "Mena",
+  "bank_account.missing_fields_title": "Chýbajúce údaje",
+  "bank_account.missing_fields_msg": "Názov alebo číslo účtu je povinné",
+
+  "notify.bank_account_created": "Bankový účet vytvorený",
+  "notify.bank_account_created_msg": "Bankový účet bol úspešne vytvorený",
 
   "health.disconnected_title": "Spojenie stratené",
   "health.disconnected_message": "Backend neodpovedá. Reštartujte prosím TidyBill."

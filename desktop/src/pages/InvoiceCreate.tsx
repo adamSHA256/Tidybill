@@ -16,6 +16,9 @@ import {
   Center,
   Menu,
   Badge,
+  Modal,
+  Switch,
+  Textarea,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { IconTrash, IconPlus, IconPackage } from '@tabler/icons-react'
@@ -24,6 +27,8 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, formatMoney, type Supplier, type BankAccount, type Item, type CustomerItem } from '../api/client'
 import { useT } from '../i18n'
+
+const CREATE_NEW = '__create_new__'
 
 interface ItemForm {
   item_id: string
@@ -52,6 +57,45 @@ export function InvoiceCreate() {
   const [invoiceNumber, setInvoiceNumber] = useState('')
   const [notes, setNotes] = useState('')
   const [items, setItems] = useState<ItemForm[]>([{ ...emptyItem, unit: 'hod' }])
+
+  // Modal states
+  const [supplierModalOpen, setSupplierModalOpen] = useState(false)
+  const [customerModalOpen, setCustomerModalOpen] = useState(false)
+  const [bankModalOpen, setBankModalOpen] = useState(false)
+
+  // Supplier form state
+  const [sName, setSName] = useState('')
+  const [sIco, setSIco] = useState('')
+  const [sDic, setSDic] = useState('')
+  const [sStreet, setSStreet] = useState('')
+  const [sCity, setSCity] = useState('')
+  const [sZip, setSZip] = useState('')
+  const [sCountry, setSCountry] = useState('CZ')
+  const [sEmail, setSEmail] = useState('')
+  const [sPhone, setSPhone] = useState('')
+  const [sWebsite, setSWebsite] = useState('')
+  const [sInvoicePrefix, setSInvoicePrefix] = useState('')
+  const [sIsVatPayer, setSIsVatPayer] = useState(false)
+  const [sNotes, setSNotes] = useState('')
+
+  // Customer form state
+  const [cName, setCName] = useState('')
+  const [cIco, setCIco] = useState('')
+  const [cDic, setCDic] = useState('')
+  const [cStreet, setCStreet] = useState('')
+  const [cCity, setCCity] = useState('')
+  const [cZip, setCZip] = useState('')
+  const [cCountry, setCCountry] = useState('CZ')
+  const [cEmail, setCEmail] = useState('')
+  const [cPhone, setCPhone] = useState('')
+  const [cNotes, setCNotes] = useState('')
+
+  // Bank account form state
+  const [bName, setBName] = useState('')
+  const [bAccountNumber, setBAccountNumber] = useState('')
+  const [bIban, setBIban] = useState('')
+  const [bSwift, setBSwift] = useState('')
+  const [bCurrency, setBCurrency] = useState('CZK')
 
   const { data: suppliers, isLoading: suppliersLoading } = useQuery({
     queryKey: ['suppliers'],
@@ -105,6 +149,99 @@ export function InvoiceCreate() {
       notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
     },
   })
+
+  // Inline creation mutations
+  const createSupplierMutation = useMutation({
+    mutationFn: (data: Partial<Supplier>) => api.createSupplier(data),
+    onSuccess: (newSupplier) => {
+      queryClient.invalidateQueries({ queryKey: ['suppliers'] })
+      setSupplierId(newSupplier.id)
+      setBankAccountId(null)
+      setSupplierModalOpen(false)
+      notifications.show({ title: t('notify.supplier_created'), message: t('notify.supplier_saved_msg').replace('{name}', newSupplier.name), color: 'green' })
+    },
+    onError: (err: Error) => {
+      notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
+    },
+  })
+
+  const createCustomerMutation = useMutation({
+    mutationFn: (data: Partial<import('../api/client').Customer>) => api.createCustomer(data),
+    onSuccess: (newCustomer) => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
+      setCustomerId(newCustomer.id)
+      setCustomerModalOpen(false)
+      notifications.show({ title: t('notify.customer_created'), message: t('notify.customer_saved_msg').replace('{name}', newCustomer.name), color: 'green' })
+    },
+    onError: (err: Error) => {
+      notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
+    },
+  })
+
+  const createBankMutation = useMutation({
+    mutationFn: (data: Partial<BankAccount>) => api.createBankAccount(selectedSupplierId!, data),
+    onSuccess: (newBank) => {
+      queryClient.invalidateQueries({ queryKey: ['bank-accounts', selectedSupplierId] })
+      setBankAccountId(newBank.id)
+      setBankModalOpen(false)
+      notifications.show({ title: t('notify.bank_account_created'), message: t('notify.bank_account_created_msg'), color: 'green' })
+    },
+    onError: (err: Error) => {
+      notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
+    },
+  })
+
+  // Modal helpers
+  const openSupplierModal = () => {
+    setSName(''); setSIco(''); setSDic(''); setSStreet(''); setSCity(''); setSZip('')
+    setSCountry('CZ'); setSEmail(''); setSPhone(''); setSWebsite(''); setSInvoicePrefix('')
+    setSIsVatPayer(false); setSNotes('')
+    setSupplierModalOpen(true)
+  }
+
+  const openCustomerModal = () => {
+    setCName(''); setCIco(''); setCDic(''); setCStreet(''); setCCity(''); setCZip('')
+    setCCountry('CZ'); setCEmail(''); setCPhone(''); setCNotes('')
+    setCustomerModalOpen(true)
+  }
+
+  const openBankModal = () => {
+    setBName(''); setBAccountNumber(''); setBIban(''); setBSwift(''); setBCurrency('CZK')
+    setBankModalOpen(true)
+  }
+
+  const handleSaveSupplier = () => {
+    if (!sName.trim()) {
+      notifications.show({ title: t('supplier.missing_name_title'), message: t('supplier.missing_name_msg'), color: 'orange' })
+      return
+    }
+    createSupplierMutation.mutate({
+      name: sName, ico: sIco, dic: sDic, street: sStreet, city: sCity, zip: sZip,
+      country: sCountry, email: sEmail, phone: sPhone, website: sWebsite,
+      invoice_prefix: sInvoicePrefix, is_vat_payer: sIsVatPayer, notes: sNotes,
+    })
+  }
+
+  const handleSaveCustomer = () => {
+    if (!cName.trim()) {
+      notifications.show({ title: t('customer.missing_name_title'), message: t('customer.missing_name_msg'), color: 'orange' })
+      return
+    }
+    createCustomerMutation.mutate({
+      name: cName, ico: cIco, dic: cDic, street: cStreet, city: cCity, zip: cZip,
+      country: cCountry, email: cEmail, phone: cPhone, notes: cNotes,
+    })
+  }
+
+  const handleSaveBank = () => {
+    if (!bName.trim() && !bAccountNumber.trim()) {
+      notifications.show({ title: t('bank_account.missing_fields_title'), message: t('bank_account.missing_fields_msg'), color: 'orange' })
+      return
+    }
+    createBankMutation.mutate({
+      name: bName, account_number: bAccountNumber, iban: bIban, swift: bSwift, currency: bCurrency,
+    })
+  }
 
   const addItem = () => setItems([...items, { ...emptyItem }])
   const removeItem = (index: number) => {
@@ -174,9 +311,50 @@ export function InvoiceCreate() {
     return <Center h={300}><Loader /></Center>
   }
 
+  // Build select data with "Create new" sentinel
+  const supplierData = [
+    ...(suppliers || []).map((s) => ({ value: s.id, label: s.name })),
+    { value: CREATE_NEW, label: `+ ${t('invoice.create_new_supplier')}` },
+  ]
+
+  const customerData = [
+    ...(customers || []).map((c) => ({ value: c.id, label: c.name })),
+    { value: CREATE_NEW, label: `+ ${t('invoice.create_new_customer')}` },
+  ]
+
+  const bankData = [
+    ...(bankAccounts || []).map((b) => ({ value: b.id, label: `${b.account_number} (${b.currency})` })),
+    { value: CREATE_NEW, label: `+ ${t('invoice.create_new_bank_account')}` },
+  ]
+
   // Build catalog suggestions: customer items first, then global most-used (deduplicated)
   const customerItemIds = new Set((customerItems || []).map((ci: CustomerItem) => ci.item_id))
   const globalSuggestions = (mostUsedItems || []).filter((item: Item) => !customerItemIds.has(item.id))
+
+  const handleSupplierSelect = (v: string | null) => {
+    if (v === CREATE_NEW) {
+      openSupplierModal()
+      return
+    }
+    setSupplierId(v)
+    setBankAccountId(null)
+  }
+
+  const handleCustomerSelect = (v: string | null) => {
+    if (v === CREATE_NEW) {
+      openCustomerModal()
+      return
+    }
+    setCustomerId(v)
+  }
+
+  const handleBankSelect = (v: string | null) => {
+    if (v === CREATE_NEW) {
+      openBankModal()
+      return
+    }
+    setBankAccountId(v)
+  }
 
   return (
     <Stack gap="lg">
@@ -204,13 +382,28 @@ export function InvoiceCreate() {
       <SimpleGrid cols={{ base: 1, md: 2 }}>
         <Paper p="md" radius="md" withBorder>
           <Text fw={500} mb="md">{t('invoice.supplier_you')}</Text>
-          <Select
-            label={t('invoice.select_supplier')}
-            placeholder={t('invoice.select_supplier_placeholder')}
-            data={(suppliers || []).map((s) => ({ value: s.id, label: s.name }))}
-            value={selectedSupplierId}
-            onChange={(v) => { setSupplierId(v); setBankAccountId(null) }}
-          />
+          {suppliers && suppliers.length === 0 ? (
+            <Paper
+              p="xl"
+              radius="md"
+              withBorder
+              style={{ borderStyle: 'dashed', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 100 }}
+              onClick={openSupplierModal}
+            >
+              <Stack align="center" gap="xs">
+                <IconPlus size={24} color="gray" />
+                <Text c="dimmed" size="sm">{t('invoice.no_suppliers_create')}</Text>
+              </Stack>
+            </Paper>
+          ) : (
+            <Select
+              label={t('invoice.select_supplier')}
+              placeholder={t('invoice.select_supplier_placeholder')}
+              data={supplierData}
+              value={selectedSupplierId}
+              onChange={handleSupplierSelect}
+            />
+          )}
           {selectedSupplier && (
             <Stack gap={4} mt="sm">
               <Text size="sm" c="dimmed">
@@ -219,15 +412,19 @@ export function InvoiceCreate() {
               <Text size="sm" c="dimmed">{selectedSupplier.street}, {selectedSupplier.city}, {selectedSupplier.zip}</Text>
             </Stack>
           )}
-          {bankAccounts && bankAccounts.length > 0 && (
+          {selectedSupplierId && bankAccounts && bankAccounts.length > 0 ? (
             <Select
               label={t('invoice.bank_account')}
               mt="sm"
-              data={bankAccounts.map((b) => ({ value: b.id, label: `${b.account_number} (${b.currency})` }))}
+              data={bankData}
               value={selectedBankId}
-              onChange={(v) => setBankAccountId(v)}
+              onChange={handleBankSelect}
             />
-          )}
+          ) : selectedSupplierId && bankAccounts && bankAccounts.length === 0 ? (
+            <Button variant="light" mt="sm" leftSection={<IconPlus size={14} />} onClick={openBankModal} fullWidth>
+              {t('invoice.create_first_bank_account')}
+            </Button>
+          ) : null}
         </Paper>
 
         <Paper p="md" radius="md" withBorder>
@@ -235,9 +432,9 @@ export function InvoiceCreate() {
           <Select
             label={t('invoice.select_customer')}
             placeholder={t('invoice.search_customer')}
-            data={(customers || []).map((c) => ({ value: c.id, label: c.name }))}
+            data={customerData}
             value={customerId}
-            onChange={(v) => setCustomerId(v)}
+            onChange={handleCustomerSelect}
             searchable
           />
           {selectedCustomer && (
@@ -388,6 +585,111 @@ export function InvoiceCreate() {
         <Button variant="default" onClick={() => navigate('/invoices')}>{t('common.cancel')}</Button>
         <Button onClick={handleCreate} loading={createMutation.isPending}>{t('invoice.create_button')}</Button>
       </Group>
+
+      {/* Supplier creation modal */}
+      <Modal opened={supplierModalOpen} onClose={() => setSupplierModalOpen(false)}
+        title={t('supplier.new_title')} size="lg">
+        <Stack gap="md">
+          <TextInput label={t('supplier.name_label')} value={sName}
+            onChange={(e) => setSName(e.currentTarget.value)} required />
+          <Group grow>
+            <TextInput label={t('supplier.ico_label')} value={sIco}
+              onChange={(e) => setSIco(e.currentTarget.value)} />
+            <TextInput label={t('supplier.dic_label')} value={sDic}
+              onChange={(e) => setSDic(e.currentTarget.value)} />
+          </Group>
+          <TextInput label={t('supplier.street_label')} value={sStreet}
+            onChange={(e) => setSStreet(e.currentTarget.value)} />
+          <Group grow>
+            <TextInput label={t('supplier.city_label')} value={sCity}
+              onChange={(e) => setSCity(e.currentTarget.value)} />
+            <TextInput label={t('supplier.zip_label')} value={sZip}
+              onChange={(e) => setSZip(e.currentTarget.value)} />
+          </Group>
+          <Select label={t('supplier.country_label')} data={['CZ', 'SK', 'DE', 'AT', 'PL', 'HU']}
+            value={sCountry} onChange={(v) => setSCountry(v || 'CZ')} />
+          <Group grow>
+            <TextInput label={t('supplier.email_label')} value={sEmail}
+              onChange={(e) => setSEmail(e.currentTarget.value)} />
+            <TextInput label={t('supplier.phone_label')} value={sPhone}
+              onChange={(e) => setSPhone(e.currentTarget.value)} />
+          </Group>
+          <Group grow>
+            <TextInput label={t('supplier.website_label')} value={sWebsite}
+              onChange={(e) => setSWebsite(e.currentTarget.value)} />
+            <TextInput label={t('supplier.invoice_prefix_label')} value={sInvoicePrefix}
+              onChange={(e) => setSInvoicePrefix(e.currentTarget.value)} />
+          </Group>
+          <Switch label={t('supplier.is_vat_payer_label')} checked={sIsVatPayer}
+            onChange={(e) => setSIsVatPayer(e.currentTarget.checked)} />
+          <Textarea label={t('supplier.notes_label')} value={sNotes}
+            onChange={(e) => setSNotes(e.currentTarget.value)} minRows={2} />
+          <Group justify="end" mt="md">
+            <Button variant="default" onClick={() => setSupplierModalOpen(false)}>{t('common.cancel')}</Button>
+            <Button onClick={handleSaveSupplier} loading={createSupplierMutation.isPending}>{t('common.create')}</Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      {/* Customer creation modal */}
+      <Modal opened={customerModalOpen} onClose={() => setCustomerModalOpen(false)}
+        title={t('customer.new_title')} size="lg">
+        <Stack gap="md">
+          <TextInput label={t('customer.name_label')} value={cName}
+            onChange={(e) => setCName(e.currentTarget.value)} required />
+          <Group grow>
+            <TextInput label={t('customer.ico_label')} value={cIco}
+              onChange={(e) => setCIco(e.currentTarget.value)} />
+            <TextInput label={t('customer.dic_label')} value={cDic}
+              onChange={(e) => setCDic(e.currentTarget.value)} />
+          </Group>
+          <TextInput label={t('customer.street_label')} value={cStreet}
+            onChange={(e) => setCStreet(e.currentTarget.value)} />
+          <Group grow>
+            <TextInput label={t('customer.city_label')} value={cCity}
+              onChange={(e) => setCCity(e.currentTarget.value)} />
+            <TextInput label={t('customer.zip_label')} value={cZip}
+              onChange={(e) => setCZip(e.currentTarget.value)} />
+          </Group>
+          <Select label={t('customer.country_label')} data={['CZ', 'SK', 'DE', 'AT', 'PL', 'HU']}
+            value={cCountry} onChange={(v) => setCCountry(v || 'CZ')} />
+          <Group grow>
+            <TextInput label={t('customer.email_label')} value={cEmail}
+              onChange={(e) => setCEmail(e.currentTarget.value)} />
+            <TextInput label={t('customer.phone_label')} value={cPhone}
+              onChange={(e) => setCPhone(e.currentTarget.value)} />
+          </Group>
+          <Textarea label={t('customer.notes_label')} value={cNotes}
+            onChange={(e) => setCNotes(e.currentTarget.value)} minRows={2} />
+          <Group justify="end" mt="md">
+            <Button variant="default" onClick={() => setCustomerModalOpen(false)}>{t('common.cancel')}</Button>
+            <Button onClick={handleSaveCustomer} loading={createCustomerMutation.isPending}>{t('common.create')}</Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      {/* Bank account creation modal */}
+      <Modal opened={bankModalOpen} onClose={() => setBankModalOpen(false)}
+        title={t('bank_account.new_title')} size="md">
+        <Stack gap="md">
+          <TextInput label={t('bank_account.name_label')} value={bName}
+            onChange={(e) => setBName(e.currentTarget.value)} />
+          <TextInput label={t('bank_account.account_number_label')} value={bAccountNumber}
+            onChange={(e) => setBAccountNumber(e.currentTarget.value)} required />
+          <TextInput label={t('bank_account.iban_label')} value={bIban}
+            onChange={(e) => setBIban(e.currentTarget.value)} />
+          <Group grow>
+            <TextInput label={t('bank_account.swift_label')} value={bSwift}
+              onChange={(e) => setBSwift(e.currentTarget.value)} />
+            <Select label={t('bank_account.currency_label')} data={['CZK', 'EUR', 'USD']}
+              value={bCurrency} onChange={(v) => setBCurrency(v || 'CZK')} />
+          </Group>
+          <Group justify="end" mt="md">
+            <Button variant="default" onClick={() => setBankModalOpen(false)}>{t('common.cancel')}</Button>
+            <Button onClick={handleSaveBank} loading={createBankMutation.isPending}>{t('common.create')}</Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   )
 }
