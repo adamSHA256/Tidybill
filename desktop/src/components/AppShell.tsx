@@ -4,7 +4,6 @@ import {
   AppShell as MantineAppShell,
   NavLink,
   Group,
-  Title,
   ActionIcon,
   useMantineColorScheme,
   Divider,
@@ -24,6 +23,7 @@ import {
   IconPlus,
 } from '@tabler/icons-react'
 import { useT } from '../i18n'
+import tidybillLogo from '../assets/tidybill_logo.svg'
 
 const navKeys = [
   { key: 'nav.dashboard', icon: IconDashboard, path: '/' },
@@ -51,7 +51,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <MantineAppShell.Navbar p="md">
         <MantineAppShell.Section>
           <Group justify="space-between" mb="md">
-            <Title order={4}>{t('app.name')}</Title>
+            <img src={tidybillLogo} alt="TidyBill" height={36} />
             <ActionIcon
               variant="subtle"
               onClick={toggleColorScheme}

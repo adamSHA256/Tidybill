@@ -14,7 +14,21 @@ import '@mantine/dates/styles.css'
 import '@mantine/notifications/styles.css'
 
 const theme = createTheme({
-  primaryColor: 'blue',
+  primaryColor: 'tidybill',
+  colors: {
+    tidybill: [
+      '#edf8f6',
+      '#d8ede9',
+      '#aedad2',
+      '#7cc7b9',
+      '#56b6a4',
+      '#4A9E8E',
+      '#3d8a7b',
+      '#337568',
+      '#296056',
+      '#1f4c44',
+    ],
+  },
   fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   defaultRadius: 'md',
 })
