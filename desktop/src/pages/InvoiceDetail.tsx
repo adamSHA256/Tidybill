@@ -23,11 +23,12 @@ import {
   IconCheck,
   IconChevronDown,
   IconNotes,
+  IconEdit,
 } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api, formatMoney, formatDate, type InvoiceStatus } from '../api/client'
+import { api, formatMoney, formatDate, openInBrowser, openFolder, type InvoiceStatus } from '../api/client'
 import { useT } from '../i18n'
 
 const statusColors: Record<string, string> = {
@@ -88,6 +89,8 @@ export function InvoiceDetail() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['invoice', id] })
       notifications.show({ title: t('notify.pdf_generated'), message: data.path, color: 'green' })
+      openInBrowser(data.path).catch((err: Error) =>
+        notifications.show({ title: t('common.error'), message: err.message, color: 'red' }))
     },
     onError: (err: Error) => {
       notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
@@ -146,6 +149,10 @@ export function InvoiceDetail() {
           </div>
         </Group>
         <Group>
+          <Button variant="light" leftSection={<IconEdit size={16} />}
+            onClick={() => navigate(`/invoices/${id}/edit`)}>
+            {t('invoice.edit')}
+          </Button>
           <Button variant="light" leftSection={<IconFileTypePdf size={16} />}
             onClick={() => pdfMutation.mutate()} loading={pdfMutation.isPending}>
             {t('invoice.generate_pdf')}
@@ -202,14 +209,30 @@ export function InvoiceDetail() {
               <Text size="sm" c="dimmed">{t('invoice.currency')}</Text>
               <Text size="sm">{invoice.currency}</Text>
             </Group>
-            {invoice.pdf_path && (
-              <Group justify="space-between">
-                <Text size="sm" c="dimmed">{t('invoice.pdf')}</Text>
-                <Text size="xs" c="blue" ff="monospace" truncate style={{ maxWidth: 200 }}>
-                  {invoice.pdf_path}
-                </Text>
-              </Group>
-            )}
+            <Group justify="space-between">
+              <Text size="sm" c="dimmed">{t('invoice.pdf')}</Text>
+              {invoice.pdf_path ? (
+                <Group gap="xs">
+                  <Button variant="light" size="compact-xs" onClick={() => {
+                    openInBrowser(invoice.pdf_path).catch((err: Error) =>
+                      notifications.show({ title: t('common.error'), message: err.message, color: 'red' }))
+                  }}>
+                    {t('invoice.open_pdf')}
+                  </Button>
+                  <Button variant="light" size="compact-xs" color="gray" onClick={() => {
+                    openFolder(invoice.pdf_path).catch((err: Error) =>
+                      notifications.show({ title: t('common.error'), message: err.message, color: 'red' }))
+                  }}>
+                    {t('invoice.open_folder')}
+                  </Button>
+                </Group>
+              ) : (
+                <Button variant="light" size="compact-xs" leftSection={<IconFileTypePdf size={14} />}
+                  onClick={() => pdfMutation.mutate()} loading={pdfMutation.isPending}>
+                  {t('invoice.generate_pdf')}
+                </Button>
+              )}
+            </Group>
           </Stack>
         </Paper>
 

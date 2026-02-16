@@ -4,6 +4,7 @@ import { ApiHealthGuard } from './components/ApiHealthGuard'
 import { Dashboard } from './pages/Dashboard'
 import { InvoiceList } from './pages/InvoiceList'
 import { InvoiceCreate } from './pages/InvoiceCreate'
+import { InvoiceEdit } from './pages/InvoiceEdit'
 import { InvoiceDetail } from './pages/InvoiceDetail'
 import { CustomerList } from './pages/CustomerList'
 import { SupplierList } from './pages/SupplierList'
@@ -20,6 +21,7 @@ export default function App() {
           <Route path="/invoices" element={<InvoiceList />} />
           <Route path="/invoices/new" element={<InvoiceCreate />} />
           <Route path="/invoices/:id" element={<InvoiceDetail />} />
+          <Route path="/invoices/:id/edit" element={<InvoiceEdit />} />
           <Route path="/customers" element={<CustomerList />} />
           <Route path="/suppliers" element={<SupplierList />} />
           <Route path="/items" element={<ItemCatalog />} />

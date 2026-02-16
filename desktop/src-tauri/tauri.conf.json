@@ -24,6 +24,11 @@
       "csp": null
     }
   },
+  "plugins": {
+    "shell": {
+      "open": "^(https?://|mailto:|tel:|/).+"
+    }
+  },
   "bundle": {
     "active": true,
     "targets": ["deb", "rpm", "appimage", "nsis"],

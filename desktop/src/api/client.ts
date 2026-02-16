@@ -350,6 +350,33 @@ export interface CreateInvoiceRequest {
   }[]
 }
 
+export async function openInBrowser(url: string): Promise<void> {
+  try {
+    if (isTauri()) {
+      const { open } = await import('@tauri-apps/plugin-shell')
+      await open(url)
+    } else {
+      window.open(url, '_blank')
+    }
+  } catch (err) {
+    console.error('openInBrowser failed:', url, err)
+    throw new Error(`Failed to open "${url}": ${err instanceof Error ? err.message : String(err)}`)
+  }
+}
+
+export async function openFolder(filePath: string): Promise<void> {
+  try {
+    if (isTauri()) {
+      const { open } = await import('@tauri-apps/plugin-shell')
+      const dir = filePath.substring(0, filePath.lastIndexOf('/'))
+      await open(dir)
+    }
+  } catch (err) {
+    console.error('openFolder failed:', filePath, err)
+    throw new Error(`Failed to open folder for "${filePath}": ${err instanceof Error ? err.message : String(err)}`)
+  }
+}
+
 // Helper to format Czech money
 export function formatMoney(amount: number, currency = 'Kc'): string {
   return amount.toLocaleString('cs-CZ', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' ' + currency

@@ -14,9 +14,9 @@ import {
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { IconEye, IconEyeCheck, IconStar, IconStarFilled } from '@tabler/icons-react'
+import { IconEye, IconStar, IconStarFilled } from '@tabler/icons-react'
 import { useState } from 'react'
-import { api, getApiBase, type PDFTemplate } from '../api/client'
+import { api, getApiBase, openInBrowser, type PDFTemplate } from '../api/client'
 import { useT } from '../i18n'
 
 export function Templates() {
@@ -58,7 +58,7 @@ export function Templates() {
       await api.generatePreview(id)
       queryClient.invalidateQueries({ queryKey: ['templates'] })
       notifications.show({ title: t('notify.preview_generated'), message: t('notify.preview_generated_msg'), color: 'green' })
-      window.open(`${getApiBase()}/templates/${id}/preview-pdf`, '_blank')
+      await openInBrowser(`${getApiBase()}/templates/${id}/preview-pdf`)
     } catch (err) {
       notifications.show({ title: t('common.error'), message: (err as Error).message, color: 'red' })
     } finally {
@@ -69,18 +69,17 @@ export function Templates() {
   const handleGenerateAll = async () => {
     setGeneratingAll(true)
     try {
-      await api.generateAllPreviews()
+      const paths = await api.generateAllPreviews()
       queryClient.invalidateQueries({ queryKey: ['templates'] })
       notifications.show({ title: t('notify.all_previews_generated'), message: t('notify.all_previews_msg'), color: 'green' })
+      for (const id of Object.keys(paths)) {
+        await openInBrowser(`${getApiBase()}/templates/${id}/preview-pdf`)
+      }
     } catch (err) {
       notifications.show({ title: t('common.error'), message: (err as Error).message, color: 'red' })
     } finally {
       setGeneratingAll(false)
     }
-  }
-
-  const openPreview = (id: string) => {
-    window.open(`${getApiBase()}/templates/${id}/preview-pdf`, '_blank')
   }
 
   if (isLoading) {
@@ -112,7 +111,6 @@ export function Templates() {
             onUpdate={(data) => updateMutation.mutate({ id: tmpl.id, data })}
             onSetDefault={() => setDefaultMutation.mutate(tmpl.id)}
             onGeneratePreview={() => handleGeneratePreview(tmpl.id)}
-            onOpenPreview={() => openPreview(tmpl.id)}
             generating={generatingId === tmpl.id}
           />
         ))}
@@ -127,7 +125,6 @@ function TemplateCard({
   onUpdate,
   onSetDefault,
   onGeneratePreview,
-  onOpenPreview,
   generating,
 }: {
   template: PDFTemplate
@@ -135,7 +132,6 @@ function TemplateCard({
   onUpdate: (data: Partial<PDFTemplate>) => void
   onSetDefault: () => void
   onGeneratePreview: () => void
-  onOpenPreview: () => void
   generating: boolean
 }) {
   const [editing, setEditing] = useState(false)
@@ -217,16 +213,6 @@ function TemplateCard({
           >
             {t('template.generate_preview')}
           </Button>
-          {tmpl.preview_path && (
-            <Button
-              size="xs"
-              variant="subtle"
-              leftSection={<IconEyeCheck size={14} />}
-              onClick={onOpenPreview}
-            >
-              {t('template.view_preview')}
-            </Button>
-          )}
         </Group>
       </Stack>
     </Paper>
