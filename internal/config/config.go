@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 type Config struct {
@@ -128,8 +129,21 @@ func getDefaultPDFDir() (string, error) {
 	return filepath.Join(home, "Documents", "TidyBill"), nil
 }
 
-func (c *Config) GetPDFPath(invoiceNumber string, year int) string {
-	yearDir := filepath.Join(c.PDFDir, fmt.Sprintf("%d", year))
+func (c *Config) GetPDFPath(invoiceNumber string, year int, supplierName string) string {
+	supplierDir := sanitizeDirName(supplierName)
+	yearDir := filepath.Join(c.PDFDir, supplierDir, fmt.Sprintf("%d", year))
 	os.MkdirAll(yearDir, 0755)
 	return filepath.Join(yearDir, invoiceNumber+".pdf")
+}
+
+func sanitizeDirName(name string) string {
+	replacer := strings.NewReplacer(
+		"/", "_", "\\", "_", ":", "_", "*", "_",
+		"?", "_", "\"", "_", "<", "_", ">", "_", "|", "_",
+	)
+	result := strings.TrimSpace(replacer.Replace(name))
+	if result == "" {
+		return "default"
+	}
+	return result
 }

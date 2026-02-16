@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/johnfercher/maroto/v2"
 	"github.com/johnfercher/maroto/v2/pkg/config"
@@ -61,7 +62,8 @@ func (s *PDFService) GenerateInvoice(data *InvoiceData, templateCode string, opt
 	}
 
 	year := data.Invoice.IssueDate.Year()
-	yearDir := filepath.Join(s.pdfDir, fmt.Sprintf("%d", year))
+	supplierDir := sanitizeDirName(data.Supplier.Name)
+	yearDir := filepath.Join(s.pdfDir, supplierDir, fmt.Sprintf("%d", year))
 	if err := os.MkdirAll(yearDir, 0755); err != nil {
 		return "", err
 	}
@@ -72,4 +74,16 @@ func (s *PDFService) GenerateInvoice(data *InvoiceData, templateCode string, opt
 	}
 
 	return pdfPath, nil
+}
+
+func sanitizeDirName(name string) string {
+	replacer := strings.NewReplacer(
+		"/", "_", "\\", "_", ":", "_", "*", "_",
+		"?", "_", "\"", "_", "<", "_", ">", "_", "|", "_",
+	)
+	result := strings.TrimSpace(replacer.Replace(name))
+	if result == "" {
+		return "default"
+	}
+	return result
 }
