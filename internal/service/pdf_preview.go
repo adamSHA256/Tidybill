@@ -32,6 +32,11 @@ func getDefaultLogoPath() string {
 
 // GeneratePreview generates a preview PDF with sample data for a given template
 func (s *PDFService) GeneratePreview(templateCode string, opts *TemplateOptions) (string, error) {
+	return s.GeneratePreviewWithYAML(templateCode, "", opts)
+}
+
+// GeneratePreviewWithYAML generates a preview PDF, optionally using YAML source for custom templates.
+func (s *PDFService) GeneratePreviewWithYAML(templateCode, yamlSource string, opts *TemplateOptions) (string, error) {
 	sampleData := buildSampleInvoiceData()
 
 	if err := os.MkdirAll(s.previewDir, 0755); err != nil {
@@ -39,7 +44,7 @@ func (s *PDFService) GeneratePreview(templateCode string, opts *TemplateOptions)
 	}
 
 	previewPath := filepath.Join(s.previewDir, templateCode+"_preview.pdf")
-	return s.generateToPath(sampleData, templateCode, opts, previewPath)
+	return s.generateToPathWithYAML(sampleData, templateCode, yamlSource, opts, previewPath)
 }
 
 // GenerateAllPreviews generates preview PDFs for ALL templates
@@ -52,7 +57,11 @@ func (s *PDFService) GenerateAllPreviews(templates []*model.PDFTemplate) (map[st
 			ShowNotes: t.ShowNotes,
 			QRType:    "spayd",
 		}
-		path, err := s.GeneratePreview(t.TemplateCode, opts)
+		yamlSource := t.YAMLSource
+		if t.IsBuiltin {
+			yamlSource = ""
+		}
+		path, err := s.GeneratePreviewWithYAML(t.TemplateCode, yamlSource, opts)
 		if err != nil {
 			results[t.ID] = "error: " + err.Error()
 			continue
@@ -64,7 +73,12 @@ func (s *PDFService) GenerateAllPreviews(templates []*model.PDFTemplate) (map[st
 
 // generateToPath generates a PDF to a specific file path
 func (s *PDFService) generateToPath(data *InvoiceData, templateCode string, opts *TemplateOptions, outputPath string) (string, error) {
-	renderer := GetTemplateRenderer(templateCode)
+	return s.generateToPathWithYAML(data, templateCode, "", opts, outputPath)
+}
+
+// generateToPathWithYAML generates a PDF, optionally using YAML source for custom templates.
+func (s *PDFService) generateToPathWithYAML(data *InvoiceData, templateCode, yamlSource string, opts *TemplateOptions, outputPath string) (string, error) {
+	renderer := s.getRenderer(templateCode, yamlSource)
 	margins := renderer.Margins()
 
 	cfgBuilder := config.NewBuilder().

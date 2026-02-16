@@ -454,14 +454,18 @@ func (s *Server) generateInvoicePDF(w http.ResponseWriter, r *http.Request) {
 		ShowNotes: true,
 		QRType:    bankAccount.QRType,
 	}
+	yamlSource := ""
 	if tmpl, err := s.templates.GetByID(templateCode); err == nil && tmpl != nil {
 		opts.ShowLogo = tmpl.ShowLogo
 		opts.ShowQR = tmpl.ShowQR
 		opts.ShowNotes = tmpl.ShowNotes
 		templateCode = tmpl.TemplateCode
+		if !tmpl.IsBuiltin && tmpl.YAMLSource != "" {
+			yamlSource = tmpl.YAMLSource
+		}
 	}
 
-	pdfPath, err := s.pdf.GenerateInvoice(data, templateCode, opts)
+	pdfPath, err := s.pdf.GenerateInvoiceWithYAML(data, templateCode, yamlSource, opts)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "PDF generation failed: "+err.Error())
 		return

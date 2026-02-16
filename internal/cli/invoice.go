@@ -880,7 +880,14 @@ func (c *CLI) generatePDF(inv *model.Invoice) {
 		QRType:    bankAcc.QRType,
 	}
 
-	pdfPath, err := c.pdfService.GenerateInvoice(data, inv.TemplateID, opts)
+	// Check if template is custom (has YAML source)
+	yamlSource := ""
+	tmpl, _ := c.templates.GetByID(inv.TemplateID)
+	if tmpl != nil && !tmpl.IsBuiltin && tmpl.YAMLSource != "" {
+		yamlSource = tmpl.YAMLSource
+	}
+
+	pdfPath, err := c.pdfService.GenerateInvoiceWithYAML(data, inv.TemplateID, yamlSource, opts)
 	if err != nil {
 		c.printError(err.Error())
 		return

@@ -11,6 +11,7 @@ import { SupplierList } from './pages/SupplierList'
 import { ItemCatalog } from './pages/ItemCatalog'
 import { Settings } from './pages/Settings'
 import { Templates } from './pages/Templates'
+import { TemplateEditor } from './pages/TemplateEditor'
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="/suppliers" element={<SupplierList />} />
           <Route path="/items" element={<ItemCatalog />} />
           <Route path="/templates" element={<Templates />} />
+          <Route path="/template-editor/:id" element={<TemplateEditor />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>
       </AppShell>

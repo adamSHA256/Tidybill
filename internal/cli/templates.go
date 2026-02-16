@@ -2,6 +2,8 @@ package cli
 
 import (
 	"fmt"
+	"io"
+	"os"
 	"strings"
 
 	"github.com/adamSHA256/tidybill/internal/i18n"
@@ -36,6 +38,11 @@ func (c *CLI) templatesMenu() {
 		fmt.Printf("  T) %s\n", i18n.T("templates.preview_one"))
 		fmt.Printf("  N) %s\n", i18n.T("templates.set_default"))
 		fmt.Printf("  U) %s\n", i18n.T("templates.edit"))
+		fmt.Printf("  D) %s\n", i18n.T("templates.duplicate"))
+		fmt.Printf("  E) %s\n", i18n.T("templates.export_yaml"))
+		fmt.Printf("  I) %s\n", i18n.T("templates.import_yaml"))
+		fmt.Printf("  X) %s\n", i18n.T("templates.delete_custom"))
+		fmt.Printf("  A) %s\n", i18n.T("templates.show_ai_prompt"))
 		fmt.Printf("  Q) %s\n", i18n.T("templates.qr_settings"))
 		fmt.Printf("  0) %s\n", i18n.T("prompt.back"))
 		fmt.Println()
@@ -51,6 +58,16 @@ func (c *CLI) templatesMenu() {
 			c.setDefaultTemplate(templates)
 		case "u":
 			c.editTemplate(templates)
+		case "d":
+			c.duplicateTemplate(templates)
+		case "e":
+			c.exportTemplateYAML(templates)
+		case "i":
+			c.importTemplateYAML()
+		case "x":
+			c.deleteCustomTemplate(templates)
+		case "a":
+			c.showAIPrompt()
 		case "q":
 			c.qrSettings()
 		case "0":
@@ -126,7 +143,11 @@ func (c *CLI) previewOneTemplate(templates []*model.PDFTemplate) {
 		QRType:    "spayd",
 	}
 
-	path, err := c.pdfService.GeneratePreview(t.TemplateCode, opts)
+	yamlSource := t.YAMLSource
+	if t.IsBuiltin {
+		yamlSource = ""
+	}
+	path, err := c.pdfService.GeneratePreviewWithYAML(t.TemplateCode, yamlSource, opts)
 	if err != nil {
 		c.printError(err.Error())
 		c.waitEnter()
@@ -254,6 +275,184 @@ func (c *CLI) qrSettings() {
 	}
 
 	c.printSuccess(fmt.Sprintf("%s: %s → %s", i18n.T("templates.qr_updated"), acc.AccountNumber, acc.QRType))
+	c.waitEnter()
+}
+
+func (c *CLI) duplicateTemplate(templates []*model.PDFTemplate) {
+	fmt.Println()
+	fmt.Println("  " + i18n.T("templates.select_to_duplicate"))
+	t := c.selectTemplate(templates)
+	if t == nil {
+		return
+	}
+
+	name := c.prompt(i18n.T("templates.new_name"))
+	if name == "" {
+		return
+	}
+
+	newTmpl, err := c.templates.Duplicate(t.ID, name)
+	if err != nil {
+		c.printError(err.Error())
+		c.waitEnter()
+		return
+	}
+
+	// Built-in templates don't store YAML in DB - inject it into the new custom copy
+	if t.IsBuiltin {
+		yamlSrc := service.GetBuiltinYAML(t.TemplateCode)
+		if yamlSrc != "" {
+			if err := c.templates.UpdateYAMLSource(newTmpl.ID, yamlSrc); err != nil {
+				c.printError(err.Error())
+				c.waitEnter()
+				return
+			}
+		}
+	}
+
+	c.printSuccess(fmt.Sprintf(i18n.T("templates.duplicate_created"), name, newTmpl.ID))
+	c.waitEnter()
+}
+
+func (c *CLI) exportTemplateYAML(templates []*model.PDFTemplate) {
+	fmt.Println()
+	fmt.Println("  " + i18n.T("templates.select_to_export"))
+	t := c.selectTemplate(templates)
+	if t == nil {
+		return
+	}
+
+	yamlSource := t.YAMLSource
+	if t.IsBuiltin && yamlSource == "" {
+		yamlSource = service.GetBuiltinYAML(t.TemplateCode)
+	}
+
+	if yamlSource == "" {
+		c.printError(i18n.T("templates.no_yaml_source"))
+		c.waitEnter()
+		return
+	}
+
+	fmt.Println()
+	fmt.Println("--- YAML START ---")
+	fmt.Println(yamlSource)
+	fmt.Println("--- YAML END ---")
+	fmt.Println()
+
+	// Option to save to file
+	filePath := c.promptDefault(i18n.T("templates.save_to_file"), "")
+	if filePath != "" {
+		if err := os.WriteFile(filePath, []byte(yamlSource), 0644); err != nil {
+			c.printError(err.Error())
+		} else {
+			c.printSuccess(fmt.Sprintf("%s: %s", i18n.T("templates.file_saved"), filePath))
+		}
+	}
+	c.waitEnter()
+}
+
+func (c *CLI) importTemplateYAML() {
+	fmt.Println()
+	name := c.prompt(i18n.T("templates.new_name"))
+	if name == "" {
+		return
+	}
+
+	filePath := c.prompt(i18n.T("templates.yaml_file_path"))
+
+	var yamlSource string
+
+	if filePath == "stdin" {
+		fmt.Println(i18n.T("templates.paste_yaml"))
+		data, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			c.printError(err.Error())
+			c.waitEnter()
+			return
+		}
+		yamlSource = string(data)
+	} else {
+		data, err := os.ReadFile(filePath)
+		if err != nil {
+			c.printError(err.Error())
+			c.waitEnter()
+			return
+		}
+		yamlSource = string(data)
+	}
+
+	// Validate
+	if err := service.ValidateYAML(yamlSource); err != nil {
+		c.printError(i18n.T("templates.invalid_yaml") + ": " + err.Error())
+		c.waitEnter()
+		return
+	}
+
+	// Get default template as parent for the duplicate
+	defaultTmpl, err := c.templates.GetDefault()
+	if err != nil || defaultTmpl == nil {
+		c.printError(i18n.T("templates.no_default_found"))
+		c.waitEnter()
+		return
+	}
+
+	newTmpl, err := c.templates.Duplicate(defaultTmpl.ID, name)
+	if err != nil {
+		c.printError(err.Error())
+		c.waitEnter()
+		return
+	}
+
+	if err := c.templates.UpdateYAMLSource(newTmpl.ID, yamlSource); err != nil {
+		c.printError(err.Error())
+		c.waitEnter()
+		return
+	}
+
+	c.printSuccess(fmt.Sprintf(i18n.T("templates.import_created"), name, newTmpl.ID))
+	c.waitEnter()
+}
+
+func (c *CLI) deleteCustomTemplate(templates []*model.PDFTemplate) {
+	// Filter to show only custom templates
+	var custom []*model.PDFTemplate
+	for _, t := range templates {
+		if !t.IsBuiltin {
+			custom = append(custom, t)
+		}
+	}
+
+	if len(custom) == 0 {
+		fmt.Println()
+		fmt.Println("  " + i18n.T("templates.no_custom_templates"))
+		c.waitEnter()
+		return
+	}
+
+	fmt.Println()
+	fmt.Println("  " + i18n.T("templates.custom_templates"))
+	t := c.selectTemplate(custom)
+	if t == nil {
+		return
+	}
+
+	if !c.confirm(fmt.Sprintf(i18n.T("templates.confirm_delete"), t.Name)) {
+		return
+	}
+
+	if err := c.templates.Delete(t.ID); err != nil {
+		c.printError(err.Error())
+		c.waitEnter()
+		return
+	}
+
+	c.printSuccess(fmt.Sprintf(i18n.T("templates.template_deleted"), t.Name))
+	c.waitEnter()
+}
+
+func (c *CLI) showAIPrompt() {
+	fmt.Println()
+	fmt.Println(service.TemplateEditingAIPrompt)
 	c.waitEnter()
 }
 
