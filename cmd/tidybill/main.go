@@ -60,9 +60,19 @@ func main() {
 
 		httpServer := &http.Server{Handler: srv.Router()}
 
-		// Shutdown on SIGINT/SIGTERM
-		ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-		defer stop()
+		shutdown := make(chan struct{})
+
+		// Handle SIGINT/SIGTERM — immediate shutdown for sidecar
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+		go func() {
+			<-sigCh
+			log.Println("[tidybill] shutting down...")
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			httpServer.Shutdown(shutdownCtx)
+			close(shutdown)
+		}()
 
 		// Watch parent process — exit if it dies (covers crashes)
 		if *parentPID > 0 {
@@ -72,6 +82,7 @@ func main() {
 					if err := syscall.Kill(*parentPID, 0); err != nil {
 						log.Println("[tidybill] parent process gone, shutting down")
 						httpServer.Shutdown(context.Background())
+						close(shutdown)
 						return
 					}
 				}
@@ -86,14 +97,24 @@ func main() {
 			}
 		}()
 
-		// Block until signal or parent death triggers shutdown
-		<-ctx.Done()
-		log.Println("[tidybill] shutting down...")
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		httpServer.Shutdown(shutdownCtx)
+		<-shutdown
 	} else {
-		// CLI mode (unchanged)
+		// CLI mode — double Ctrl+C within 3s to exit
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGINT)
+		go func() {
+			for {
+				<-sigCh
+				fmt.Fprintln(os.Stderr, "\nPress Ctrl+C again within 3s to exit")
+				select {
+				case <-sigCh:
+					os.Exit(0)
+				case <-time.After(3 * time.Second):
+					// Reset — next Ctrl+C will warn again
+				}
+			}
+		}()
+
 		app := cli.New(db, cfg)
 		if err := app.Run(); err != nil {
 			fmt.Fprintln(os.Stderr, i18n.Tf("app.error_general", err))
