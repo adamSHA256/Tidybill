@@ -54,6 +54,7 @@
   "invoice.invoice_number": "Invoice Number",
   "invoice.invoice_number_placeholder": "Leave empty for auto",
   "invoice.invoice_number_desc": "Optional — auto-generated if empty",
+  "invoice.invoice_number_auto_desc": "Auto-generated — edit to override",
   "invoice.currency": "Currency",
   "invoice.supplier_you": "Supplier (You)",
   "invoice.select_supplier": "Select supplier",

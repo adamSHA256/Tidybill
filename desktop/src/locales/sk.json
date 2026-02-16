@@ -54,6 +54,7 @@
   "invoice.invoice_number": "Číslo faktúry",
   "invoice.invoice_number_placeholder": "Nechajte prázdne pre automatické",
   "invoice.invoice_number_desc": "Voliteľné — automaticky generované",
+  "invoice.invoice_number_auto_desc": "Automaticky generované — upravte pre zmenu",
   "invoice.currency": "Mena",
   "invoice.supplier_you": "Dodávateľ (Vy)",
   "invoice.select_supplier": "Vyberte dodávateľa",

@@ -72,6 +72,8 @@ export const api = {
     return request<Invoice[]>(`/invoices${qs ? '?' + qs : ''}`)
   },
   getInvoice: (id: string) => request<Invoice>(`/invoices/${id}`),
+  getNextInvoiceNumber: (supplierId: string) =>
+    request<{ invoice_number: string }>(`/invoices/next-number?supplier_id=${encodeURIComponent(supplierId)}`),
   createInvoice: (data: CreateInvoiceRequest) =>
     request<Invoice>('/invoices', { method: 'POST', body: JSON.stringify(data) }),
   updateInvoice: (id: string, data: Partial<CreateInvoiceRequest> & { internal_notes?: string }) =>
