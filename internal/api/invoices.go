@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/adamSHA256/tidybill/internal/database/repository"
@@ -171,6 +172,10 @@ func (s *Server) createInvoice(w http.ResponseWriter, r *http.Request) {
 
 	// Create invoice
 	if err := s.invoices.Create(inv); err != nil {
+		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+			writeError(w, http.StatusConflict, "invoice number already exists: "+inv.InvoiceNumber)
+			return
+		}
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
