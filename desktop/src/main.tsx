@@ -77,7 +77,7 @@ function ApiGate({ children }: { children: React.ReactNode }) {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <MantineProvider theme={theme} defaultColorScheme="light">
-      <Notifications position="top-right" />
+      <Notifications position="top-right" autoClose={5000} />
       <ApiGate>
         <QueryClientProvider client={queryClient}>
           <ModalsProvider>
