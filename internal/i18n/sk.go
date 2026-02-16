@@ -239,7 +239,10 @@ var messagesSK = map[string]string{
 	"wizard.setup_prompt":     "Nastavme váš prvý firemný profil.",
 	"wizard.supplier_details": "Údaje dodávateľa (vaša firma)",
 	"wizard.bank_account":     "Bankový účet",
+	"wizard.pdf_directory":    "Výstup PDF",
+	"wizard.pdf_dir_prompt":   "Kam sa majú ukladať vygenerované PDF faktúry?",
 	"wizard.summary":          "Súhrn",
+	"label.pdf_dir":           "PDF:      %s",
 
 	// ── Settings ────────────────────────────────────────────────────────
 	"settings.change_language":  "Zmeniť jazyk aplikácie",

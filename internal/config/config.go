@@ -22,10 +22,15 @@ func New() (*Config, error) {
 		return nil, err
 	}
 
+	pdfDir, err := getDefaultPDFDir()
+	if err != nil {
+		pdfDir = filepath.Join(dataDir, "pdfs")
+	}
+
 	cfg := &Config{
 		DataDir:    dataDir,
 		DBPath:     filepath.Join(dataDir, "invoices.db"),
-		PDFDir:     filepath.Join(dataDir, "pdfs"),
+		PDFDir:     pdfDir,
 		LogoDir:    filepath.Join(dataDir, "logos"),
 		ExportDir:  filepath.Join(dataDir, "exports"),
 		PreviewDir: filepath.Join(dataDir, "previews"),
@@ -105,6 +110,22 @@ func (c *Config) ApplySettings(get func(key string) (string, error)) error {
 	}
 
 	return nil
+}
+
+func getDefaultPDFDir() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+
+	// On Linux, check XDG_DOCUMENTS_DIR first
+	if runtime.GOOS == "linux" {
+		if docsDir := os.Getenv("XDG_DOCUMENTS_DIR"); docsDir != "" {
+			return filepath.Join(docsDir, "TidyBill"), nil
+		}
+	}
+
+	return filepath.Join(home, "Documents", "TidyBill"), nil
 }
 
 func (c *Config) GetPDFPath(invoiceNumber string, year int) string {
