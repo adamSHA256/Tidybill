@@ -18,6 +18,10 @@
             "--port",
             {
               "validator": "\\d+"
+            },
+            "--parent-pid",
+            {
+              "validator": "\\d+"
             }
           ]
         }
@@ -32,6 +36,10 @@
           "args": [
             "--gui",
             "--port",
+            {
+              "validator": "\\d+"
+            },
+            "--parent-pid",
             {
               "validator": "\\d+"
             }

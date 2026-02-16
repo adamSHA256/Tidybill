@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/adamSHA256/tidybill/internal/api"
 	"github.com/adamSHA256/tidybill/internal/cli"
@@ -19,6 +23,7 @@ import (
 func main() {
 	gui := flag.Bool("gui", false, "Start web UI mode (HTTP server)")
 	port := flag.String("port", "8080", "HTTP server port (used with --gui)")
+	parentPID := flag.Int("parent-pid", 0, "Parent process PID (exit when parent dies)")
 	flag.Parse()
 
 	// Load configuration
@@ -53,12 +58,40 @@ func main() {
 		actualPort := listener.Addr().(*net.TCPAddr).Port
 		fmt.Printf("TIDYBILL_PORT=%d\n", actualPort)
 
-		log.Printf("TidyBill API server running on http://localhost:%d", actualPort)
-		log.Println("  Press Ctrl+C to stop")
+		httpServer := &http.Server{Handler: srv.Router()}
 
-		if err := http.Serve(listener, srv.Router()); err != nil {
-			log.Fatalf("Server failed: %v", err)
+		// Shutdown on SIGINT/SIGTERM
+		ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+		defer stop()
+
+		// Watch parent process — exit if it dies (covers crashes)
+		if *parentPID > 0 {
+			go func() {
+				for {
+					time.Sleep(2 * time.Second)
+					if err := syscall.Kill(*parentPID, 0); err != nil {
+						log.Println("[tidybill] parent process gone, shutting down")
+						httpServer.Shutdown(context.Background())
+						return
+					}
+				}
+			}()
 		}
+
+		// Start server in background
+		go func() {
+			log.Printf("TidyBill API server running on http://localhost:%d", actualPort)
+			if err := httpServer.Serve(listener); err != nil && err != http.ErrServerClosed {
+				log.Fatalf("Server failed: %v", err)
+			}
+		}()
+
+		// Block until signal or parent death triggers shutdown
+		<-ctx.Done()
+		log.Println("[tidybill] shutting down...")
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		httpServer.Shutdown(shutdownCtx)
 	} else {
 		// CLI mode (unchanged)
 		app := cli.New(db, cfg)
