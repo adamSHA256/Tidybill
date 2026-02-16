@@ -9,6 +9,28 @@ import (
 	"github.com/adamSHA256/tidybill/internal/service"
 )
 
+func (s *Server) getNextInvoiceNumber(w http.ResponseWriter, r *http.Request) {
+	supplierID := r.URL.Query().Get("supplier_id")
+	if supplierID == "" {
+		writeError(w, http.StatusBadRequest, "supplier_id is required")
+		return
+	}
+
+	supplier, err := s.suppliers.GetByID(supplierID)
+	if err != nil || supplier == nil {
+		writeError(w, http.StatusNotFound, "supplier not found")
+		return
+	}
+
+	number, err := s.invoices.GetNextNumber(supplier.ID, supplier.InvoicePrefix)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"invoice_number": number})
+}
+
 func (s *Server) listInvoices(w http.ResponseWriter, r *http.Request) {
 	status := model.InvoiceStatus(r.URL.Query().Get("status"))
 	customerID := r.URL.Query().Get("customer_id")

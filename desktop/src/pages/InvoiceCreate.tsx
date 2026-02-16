@@ -22,7 +22,7 @@ import {
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { IconTrash, IconPlus, IconPackage } from '@tabler/icons-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, formatMoney, type Supplier, type BankAccount, type Item, type CustomerItem } from '../api/client'
@@ -122,6 +122,20 @@ export function InvoiceCreate() {
     queryFn: () => api.getBankAccounts(selectedSupplierId!),
     enabled: !!selectedSupplierId,
   })
+
+  // Auto-fetch next invoice number when supplier is selected
+  const { data: nextNumberData } = useQuery({
+    queryKey: ['next-invoice-number', selectedSupplierId],
+    queryFn: () => api.getNextInvoiceNumber(selectedSupplierId!),
+    enabled: !!selectedSupplierId,
+  })
+
+  // Pre-fill invoice number when supplier changes
+  useEffect(() => {
+    if (nextNumberData?.invoice_number) {
+      setInvoiceNumber(nextNumberData.invoice_number)
+    }
+  }, [nextNumberData])
 
   // Catalog queries
   const { data: customerItems } = useQuery({
@@ -378,7 +392,7 @@ export function InvoiceCreate() {
       <Paper p="md" radius="md" withBorder>
         <Text fw={500} mb="md">{t('invoice.details')}</Text>
         <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }}>
-          <TextInput label={t('invoice.invoice_number')} placeholder={t('invoice.invoice_number_placeholder')} value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.currentTarget.value)} description={t('invoice.invoice_number_desc')} />
+          <TextInput label={t('invoice.invoice_number')} placeholder={t('invoice.invoice_number_placeholder')} value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.currentTarget.value)} description={invoiceNumber ? t('invoice.invoice_number_auto_desc') : t('invoice.invoice_number_desc')} />
           <TextInput label={t('invoice.issue_date')} type="date" value={issueDate} onChange={(e) => setIssueDate(e.currentTarget.value)} />
           <TextInput label={t('invoice.due_date')} type="date" value={dueDate} onChange={(e) => setDueDate(e.currentTarget.value)} />
           <Select label={t('invoice.currency')} data={['CZK', 'EUR', 'USD']} value={currency} onChange={(v) => setCurrency(v || 'CZK')} />
