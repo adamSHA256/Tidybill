@@ -12,14 +12,15 @@ import (
 func (s *Server) listInvoices(w http.ResponseWriter, r *http.Request) {
 	status := model.InvoiceStatus(r.URL.Query().Get("status"))
 	customerID := r.URL.Query().Get("customer_id")
+	supplierID := r.URL.Query().Get("supplier_id")
 
-	invoices, err := s.invoices.List(status, customerID)
+	invoices, err := s.invoices.List(status, customerID, supplierID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	// Load items and customer name for each invoice
+	// Load items, customer and supplier for each invoice
 	for _, inv := range invoices {
 		items, err := s.invoiceItems.GetByInvoice(inv.ID)
 		if err == nil {
@@ -28,6 +29,10 @@ func (s *Server) listInvoices(w http.ResponseWriter, r *http.Request) {
 		cust, err := s.customers.GetByID(inv.CustomerID)
 		if err == nil && cust != nil {
 			inv.Customer = cust
+		}
+		sup, err := s.suppliers.GetByID(inv.SupplierID)
+		if err == nil && sup != nil {
+			inv.Supplier = sup
 		}
 	}
 

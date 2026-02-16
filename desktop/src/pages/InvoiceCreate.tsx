@@ -107,6 +107,12 @@ export function InvoiceCreate() {
     queryFn: () => api.getCustomers(),
   })
 
+  const { data: units } = useQuery({
+    queryKey: ['units'],
+    queryFn: api.getUnits,
+  })
+  const unitOptions = (units || []).map((u) => u.name)
+
   // Auto-select default supplier
   const defaultSupplier = suppliers?.find((s: Supplier) => s.is_default)
   const selectedSupplierId = supplierId || defaultSupplier?.id || null
@@ -534,8 +540,8 @@ export function InvoiceCreate() {
                     onChange={(val) => updateItem(i, 'quantity', val || 0)} />
                 </Table.Td>
                 <Table.Td>
-                  <Select size="sm" data={['ks', 'hod', 'den', 'm\u00B2']} value={item.unit}
-                    onChange={(val) => updateItem(i, 'unit', val || 'ks')} />
+                  <Select size="sm" data={unitOptions} value={item.unit}
+                    onChange={(val) => updateItem(i, 'unit', val || unitOptions[0] || 'ks')} />
                 </Table.Td>
                 <Table.Td>
                   <NumberInput size="sm" min={0} value={item.unit_price}

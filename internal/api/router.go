@@ -107,6 +107,10 @@ func (s *Server) Router() http.Handler {
 	mux.HandleFunc("GET /api/settings", s.getSettings)
 	mux.HandleFunc("PUT /api/settings", s.updateSettings)
 
+	// Units
+	mux.HandleFunc("GET /api/units", s.getUnits)
+	mux.HandleFunc("PUT /api/units", s.updateUnits)
+
 	return corsMiddleware(mux)
 }
 

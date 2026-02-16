@@ -122,7 +122,7 @@ func (c *CLI) createItem() *model.Item {
 	}
 
 	item.DefaultPrice = c.promptFloat(i18n.T("prompt.default_price"), 0)
-	item.DefaultUnit = c.promptDefault(i18n.T("prompt.default_unit"), i18n.T("default.unit_pcs"))
+	item.DefaultUnit = c.selectUnit("")
 	item.DefaultVATRate = c.promptFloat(i18n.T("prompt.default_vat"), defaultVAT)
 	item.Category = c.promptCategory()
 
@@ -226,7 +226,7 @@ func (c *CLI) editItemDetails(item *model.Item) {
 
 	item.Description = c.promptDefaultMaxLen(i18n.T("prompt.item_description"), item.Description, model.MaxDescriptionLen)
 	item.DefaultPrice = c.promptFloat(i18n.T("prompt.default_price"), item.DefaultPrice)
-	item.DefaultUnit = c.promptDefault(i18n.T("prompt.default_unit"), item.DefaultUnit)
+	item.DefaultUnit = c.selectUnit(item.DefaultUnit)
 	item.DefaultVATRate = c.promptFloat(i18n.T("prompt.default_vat"), item.DefaultVATRate)
 	item.Category = c.promptCategory()
 

@@ -63,10 +63,11 @@ export const api = {
   getDashboardStats: () => request<DashboardStats>('/dashboard/stats'),
 
   // Invoices
-  getInvoices: (params?: { status?: string; customer_id?: string }) => {
+  getInvoices: (params?: { status?: string; customer_id?: string; supplier_id?: string }) => {
     const query = new URLSearchParams()
     if (params?.status) query.set('status', params.status)
     if (params?.customer_id) query.set('customer_id', params.customer_id)
+    if (params?.supplier_id) query.set('supplier_id', params.supplier_id)
     const qs = query.toString()
     return request<Invoice[]>(`/invoices${qs ? '?' + qs : ''}`)
   },
@@ -168,6 +169,11 @@ export const api = {
   getSettings: () => request<AppSettings>('/settings'),
   updateSettings: (data: Partial<AppSettings>) =>
     request<AppSettings>('/settings', { method: 'PUT', body: JSON.stringify(data) }),
+
+  // Units
+  getUnits: () => request<Unit[]>('/units'),
+  updateUnits: (units: Unit[]) =>
+    request<Unit[]>('/units', { method: 'PUT', body: JSON.stringify(units) }),
 }
 
 // Types matching Go models exactly
@@ -329,6 +335,11 @@ export interface AppSettings {
   dir_logos?: string
   dir_pdfs?: string
   dir_previews?: string
+}
+
+export interface Unit {
+  name: string
+  is_default?: boolean
 }
 
 export interface CreateInvoiceRequest {

@@ -460,6 +460,15 @@ var messagesCS = map[string]string{
 	"success.directories_updated": "Adresáře aktualizovány",
 	"error.directory_invalid":    "Adresář nelze vytvořit: %v",
 
+	// ── Units ──────────────────────────────────────────────────────────
+	"settings.add_unit_or_type": "  nebo zadejte vlastní jednotku",
+	"settings.manage_units":    "Správa jednotek",
+	"settings.units_title":     "SPRÁVA JEDNOTEK",
+	"settings.add_unit":        "Přidat jednotku",
+	"settings.remove_unit":     "Odebrat jednotku",
+	"settings.set_default_unit": "Nastavit výchozí jednotku",
+	"success.units_updated":    "Jednotky aktualizovány",
+
 	// ── Errors (new) ────────────────────────────────────────────────────
 	"error.invalid_option":  "Neplatná volba",
 	"error.no_bank_accounts": "Žádné bankovní účty",

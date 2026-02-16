@@ -11,11 +11,12 @@ import {
   Center,
   TextInput,
   Button,
+  Pill,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
-import { api } from '../api/client'
+import { api, type Unit } from '../api/client'
 import { useT } from '../i18n'
 
 const langOptions = [
@@ -36,6 +37,14 @@ export function Settings() {
   const [dirLogos, setDirLogos] = useState('')
   const [dirPdfs, setDirPdfs] = useState('')
   const [dirPreviews, setDirPreviews] = useState('')
+  const [newUnitName, setNewUnitName] = useState('')
+
+  const { data: units } = useQuery({
+    queryKey: ['units'],
+    queryFn: api.getUnits,
+  })
+
+  const [localUnits, setLocalUnits] = useState<Unit[]>([])
 
   useEffect(() => {
     if (settings) {
@@ -44,6 +53,23 @@ export function Settings() {
       setDirPreviews(settings.dir_previews || '')
     }
   }, [settings])
+
+  useEffect(() => {
+    if (units) {
+      setLocalUnits(units)
+    }
+  }, [units])
+
+  const unitsMutation = useMutation({
+    mutationFn: api.updateUnits,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['units'] })
+      notifications.show({ title: t('notify.units_saved'), message: t('notify.units_saved_msg'), color: 'green' })
+    },
+    onError: (err: Error) => {
+      notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
+    },
+  })
 
   const updateMutation = useMutation({
     mutationFn: api.updateSettings,
@@ -136,6 +162,68 @@ export function Settings() {
             loading={updateMutation.isPending}
           >
             {t('settings.save_directories')}
+          </Button>
+        </Stack>
+      </Paper>
+
+      <Paper p="md" radius="md" withBorder>
+        <Text fw={500} mb="xs">{t('settings.units')}</Text>
+        <Text c="dimmed" size="sm" mb="md">{t('settings.units_desc')}</Text>
+        <Stack gap="md">
+          <Group gap="xs" wrap="wrap">
+            {localUnits.map((u, i) => (
+              <Pill
+                key={u.name}
+                size="lg"
+                withRemoveButton={localUnits.length > 1}
+                onRemove={() => {
+                  const next = localUnits.filter((_, idx) => idx !== i)
+                  if (u.is_default && next.length > 0) next[0].is_default = true
+                  setLocalUnits(next)
+                }}
+                styles={{ root: { cursor: 'pointer', border: u.is_default ? '2px solid var(--mantine-color-blue-5)' : undefined } }}
+                onClick={() => {
+                  setLocalUnits(localUnits.map((unit, idx) => ({ ...unit, is_default: idx === i })))
+                }}
+              >
+                {u.name}
+                {u.is_default && (
+                  <Badge size="xs" variant="light" color="blue" ml={4}>{t('settings.default_unit_label')}</Badge>
+                )}
+              </Pill>
+            ))}
+          </Group>
+          <Group>
+            <TextInput
+              placeholder={t('settings.unit_placeholder')}
+              value={newUnitName}
+              onChange={(e) => setNewUnitName(e.currentTarget.value)}
+              w={250}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newUnitName.trim()) {
+                  setLocalUnits([...localUnits, { name: newUnitName.trim() }])
+                  setNewUnitName('')
+                }
+              }}
+            />
+            <Button
+              variant="light"
+              size="sm"
+              disabled={!newUnitName.trim()}
+              onClick={() => {
+                setLocalUnits([...localUnits, { name: newUnitName.trim() }])
+                setNewUnitName('')
+              }}
+            >
+              {t('settings.add_unit')}
+            </Button>
+          </Group>
+          <Button
+            w={200}
+            onClick={() => unitsMutation.mutate(localUnits)}
+            loading={unitsMutation.isPending}
+          >
+            {t('settings.save_units')}
           </Button>
         </Stack>
       </Paper>

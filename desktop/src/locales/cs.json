@@ -307,6 +307,19 @@
   "notify.bank_account_created": "Bankovní účet vytvořen",
   "notify.bank_account_created_msg": "Bankovní účet byl úspěšně vytvořen",
 
+  "settings.units": "Jednotky",
+  "settings.units_desc": "Spravujte jednotky pro položky faktur",
+  "settings.add_unit": "Přidat jednotku",
+  "settings.default_unit_label": "výchozí",
+  "settings.unit_placeholder": "Nová jednotka (např. bal, m, l)",
+  "settings.save_units": "Uložit jednotky",
+  "notify.units_saved": "Jednotky uloženy",
+  "notify.units_saved_msg": "Jednotky byly aktualizovány",
+
+  "invoice.supplier": "Dodavatel",
+  "invoice.filter_supplier": "Filtr dodavatele",
+  "invoice.all_suppliers": "Všichni dodavatelé",
+
   "health.disconnected_title": "Spojení ztraceno",
   "health.disconnected_message": "Backend neodpovídá. Restartujte prosím TidyBill."
 }

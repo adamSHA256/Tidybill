@@ -104,6 +104,7 @@ export function Dashboard() {
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th>{t('invoice.number')}</Table.Th>
+                  <Table.Th>{t('invoice.supplier')}</Table.Th>
                   <Table.Th>{t('invoice.customer')}</Table.Th>
                   <Table.Th>{t('invoice.amount')}</Table.Th>
                   <Table.Th>{t('invoice.status')}</Table.Th>
@@ -113,6 +114,7 @@ export function Dashboard() {
                 {recentInvoices.map((inv) => (
                   <Table.Tr key={inv.id}>
                     <Table.Td fw={600} ff="monospace" fz="sm">{inv.invoice_number}</Table.Td>
+                    <Table.Td fz="sm">{inv.supplier?.name || '—'}</Table.Td>
                     <Table.Td fz="sm">{inv.customer?.name || '—'}</Table.Td>
                     <Table.Td fz="sm">{formatMoney(inv.total)}</Table.Td>
                     <Table.Td>
@@ -154,7 +156,7 @@ export function Dashboard() {
                   )
                   return (
                     <div key={inv.id}>
-                      <Text size="sm" fw={500}>{inv.invoice_number} — {inv.customer?.name || '—'}</Text>
+                      <Text size="sm" fw={500}>{inv.invoice_number} — {inv.supplier?.name || '—'} → {inv.customer?.name || '—'}</Text>
                       <Text size="xs" c="red">{formatMoney(inv.total)} — {t('dashboard.days_overdue').replace('{days}', String(daysOverdue))}</Text>
                     </div>
                   )

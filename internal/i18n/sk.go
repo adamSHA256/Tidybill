@@ -460,6 +460,15 @@ var messagesSK = map[string]string{
 	"success.directories_updated": "Adresáre aktualizované",
 	"error.directory_invalid":    "Adresár nie je možné vytvoriť: %v",
 
+	// ── Units ──────────────────────────────────────────────────────────
+	"settings.add_unit_or_type": "  alebo zadajte vlastnú jednotku",
+	"settings.manage_units":    "Správa jednotiek",
+	"settings.units_title":     "SPRÁVA JEDNOTIEK",
+	"settings.add_unit":        "Pridať jednotku",
+	"settings.remove_unit":     "Odstrániť jednotku",
+	"settings.set_default_unit": "Nastaviť predvolenú jednotku",
+	"success.units_updated":    "Jednotky aktualizované",
+
 	// ── Errors (new) ────────────────────────────────────────────────────
 	"error.invalid_option":  "Neplatná voľba",
 	"error.no_bank_accounts": "Žiadne bankové účty",
