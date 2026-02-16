@@ -239,7 +239,10 @@ var messagesEN = map[string]string{
 	"wizard.setup_prompt":     "Let's set up your first company profile.",
 	"wizard.supplier_details": "Supplier details (your company)",
 	"wizard.bank_account":     "Bank account",
+	"wizard.pdf_directory":    "PDF output",
+	"wizard.pdf_dir_prompt":   "Where should we save generated PDF invoices?",
 	"wizard.summary":          "Summary",
+	"label.pdf_dir":           "PDFs:     %s",
 
 	// ── Settings ────────────────────────────────────────────────────────
 	"settings.change_language":  "Change application language",

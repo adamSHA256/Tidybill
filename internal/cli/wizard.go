@@ -81,12 +81,19 @@ func (c *CLI) firstRunWizard() error {
 	bankAcc.Currency = c.promptDefault(i18n.T("prompt.currency"), "CZK")
 
 	fmt.Println()
+	fmt.Printf("=== %s ===\n", i18n.T("wizard.pdf_directory"))
+	fmt.Println()
+	fmt.Println(i18n.T("wizard.pdf_dir_prompt"))
+	pdfDir := c.promptDefault(i18n.T("prompt.dir_pdfs"), c.cfg.PDFDir)
+
+	fmt.Println()
 	fmt.Printf("=== %s ===\n", i18n.T("wizard.summary"))
 	fmt.Println()
 	fmt.Println(i18n.Tf("label.company", supplier.Name))
 	fmt.Println(i18n.Tf("label.address_short", supplier.Street, supplier.ZIP, supplier.City))
 	fmt.Println(i18n.Tf("label.ico", supplier.ICO))
 	fmt.Println(i18n.Tf("label.account", bankAcc.AccountNumber))
+	fmt.Println(i18n.Tf("label.pdf_dir", pdfDir))
 	fmt.Println()
 
 	if !c.confirm(i18n.T("confirm.save_data")) {
@@ -102,6 +109,12 @@ func (c *CLI) firstRunWizard() error {
 	bankAcc.SupplierID = supplier.ID
 	if err := c.bankAccs.Create(bankAcc); err != nil {
 		return fmt.Errorf(i18n.T("error.save_account_failed"), err)
+	}
+
+	// Save PDF directory if changed from default
+	if pdfDir != c.cfg.PDFDir {
+		c.settings.Set("dir.pdfs", pdfDir)
+		c.cfg.PDFDir = pdfDir
 	}
 
 	c.currentSupp = supplier.ID

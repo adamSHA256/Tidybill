@@ -239,7 +239,10 @@ var messagesCS = map[string]string{
 	"wizard.setup_prompt":     "Pojďme nastavit váš první firemní profil.",
 	"wizard.supplier_details": "Údaje dodavatele (vaše firma)",
 	"wizard.bank_account":     "Bankovní účet",
+	"wizard.pdf_directory":    "Výstup PDF",
+	"wizard.pdf_dir_prompt":   "Kam se mají ukládat vygenerované PDF faktury?",
 	"wizard.summary":          "Souhrn",
+	"label.pdf_dir":           "PDF:      %s",
 
 	// ── Settings ────────────────────────────────────────────────────────
 	"settings.change_language":  "Změnit jazyk aplikace",
