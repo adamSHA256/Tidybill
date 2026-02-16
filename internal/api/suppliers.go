@@ -130,6 +130,14 @@ func (s *Server) createBankAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Clear existing defaults for this currency before creating
+	if ba.IsDefault {
+		if err := s.bankAccounts.ClearDefaultsForCurrency(supplierID, ba.Currency); err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
+
 	if err := s.bankAccounts.Create(ba); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -315,6 +323,8 @@ func (s *Server) updateBankAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	wasDefault := existing.IsDefault
+
 	if err := readJSON(r, existing); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid JSON: "+err.Error())
 		return
@@ -324,6 +334,11 @@ func (s *Server) updateBankAccount(w http.ResponseWriter, r *http.Request) {
 	if existing.QRType != "" && !validQRTypes[existing.QRType] {
 		writeError(w, http.StatusBadRequest, "invalid qr_type, must be one of: spayd, pay_by_square, epc, none")
 		return
+	}
+
+	// Clear existing defaults for this currency when setting a new default
+	if existing.IsDefault && !wasDefault {
+		s.bankAccounts.ClearDefaultsForCurrency(existing.SupplierID, existing.Currency)
 	}
 
 	if err := s.bankAccounts.Update(existing); err != nil {

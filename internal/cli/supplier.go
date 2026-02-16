@@ -319,7 +319,10 @@ func (c *CLI) addBankAccount(supplierID string) {
 	}
 
 	if acc.IsDefault && len(existing) > 0 {
-		c.bankAccs.ClearDefaultsForCurrency(supplierID, acc.Currency)
+		if err := c.bankAccs.ClearDefaultsForCurrency(supplierID, acc.Currency); err != nil {
+			c.printError(err.Error())
+			return
+		}
 	}
 
 	if err := c.bankAccs.Create(acc); err != nil {

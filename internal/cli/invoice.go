@@ -172,11 +172,33 @@ func (c *CLI) createInvoice() {
 	invoice.InvoiceNumber = invNumber
 	invoice.VariableSymbol = repository.GenerateVariableSymbol(invNumber)
 	invoice.Currency = bankAcc.Currency
-	invoice.DueDate = time.Now().AddDate(0, 0, customer.DefaultDueDays)
+
+	// Due date: use customer default, fall back to global setting
+	dueDays := customer.DefaultDueDays
+	if dueDays == 0 {
+		dueDays = c.getDefaultDueDaysInt()
+	}
+	invoice.DueDate = time.Now().AddDate(0, 0, dueDays)
 
 	fmt.Println()
 	fmt.Println(i18n.Tf("label.invoice_number", invoice.InvoiceNumber))
 	fmt.Println(i18n.Tf("label.customer_short", customer.Name))
+
+	// Allow user to change currency (default from bank account)
+	invoice.Currency = c.promptDefault(i18n.T("prompt.currency"), bankAcc.Currency)
+
+	// Allow user to change issue date (default: today)
+	issueDateStr := c.promptDefault(i18n.T("prompt.issue_date_confirm"), invoice.IssueDate.Format("02.01.2006"))
+	if t, err := time.Parse("02.01.2006", issueDateStr); err == nil {
+		invoice.IssueDate = t
+		invoice.TaxableDate = t
+	}
+
+	// Allow user to change due date
+	dueDateStr := c.promptDefault(i18n.T("prompt.due_date_confirm"), invoice.DueDate.Format("02.01.2006"))
+	if t, err := time.Parse("02.01.2006", dueDateStr); err == nil {
+		invoice.DueDate = t
+	}
 	fmt.Println(i18n.Tf("label.due_date_short", invoice.DueDate.Format("02.01.2006")))
 	fmt.Println()
 
@@ -1065,7 +1087,11 @@ func (c *CLI) createFromExisting() {
 	newInv.PaymentMethod = sourceInv.PaymentMethod
 	newInv.ExchangeRate = sourceInv.ExchangeRate
 	newInv.Language = sourceInv.Language
-	newInv.DueDate = time.Now().AddDate(0, 0, customer.DefaultDueDays)
+	dupDueDays := customer.DefaultDueDays
+	if dupDueDays == 0 {
+		dupDueDays = c.getDefaultDueDaysInt()
+	}
+	newInv.DueDate = time.Now().AddDate(0, 0, dupDueDays)
 	newInv.Notes = sourceInv.Notes
 
 	// Deep-copy items (clear IDs for new UUIDs)
@@ -1101,7 +1127,11 @@ func (c *CLI) createFromExisting() {
 		if newCust != nil {
 			newInv.CustomerID = newCust.ID
 			customer = newCust
-			newInv.DueDate = time.Now().AddDate(0, 0, customer.DefaultDueDays)
+			editDueDays := customer.DefaultDueDays
+			if editDueDays == 0 {
+				editDueDays = c.getDefaultDueDaysInt()
+			}
+			newInv.DueDate = time.Now().AddDate(0, 0, editDueDays)
 		}
 
 		dueDateStr := c.promptDefault(i18n.T("prompt.new_due_date"), newInv.DueDate.Format("02.01.2006"))

@@ -12,21 +12,56 @@ import {
   TextInput,
   Button,
   Pill,
+  Modal,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
-import { api, type Unit } from '../api/client'
+import { useNavigate } from 'react-router-dom'
+import { api, type Unit, type PDFTemplate } from '../api/client'
 import { useT } from '../i18n'
 
 const langOptions = [
-  { value: 'cs', label: 'Cestina' },
-  { value: 'sk', label: 'Slovencina' },
+  { value: 'cs', label: 'Čeština' },
+  { value: 'sk', label: 'Slovenčina' },
   { value: 'en', label: 'English' },
 ]
 
+const BASE_CURRENCIES = ['CZK', 'EUR', 'USD', 'GBP', 'PLN', 'CHF']
+const ADD_CURRENCY = '__add_currency__'
+
+interface DashboardWidgets {
+  revenue: boolean
+  unpaid: boolean
+  customers: boolean
+  invoices_month: boolean
+  overdue: boolean
+  recent: boolean
+  quick_actions: boolean
+}
+
+const defaultWidgets: DashboardWidgets = {
+  revenue: true,
+  unpaid: true,
+  customers: true,
+  invoices_month: true,
+  overdue: true,
+  recent: true,
+  quick_actions: true,
+}
+
+function parseWidgets(raw?: string): DashboardWidgets {
+  if (!raw) return { ...defaultWidgets }
+  try {
+    return { ...defaultWidgets, ...JSON.parse(raw) }
+  } catch {
+    return { ...defaultWidgets }
+  }
+}
+
 export function Settings() {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const { t, setLang } = useT()
 
   const { data: settings, isLoading } = useQuery({
@@ -34,9 +69,15 @@ export function Settings() {
     queryFn: api.getSettings,
   })
 
+  const { data: templates } = useQuery({
+    queryKey: ['templates'],
+    queryFn: api.getTemplates,
+  })
+
   const [dirLogos, setDirLogos] = useState('')
   const [dirPdfs, setDirPdfs] = useState('')
   const [dirPreviews, setDirPreviews] = useState('')
+  const [localCurrency, setLocalCurrency] = useState('')
   const [newUnitName, setNewUnitName] = useState('')
 
   const { data: units } = useQuery({
@@ -45,12 +86,17 @@ export function Settings() {
   })
 
   const [localUnits, setLocalUnits] = useState<Unit[]>([])
+  const [dashWidgets, setDashWidgets] = useState<DashboardWidgets>(defaultWidgets)
+  const [currencyModalOpen, setCurrencyModalOpen] = useState(false)
+  const [newCurrencyCode, setNewCurrencyCode] = useState('')
 
   useEffect(() => {
     if (settings) {
       setDirLogos(settings.dir_logos || '')
       setDirPdfs(settings.dir_pdfs || '')
       setDirPreviews(settings.dir_previews || '')
+      setLocalCurrency(settings.default_currency || 'CZK')
+      setDashWidgets(parseWidgets(settings.dashboard_widgets))
     }
   }, [settings])
 
@@ -88,6 +134,14 @@ export function Settings() {
 
   const comingSoonBadge = <Badge size="xs" variant="light" color="gray">{t('settings.coming_soon')}</Badge>
 
+  const defaultTemplate = templates?.find((tmpl: PDFTemplate) => tmpl.is_default)
+
+  const handleWidgetToggle = (key: keyof DashboardWidgets, checked: boolean) => {
+    const next = { ...dashWidgets, [key]: checked }
+    setDashWidgets(next)
+    updateMutation.mutate({ dashboard_widgets: JSON.stringify(next) })
+  }
+
   return (
     <Stack gap="lg">
       <div>
@@ -105,16 +159,28 @@ export function Settings() {
             onChange={(v) => { if (v) setLang(v as 'cs' | 'sk' | 'en') }}
             w={300}
           />
-          <Group gap="xs">
-            <Select
-              label={t('settings.default_currency')}
-              data={['CZK', 'EUR', 'USD']}
-              defaultValue="CZK"
-              w={300}
-              disabled
-            />
-            {comingSoonBadge}
-          </Group>
+          <Select
+            label={t('settings.default_currency')}
+            data={[
+              ...([...new Set([...BASE_CURRENCIES, ...(() => { try { return JSON.parse(settings?.custom_currencies || '[]') } catch { return [] } })()])])
+                .map((c) => ({ value: c, label: c })),
+              { value: ADD_CURRENCY, label: `+ ${t('invoice.add_currency')}` },
+            ]}
+            value={localCurrency}
+            onChange={(v) => {
+              if (v === ADD_CURRENCY) {
+                setNewCurrencyCode('')
+                setCurrencyModalOpen(true)
+                return
+              }
+              if (v) {
+                setLocalCurrency(v)
+                updateMutation.mutate({ default_currency: v })
+              }
+            }}
+            searchable
+            w={300}
+          />
           <Group gap="xs">
             <Select
               label={t('settings.date_format')}
@@ -123,6 +189,33 @@ export function Settings() {
               w={300}
               disabled
             />
+            {comingSoonBadge}
+          </Group>
+        </Stack>
+      </Paper>
+
+      <Paper p="md" radius="md" withBorder>
+        <Text fw={500} mb="md">{t('settings.invoices')}</Text>
+        <Stack gap="md">
+          <Group gap="xs">
+            <Select
+              label={t('settings.default_vat')}
+              data={['0%', '12%', '21%']}
+              defaultValue="21%"
+              w={300}
+              disabled
+            />
+            {comingSoonBadge}
+          </Group>
+          <Select
+            label={t('settings.default_due')}
+            data={['7', '14', '30', '60']}
+            value={settings?.default_due_days || '14'}
+            onChange={(v) => { if (v) updateMutation.mutate({ default_due_days: v }) }}
+            w={300}
+          />
+          <Group>
+            <Switch label={t('settings.auto_number')} defaultChecked disabled />
             {comingSoonBadge}
           </Group>
         </Stack>
@@ -229,52 +322,99 @@ export function Settings() {
       </Paper>
 
       <Paper p="md" radius="md" withBorder>
-        <Group gap="xs" mb="md">
-          <Text fw={500}>{t('settings.invoices')}</Text>
-          {comingSoonBadge}
-        </Group>
-        <Stack gap="md">
-          <Select
-            label={t('settings.default_vat')}
-            data={['0%', '12%', '21%']}
-            defaultValue="21%"
-            w={300}
-            disabled
+        <Text fw={500} mb="md">{t('settings.dashboard')}</Text>
+        <Text c="dimmed" size="sm" mb="md">{t('settings.dashboard_desc')}</Text>
+        <Stack gap="sm">
+          <Switch
+            label={t('dashboard.total_revenue')}
+            checked={dashWidgets.revenue}
+            onChange={(e) => handleWidgetToggle('revenue', e.currentTarget.checked)}
           />
-          <Select
-            label={t('settings.default_due')}
-            data={['7', '14', '30', '60']}
-            defaultValue="14"
-            w={300}
-            disabled
+          <Switch
+            label={t('dashboard.unpaid_invoices')}
+            checked={dashWidgets.unpaid}
+            onChange={(e) => handleWidgetToggle('unpaid', e.currentTarget.checked)}
           />
-          <Group>
-            <Switch label={t('settings.auto_number')} defaultChecked disabled />
-          </Group>
+          <Switch
+            label={t('dashboard.active_customers')}
+            checked={dashWidgets.customers}
+            onChange={(e) => handleWidgetToggle('customers', e.currentTarget.checked)}
+          />
+          <Switch
+            label={t('dashboard.invoices_month')}
+            checked={dashWidgets.invoices_month}
+            onChange={(e) => handleWidgetToggle('invoices_month', e.currentTarget.checked)}
+          />
+          <Switch
+            label={t('dashboard.overdue_title')}
+            checked={dashWidgets.overdue}
+            onChange={(e) => handleWidgetToggle('overdue', e.currentTarget.checked)}
+          />
+          <Switch
+            label={t('dashboard.recent_invoices')}
+            checked={dashWidgets.recent}
+            onChange={(e) => handleWidgetToggle('recent', e.currentTarget.checked)}
+          />
+          <Switch
+            label={t('dashboard.quick_actions')}
+            checked={dashWidgets.quick_actions}
+            onChange={(e) => handleWidgetToggle('quick_actions', e.currentTarget.checked)}
+          />
         </Stack>
       </Paper>
 
       <Paper p="md" radius="md" withBorder>
-        <Group gap="xs" mb="md">
-          <Text fw={500}>{t('settings.pdf_output')}</Text>
-          {comingSoonBadge}
-        </Group>
+        <Text fw={500} mb="md">{t('settings.pdf_output')}</Text>
         <Stack gap="md">
-          <Select
-            label={t('settings.default_template')}
-            data={['Classic', 'Modern', 'Minimal']}
-            defaultValue="Classic"
-            w={300}
-            disabled
-          />
-          <Group>
-            <Switch label={t('settings.include_qr')} defaultChecked disabled />
+          <Group gap="md">
+            <Text size="sm">{t('settings.default_template')}:</Text>
+            <Badge variant="light" color="blue" size="lg">
+              {defaultTemplate?.name || '—'}
+            </Badge>
           </Group>
-          <Group>
-            <Switch label={t('settings.include_logo')} defaultChecked disabled />
-          </Group>
+          <Text c="dimmed" size="sm">{t('settings.pdf_output_hint')}</Text>
+          <Button
+            w={250}
+            variant="light"
+            onClick={() => navigate('/templates')}
+          >
+            {t('settings.go_to_templates')}
+          </Button>
         </Stack>
       </Paper>
+
+      {/* Add currency modal */}
+      <Modal opened={currencyModalOpen} onClose={() => setCurrencyModalOpen(false)}
+        title={t('invoice.add_currency')} size="xs">
+        <Stack gap="md">
+          <TextInput label={t('invoice.currency_code')} placeholder="BTC"
+            value={newCurrencyCode} onChange={(e) => setNewCurrencyCode(e.currentTarget.value.toUpperCase())}
+            maxLength={10}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && newCurrencyCode.trim()) {
+                const code = newCurrencyCode.trim().toUpperCase()
+                const existing: string[] = (() => { try { return JSON.parse(settings?.custom_currencies || '[]') } catch { return [] } })()
+                const updated = [...new Set([...existing, code])]
+                updateMutation.mutate({ custom_currencies: JSON.stringify(updated), default_currency: code })
+                setLocalCurrency(code)
+                setCurrencyModalOpen(false)
+              }
+            }}
+          />
+          <Group justify="end">
+            <Button variant="default" onClick={() => setCurrencyModalOpen(false)}>{t('common.cancel')}</Button>
+            <Button disabled={!newCurrencyCode.trim()} onClick={() => {
+              const code = newCurrencyCode.trim().toUpperCase()
+              if (!code) return
+              const existing: string[] = (() => { try { return JSON.parse(settings?.custom_currencies || '[]') } catch { return [] } })()
+              const updated = [...new Set([...existing, code])]
+              updateMutation.mutate({ custom_currencies: JSON.stringify(updated), default_currency: code })
+              setLocalCurrency(code)
+              setCurrencyModalOpen(false)
+            }}>{t('common.save')}</Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   )
 }

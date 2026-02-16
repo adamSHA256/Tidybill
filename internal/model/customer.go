@@ -25,6 +25,6 @@ func NewCustomer() *Customer {
 	return &Customer{
 		Country:        "CZ",
 		DefaultVATRate: 0,
-		DefaultDueDays: 14,
+		DefaultDueDays: 0, // 0 = use global default from settings
 	}
 }

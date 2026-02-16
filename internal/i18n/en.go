@@ -79,7 +79,7 @@ var messagesEN = map[string]string{
 	"prompt.currency":            "Currency",
 	"prompt.region":              "Region (optional)",
 	"prompt.due_days":            "Due days",
-	"prompt.default_due_days":    "Default due days",
+	"prompt.default_due_days":    "Due days",
 	"prompt.notes":               "Notes",
 	"prompt.item_description":    "Item description",
 	"prompt.quantity":            "Quantity",
@@ -96,6 +96,8 @@ var messagesEN = map[string]string{
 	"prompt.search_name_ico":     "Search (name or company ID)",
 	"prompt.add_item":            "Add item:",
 	"prompt.invoice_notes":       "Invoice notes (printed on PDF)",
+	"prompt.due_date_confirm":    "Due date (DD.MM.YYYY)",
+	"prompt.issue_date_confirm":  "Issue date (DD.MM.YYYY)",
 
 	// ── Labels ──────────────────────────────────────────────────────────
 	"label.address":              "Address: %s, %s %s, %s",
@@ -247,7 +249,14 @@ var messagesEN = map[string]string{
 	// ── Settings ────────────────────────────────────────────────────────
 	"settings.change_language":  "Change application language",
 	"settings.current_language": "Current language:",
+	"settings.current_currency": "Default currency:",
+	"settings.current_due_days": "Default due days:",
+	"settings.change_currency":  "Change default currency",
+	"settings.change_due_days":  "Change default due days",
+	"settings.days":             "days",
 	"success.language_changed":  "Language changed to: %s",
+	"success.currency_changed":  "Default currency changed to: %s",
+	"success.due_days_changed":  "Default due days changed to: %s days",
 
 	// ── Defaults ────────────────────────────────────────────────────────
 	"default.main_account": "Main account",

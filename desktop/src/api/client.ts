@@ -350,6 +350,10 @@ export interface AppSettings {
   dir_logos?: string
   dir_pdfs?: string
   dir_previews?: string
+  default_currency?: string
+  default_due_days?: string
+  dashboard_widgets?: string
+  custom_currencies?: string
 }
 
 export interface Unit {

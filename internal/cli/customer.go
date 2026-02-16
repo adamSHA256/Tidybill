@@ -85,7 +85,7 @@ func (c *CLI) createCustomer() *model.Customer {
 	cust.DIC = c.prompt(i18n.T("prompt.dic"))
 	cust.Email = c.prompt(i18n.T("prompt.email"))
 	cust.Phone = c.prompt(i18n.T("prompt.phone"))
-	cust.DefaultDueDays = c.promptInt(i18n.T("prompt.default_due_days"), 14)
+	cust.DefaultDueDays = c.promptInt(i18n.T("prompt.default_due_days"), c.getDefaultDueDaysInt())
 	cust.Notes = c.prompt(i18n.T("prompt.notes"))
 
 	if err := c.customers.Create(cust); err != nil {

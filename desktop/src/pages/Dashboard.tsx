@@ -18,6 +18,35 @@ import { useQuery } from '@tanstack/react-query'
 import { api, formatMoney, type Invoice } from '../api/client'
 import { useT } from '../i18n'
 
+interface DashboardWidgets {
+  revenue: boolean
+  unpaid: boolean
+  customers: boolean
+  invoices_month: boolean
+  overdue: boolean
+  recent: boolean
+  quick_actions: boolean
+}
+
+const defaultWidgets: DashboardWidgets = {
+  revenue: true,
+  unpaid: true,
+  customers: true,
+  invoices_month: true,
+  overdue: true,
+  recent: true,
+  quick_actions: true,
+}
+
+function parseWidgets(raw?: string): DashboardWidgets {
+  if (!raw) return { ...defaultWidgets }
+  try {
+    return { ...defaultWidgets, ...JSON.parse(raw) }
+  } catch {
+    return { ...defaultWidgets }
+  }
+}
+
 const statusColors: Record<string, string> = {
   draft: 'gray',
   created: 'blue',
@@ -31,6 +60,13 @@ const statusColors: Record<string, string> = {
 export function Dashboard() {
   const navigate = useNavigate()
   const { t } = useT()
+
+  const { data: settings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: api.getSettings,
+  })
+
+  const widgets = parseWidgets(settings?.dashboard_widgets)
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['dashboard-stats'],
@@ -62,85 +98,97 @@ export function Dashboard() {
       </div>
 
       <SimpleGrid cols={{ base: 1, xs: 2, md: 4 }}>
-        <Paper p="md" radius="md" withBorder>
-          <Text size="xs" c="dimmed">{t('dashboard.total_revenue')}</Text>
-          <Title order={2} mt={4}>{formatMoney(stats?.total_revenue_month || 0)}</Title>
-        </Paper>
+        {widgets.revenue && (
+          <Paper p="md" radius="md" withBorder>
+            <Text size="xs" c="dimmed">{t('dashboard.total_revenue')}</Text>
+            <Title order={2} mt={4}>{formatMoney(stats?.total_revenue_month || 0)}</Title>
+          </Paper>
+        )}
 
-        <Paper p="md" radius="md" withBorder>
-          <Text size="xs" c="dimmed">{t('dashboard.unpaid_invoices')}</Text>
-          <Title order={2} mt={4} c={stats?.unpaid_count ? 'red' : undefined}>
-            {stats?.unpaid_count || 0}
-          </Title>
-          {(stats?.unpaid_amount || 0) > 0 && (
-            <Text size="xs" c="red" mt={4}>{t('dashboard.outstanding').replace('{amount}', formatMoney(stats!.unpaid_amount))}</Text>
-          )}
-        </Paper>
+        {widgets.unpaid && (
+          <Paper p="md" radius="md" withBorder>
+            <Text size="xs" c="dimmed">{t('dashboard.unpaid_invoices')}</Text>
+            <Title order={2} mt={4} c={stats?.unpaid_count ? 'red' : undefined}>
+              {stats?.unpaid_count || 0}
+            </Title>
+            {(stats?.unpaid_amount || 0) > 0 && (
+              <Text size="xs" c="red" mt={4}>{t('dashboard.outstanding').replace('{amount}', formatMoney(stats!.unpaid_amount))}</Text>
+            )}
+          </Paper>
+        )}
 
-        <Paper p="md" radius="md" withBorder>
-          <Text size="xs" c="dimmed">{t('dashboard.active_customers')}</Text>
-          <Title order={2} mt={4}>{stats?.active_customers || 0}</Title>
-        </Paper>
+        {widgets.customers && (
+          <Paper p="md" radius="md" withBorder>
+            <Text size="xs" c="dimmed">{t('dashboard.active_customers')}</Text>
+            <Title order={2} mt={4}>{stats?.active_customers || 0}</Title>
+          </Paper>
+        )}
 
-        <Paper p="md" radius="md" withBorder>
-          <Text size="xs" c="dimmed">{t('dashboard.invoices_month')}</Text>
-          <Title order={2} mt={4}>{stats?.invoices_this_month || 0}</Title>
-        </Paper>
+        {widgets.invoices_month && (
+          <Paper p="md" radius="md" withBorder>
+            <Text size="xs" c="dimmed">{t('dashboard.invoices_month')}</Text>
+            <Title order={2} mt={4}>{stats?.invoices_this_month || 0}</Title>
+          </Paper>
+        )}
       </SimpleGrid>
 
       <SimpleGrid cols={{ base: 1, md: 2 }}>
-        <Paper p="md" radius="md" withBorder>
-          <Group justify="space-between" mb="md">
-            <Text fw={500}>{t('dashboard.recent_invoices')}</Text>
-            <Button variant="subtle" size="xs" onClick={() => navigate('/invoices')}>
-              {t('dashboard.view_all')}
-            </Button>
-          </Group>
+        {widgets.recent && (
+          <Paper p="md" radius="md" withBorder>
+            <Group justify="space-between" mb="md">
+              <Text fw={500}>{t('dashboard.recent_invoices')}</Text>
+              <Button variant="subtle" size="xs" onClick={() => navigate('/invoices')}>
+                {t('dashboard.view_all')}
+              </Button>
+            </Group>
 
-          {recentInvoices.length === 0 ? (
-            <Text c="dimmed" size="sm" ta="center" py="xl">{t('dashboard.no_invoices')}</Text>
-          ) : (
-            <Table>
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>{t('invoice.number')}</Table.Th>
-                  <Table.Th>{t('invoice.customer')}</Table.Th>
-                  <Table.Th>{t('invoice.amount')}</Table.Th>
-                  <Table.Th>{t('invoice.status')}</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {recentInvoices.map((inv) => (
-                  <Table.Tr key={inv.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/invoices/${inv.id}`)}>
-                    <Table.Td fw={600} ff="monospace" fz="sm">{inv.invoice_number}</Table.Td>
-                    <Table.Td fz="sm">{inv.customer?.name || '—'}</Table.Td>
-                    <Table.Td fz="sm">{formatMoney(inv.total)}</Table.Td>
-                    <Table.Td>
-                      <Badge color={statusColors[inv.status]} size="sm" variant="light">
-                        {t(`status.${inv.status}`)}
-                      </Badge>
-                    </Table.Td>
+            {recentInvoices.length === 0 ? (
+              <Text c="dimmed" size="sm" ta="center" py="xl">{t('dashboard.no_invoices')}</Text>
+            ) : (
+              <Table>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>{t('invoice.number')}</Table.Th>
+                    <Table.Th>{t('invoice.customer')}</Table.Th>
+                    <Table.Th>{t('invoice.amount')}</Table.Th>
+                    <Table.Th>{t('invoice.status')}</Table.Th>
                   </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          )}
-        </Paper>
+                </Table.Thead>
+                <Table.Tbody>
+                  {recentInvoices.map((inv) => (
+                    <Table.Tr key={inv.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/invoices/${inv.id}`)}>
+                      <Table.Td fw={600} ff="monospace" fz="sm">{inv.invoice_number}</Table.Td>
+                      <Table.Td fz="sm">{inv.customer?.name || '—'}</Table.Td>
+                      <Table.Td fz="sm">{formatMoney(inv.total)}</Table.Td>
+                      <Table.Td>
+                        <Badge color={statusColors[inv.status]} size="sm" variant="light">
+                          {t(`status.${inv.status}`)}
+                        </Badge>
+                      </Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+              </Table>
+            )}
+          </Paper>
+        )}
 
         <Stack gap="md">
-          <Paper p="md" radius="md" withBorder>
-            <Text fw={500} mb="md">{t('dashboard.quick_actions')}</Text>
-            <Stack gap="sm">
-              <Button fullWidth leftSection={<IconPlus size={16} />} onClick={() => navigate('/invoices/new')}>
-                {t('dashboard.create_invoice')}
-              </Button>
-              <Button fullWidth variant="default" onClick={() => navigate('/customers')}>
-                {t('dashboard.manage_customers')}
-              </Button>
-            </Stack>
-          </Paper>
+          {widgets.quick_actions && (
+            <Paper p="md" radius="md" withBorder>
+              <Text fw={500} mb="md">{t('dashboard.quick_actions')}</Text>
+              <Stack gap="sm">
+                <Button fullWidth leftSection={<IconPlus size={16} />} onClick={() => navigate('/invoices/new')}>
+                  {t('dashboard.create_invoice')}
+                </Button>
+                <Button fullWidth variant="default" onClick={() => navigate('/customers')}>
+                  {t('dashboard.manage_customers')}
+                </Button>
+              </Stack>
+            </Paper>
+          )}
 
-          {overdueInvoices.length > 0 && (
+          {widgets.overdue && overdueInvoices.length > 0 && (
             <Alert
               variant="light"
               color="red"

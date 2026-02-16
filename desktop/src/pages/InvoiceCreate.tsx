@@ -19,17 +19,21 @@ import {
   Modal,
   Switch,
   Textarea,
+  Alert,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { DateInput } from '@mantine/dates'
-import { IconTrash, IconPlus, IconPackage } from '@tabler/icons-react'
+import { IconTrash, IconPlus, IconPackage, IconAlertTriangle } from '@tabler/icons-react'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, formatMoney, type Supplier, type BankAccount, type Item, type CustomerItem } from '../api/client'
 import { useT } from '../i18n'
 
+const BASE_CURRENCIES = ['CZK', 'EUR', 'USD', 'GBP', 'PLN', 'CHF']
+
 const CREATE_NEW = '__create_new__'
+const ADD_CURRENCY = '__add_currency__'
 
 interface ItemForm {
   item_id: string
@@ -47,14 +51,25 @@ export function InvoiceCreate() {
   const queryClient = useQueryClient()
   const { t } = useT()
 
+  const { data: settings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: api.getSettings,
+  })
+
+  const globalDueDays = parseInt(settings?.default_due_days || '14', 10) || 14
+  const globalCurrency = settings?.default_currency || 'CZK'
+  const customCurrencies: string[] = (() => {
+    try { return JSON.parse(settings?.custom_currencies || '[]') } catch { return [] }
+  })()
+
   const [supplierId, setSupplierId] = useState<string | null>(null)
   const [customerId, setCustomerId] = useState<string | null>(null)
   const [bankAccountId, setBankAccountId] = useState<string | null>(null)
   const [issueDate, setIssueDate] = useState<string | null>(new Date().toISOString().slice(0, 10))
-  const [dueDate, setDueDate] = useState<string | null>(
-    new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10)
-  )
-  const [currency, setCurrency] = useState('CZK')
+  const [dueDate, setDueDate] = useState<string | null>(null)
+  const [dueDateInitialized, setDueDateInitialized] = useState(false)
+  const [currency, setCurrency] = useState('')
+  const [currencyInitialized, setCurrencyInitialized] = useState(false)
   const [invoiceNumber, setInvoiceNumber] = useState('')
   const [notes, setNotes] = useState('')
   const [items, setItems] = useState<ItemForm[]>([{ ...emptyItem, unit: 'hod' }])
@@ -63,6 +78,9 @@ export function InvoiceCreate() {
   const [supplierModalOpen, setSupplierModalOpen] = useState(false)
   const [customerModalOpen, setCustomerModalOpen] = useState(false)
   const [bankModalOpen, setBankModalOpen] = useState(false)
+  const [currencyModalOpen, setCurrencyModalOpen] = useState(false)
+  const [newCurrencyCode, setNewCurrencyCode] = useState('')
+  const [currencyTarget, setCurrencyTarget] = useState<'invoice' | 'bank'>('invoice')
 
   // Supplier form state
   const [sName, setSName] = useState('')
@@ -138,6 +156,23 @@ export function InvoiceCreate() {
     }
   }, [nextNumberData])
 
+  // Initialize currency from settings (will be overridden by bank account below)
+  useEffect(() => {
+    if (!currencyInitialized && settings) {
+      setCurrency(globalCurrency)
+      setCurrencyInitialized(true)
+    }
+  }, [settings, currencyInitialized, globalCurrency])
+
+  // Initialize due date from settings (or customer default)
+  useEffect(() => {
+    if (!dueDateInitialized && settings) {
+      const days = globalDueDays
+      setDueDate(new Date(Date.now() + days * 86400000).toISOString().slice(0, 10))
+      setDueDateInitialized(true)
+    }
+  }, [settings, dueDateInitialized, globalDueDays])
+
   // Catalog queries
   const { data: customerItems } = useQuery({
     queryKey: ['customer-items', customerId],
@@ -153,6 +188,13 @@ export function InvoiceCreate() {
   // Auto-select default bank account
   const defaultBank = bankAccounts?.find((b: BankAccount) => b.is_default)
   const selectedBankId = bankAccountId || defaultBank?.id || null
+
+  // Auto-set currency from default bank account when it loads
+  useEffect(() => {
+    if (defaultBank && !bankAccountId) {
+      setCurrency(defaultBank.currency)
+    }
+  }, [defaultBank?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectedSupplier = suppliers?.find((s) => s.id === selectedSupplierId)
   const selectedCustomer = customers?.find((c) => c.id === customerId)
@@ -211,6 +253,41 @@ export function InvoiceCreate() {
       notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
     },
   })
+
+  const updateSettingsMutation = useMutation({
+    mutationFn: api.updateSettings,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['settings'] }),
+  })
+
+  // Build currency select data: base + custom + "Add new"
+  const allCurrencies = [...new Set([...BASE_CURRENCIES, ...customCurrencies])]
+  const currencyData = [
+    ...allCurrencies.map((c) => ({ value: c, label: c })),
+    { value: ADD_CURRENCY, label: `+ ${t('invoice.add_currency')}` },
+  ]
+
+  const handleCurrencySelect = (v: string | null, target: 'invoice' | 'bank') => {
+    if (v === ADD_CURRENCY) {
+      setNewCurrencyCode('')
+      setCurrencyTarget(target)
+      setCurrencyModalOpen(true)
+      return
+    }
+    if (target === 'invoice') setCurrency(v || globalCurrency)
+    else setBCurrency(v || 'CZK')
+  }
+
+  const handleAddCurrency = () => {
+    const code = newCurrencyCode.trim().toUpperCase()
+    if (!code) return
+    // Save to custom currencies
+    const updated = [...new Set([...customCurrencies, code])]
+    updateSettingsMutation.mutate({ custom_currencies: JSON.stringify(updated) })
+    // Apply to the target field
+    if (currencyTarget === 'invoice') setCurrency(code)
+    else setBCurrency(code)
+    setCurrencyModalOpen(false)
+  }
 
   // Modal helpers
   const openSupplierModal = () => {
@@ -367,6 +444,10 @@ export function InvoiceCreate() {
       return
     }
     setCustomerId(v)
+    // Recalculate due date from customer's default_due_days or global setting
+    const cust = customers?.find((c) => c.id === v)
+    const days = (cust && cust.default_due_days > 0) ? cust.default_due_days : globalDueDays
+    setDueDate(new Date(Date.now() + days * 86400000).toISOString().slice(0, 10))
   }
 
   const handleBankSelect = (v: string | null) => {
@@ -375,7 +456,16 @@ export function InvoiceCreate() {
       return
     }
     setBankAccountId(v)
+    // Auto-set currency from selected bank account
+    const acc = bankAccounts?.find((b) => b.id === v)
+    if (acc) {
+      setCurrency(acc.currency)
+    }
   }
+
+  // Currency mismatch detection
+  const selectedBank = bankAccounts?.find((b) => b.id === selectedBankId)
+  const currencyMismatch = selectedBank && currency && selectedBank.currency !== currency
 
   return (
     <Stack gap="lg">
@@ -396,8 +486,13 @@ export function InvoiceCreate() {
           <TextInput label={t('invoice.invoice_number')} placeholder={t('invoice.invoice_number_placeholder')} value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.currentTarget.value)} description={invoiceNumber ? t('invoice.invoice_number_auto_desc') : t('invoice.invoice_number_desc')} />
           <DateInput label={t('invoice.issue_date')} valueFormat="DD.MM.YYYY" value={issueDate} onChange={setIssueDate} clearable />
           <DateInput label={t('invoice.due_date')} valueFormat="DD.MM.YYYY" value={dueDate} onChange={setDueDate} clearable />
-          <Select label={t('invoice.currency')} data={['CZK', 'EUR', 'USD']} value={currency} onChange={(v) => setCurrency(v || 'CZK')} />
+          <Select label={t('invoice.currency')} data={currencyData} value={currency} onChange={(v) => handleCurrencySelect(v, 'invoice')} searchable />
         </SimpleGrid>
+        {currencyMismatch && (
+          <Alert variant="light" color="orange" mt="sm" icon={<IconAlertTriangle size={16} />}>
+            {t('invoice.currency_mismatch').replace('{bank}', selectedBank!.currency).replace('{invoice}', currency)}
+          </Alert>
+        )}
       </Paper>
 
       <SimpleGrid cols={{ base: 1, md: 2 }}>
@@ -702,12 +797,28 @@ export function InvoiceCreate() {
           <Group grow>
             <TextInput label={t('bank_account.swift_label')} value={bSwift}
               onChange={(e) => setBSwift(e.currentTarget.value)} />
-            <Select label={t('bank_account.currency_label')} data={['CZK', 'EUR', 'USD']}
-              value={bCurrency} onChange={(v) => setBCurrency(v || 'CZK')} />
+            <Select label={t('bank_account.currency_label')} data={currencyData}
+              value={bCurrency} onChange={(v) => handleCurrencySelect(v, 'bank')} searchable />
           </Group>
           <Group justify="end" mt="md">
             <Button variant="default" onClick={() => setBankModalOpen(false)}>{t('common.cancel')}</Button>
             <Button onClick={handleSaveBank} loading={createBankMutation.isPending}>{t('common.create')}</Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      {/* Add currency modal */}
+      <Modal opened={currencyModalOpen} onClose={() => setCurrencyModalOpen(false)}
+        title={t('invoice.add_currency')} size="xs">
+        <Stack gap="md">
+          <TextInput label={t('invoice.currency_code')} placeholder="BTC"
+            value={newCurrencyCode} onChange={(e) => setNewCurrencyCode(e.currentTarget.value.toUpperCase())}
+            maxLength={10}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleAddCurrency() }}
+          />
+          <Group justify="end">
+            <Button variant="default" onClick={() => setCurrencyModalOpen(false)}>{t('common.cancel')}</Button>
+            <Button onClick={handleAddCurrency} disabled={!newCurrencyCode.trim()}>{t('common.save')}</Button>
           </Group>
         </Stack>
       </Modal>

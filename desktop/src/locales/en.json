@@ -325,6 +325,11 @@
   "notify.bank_account_created": "Bank account created",
   "notify.bank_account_created_msg": "Bank account was created successfully",
 
+  "settings.dashboard": "Dashboard",
+  "settings.dashboard_desc": "Choose which widgets to display on the dashboard",
+  "settings.pdf_output_hint": "Logo, QR code and other settings are configured per template.",
+  "settings.go_to_templates": "Manage PDF templates",
+
   "settings.units": "Units",
   "settings.units_desc": "Manage units for invoice items",
   "settings.add_unit": "Add unit",
@@ -337,6 +342,10 @@
   "invoice.supplier": "Supplier",
   "invoice.filter_supplier": "Filter by supplier",
   "invoice.all_suppliers": "All suppliers",
+
+  "invoice.currency_mismatch": "Bank account uses {bank}, but invoice currency is {invoice}. Consider changing the account or currency.",
+  "invoice.add_currency": "Add currency",
+  "invoice.currency_code": "Currency code",
 
   "health.disconnected_title": "Connection Lost",
   "health.disconnected_message": "The backend is not responding. Please restart TidyBill."

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -153,6 +154,24 @@ func (s *Server) createInvoice(w http.ResponseWriter, r *http.Request) {
 	inv.VariableSymbol = repository.GenerateVariableSymbol(invNumber)
 	inv.Notes = req.Notes
 
+	// Apply global defaults from settings
+	if defaultCurrency, _ := s.settings.Get("default.currency"); defaultCurrency != "" {
+		inv.Currency = defaultCurrency
+	}
+	if defaultDueDays, _ := s.settings.Get("default.due_days"); defaultDueDays != "" {
+		var days int
+		if _, err := fmt.Sscanf(defaultDueDays, "%d", &days); err == nil && days > 0 {
+			inv.DueDate = time.Now().AddDate(0, 0, days)
+		}
+	}
+
+	// Override with customer-specific due days if set
+	customer, _ := s.customers.GetByID(req.CustomerID)
+	if customer != nil && customer.DefaultDueDays > 0 {
+		inv.DueDate = time.Now().AddDate(0, 0, customer.DefaultDueDays)
+	}
+
+	// Override with explicit request values
 	if req.Currency != "" {
 		inv.Currency = req.Currency
 	}

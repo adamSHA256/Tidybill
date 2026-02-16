@@ -79,7 +79,7 @@ var messagesCS = map[string]string{
 	"prompt.currency":            "Měna",
 	"prompt.region":              "Kraj (volitelné)",
 	"prompt.due_days":            "Splatnost (dny)",
-	"prompt.default_due_days":    "Výchozí splatnost (dny)",
+	"prompt.default_due_days":    "Splatnost (dny)",
 	"prompt.notes":               "Poznámky",
 	"prompt.item_description":    "Popis položky",
 	"prompt.quantity":            "Množství",
@@ -96,6 +96,8 @@ var messagesCS = map[string]string{
 	"prompt.search_name_ico":     "Hledat (název nebo IČO)",
 	"prompt.add_item":            "Přidat položku:",
 	"prompt.invoice_notes":       "Poznámky k faktuře (tisknou se na PDF)",
+	"prompt.due_date_confirm":    "Splatnost (DD.MM.RRRR)",
+	"prompt.issue_date_confirm":  "Datum vystavení (DD.MM.RRRR)",
 
 	// ── Labels ──────────────────────────────────────────────────────────
 	"label.address":              "Adresa:  %s, %s %s, %s",
@@ -247,7 +249,14 @@ var messagesCS = map[string]string{
 	// ── Settings ────────────────────────────────────────────────────────
 	"settings.change_language":  "Změnit jazyk aplikace",
 	"settings.current_language": "Aktuální jazyk:",
+	"settings.current_currency": "Výchozí měna:",
+	"settings.current_due_days": "Výchozí splatnost:",
+	"settings.change_currency":  "Změnit výchozí měnu",
+	"settings.change_due_days":  "Změnit výchozí splatnost (dny)",
+	"settings.days":             "dní",
 	"success.language_changed":  "Jazyk změněn na: %s",
+	"success.currency_changed":  "Výchozí měna změněna na: %s",
+	"success.due_days_changed":  "Výchozí splatnost změněna na: %s dní",
 
 	// ── Defaults ────────────────────────────────────────────────────────
 	"default.main_account": "Hlavní účet",

@@ -75,6 +75,7 @@ func (c *CLI) firstRunWizard() error {
 	fmt.Println()
 
 	bankAcc := model.NewBankAccount("")
+	bankAcc.IsDefault = true
 	bankAcc.Name = c.promptDefault(i18n.T("prompt.account_name"), i18n.T("default.main_account"))
 	bankAcc.AccountNumber = c.prompt(i18n.T("prompt.account_number"))
 	bankAcc.IBAN = c.prompt(i18n.T("prompt.iban"))

@@ -79,7 +79,7 @@ var messagesSK = map[string]string{
 	"prompt.currency":            "Mena",
 	"prompt.region":              "Kraj (voliteľné)",
 	"prompt.due_days":            "Splatnosť (dni)",
-	"prompt.default_due_days":    "Predvolená splatnosť (dni)",
+	"prompt.default_due_days":    "Splatnosť (dni)",
 	"prompt.notes":               "Poznámky",
 	"prompt.item_description":    "Popis položky",
 	"prompt.quantity":            "Množstvo",
@@ -96,6 +96,8 @@ var messagesSK = map[string]string{
 	"prompt.search_name_ico":     "Hľadať (názov alebo IČO)",
 	"prompt.add_item":            "Pridať položku:",
 	"prompt.invoice_notes":       "Poznámky k faktúre (tlačia sa na PDF)",
+	"prompt.due_date_confirm":    "Splatnosť (DD.MM.RRRR)",
+	"prompt.issue_date_confirm":  "Dátum vystavenia (DD.MM.RRRR)",
 
 	// ── Labels ──────────────────────────────────────────────────────────
 	"label.address":              "Adresa:  %s, %s %s, %s",
@@ -247,7 +249,14 @@ var messagesSK = map[string]string{
 	// ── Settings ────────────────────────────────────────────────────────
 	"settings.change_language":  "Zmeniť jazyk aplikácie",
 	"settings.current_language": "Aktuálny jazyk:",
+	"settings.current_currency": "Predvolená mena:",
+	"settings.current_due_days": "Predvolená splatnosť:",
+	"settings.change_currency":  "Zmeniť predvolenú menu",
+	"settings.change_due_days":  "Zmeniť predvolenú splatnosť (dni)",
+	"settings.days":             "dní",
 	"success.language_changed":  "Jazyk zmenený na: %s",
+	"success.currency_changed":  "Predvolená mena zmenená na: %s",
+	"success.due_days_changed":  "Predvolená splatnosť zmenená na: %s dní",
 
 	// ── Defaults ────────────────────────────────────────────────────────
 	"default.main_account": "Hlavný účet",

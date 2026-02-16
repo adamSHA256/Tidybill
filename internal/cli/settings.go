@@ -21,9 +21,18 @@ func (c *CLI) settingsMenu() {
 		fmt.Println()
 
 		currentLang := i18n.GetLang()
-		fmt.Printf("  %s %s\n\n", i18n.T("settings.current_language"), langName(currentLang))
+		fmt.Printf("  %s %s\n", i18n.T("settings.current_language"), langName(currentLang))
+
+		currency := c.getDefaultCurrency()
+		fmt.Printf("  %s %s\n", i18n.T("settings.current_currency"), currency)
+
+		dueDays := c.getDefaultDueDays()
+		fmt.Printf("  %s %s\n", i18n.T("settings.current_due_days"), dueDays)
+		fmt.Println()
 
 		fmt.Printf("  L) %s\n", i18n.T("settings.change_language"))
+		fmt.Printf("  M) %s\n", i18n.T("settings.change_currency"))
+		fmt.Printf("  S) %s\n", i18n.T("settings.change_due_days"))
 		fmt.Printf("  %s\n", i18n.T("action.change_directories"))
 		fmt.Printf("  U) %s\n", i18n.T("settings.manage_units"))
 		fmt.Printf("  %s\n", i18n.T("action.back"))
@@ -34,6 +43,10 @@ func (c *CLI) settingsMenu() {
 		switch strings.ToLower(choice) {
 		case "l":
 			c.changeLanguage()
+		case "m":
+			c.changeDefaultCurrency()
+		case "s":
+			c.changeDefaultDueDays()
 		case "d":
 			c.changeDirectories()
 		case "u":
@@ -294,6 +307,104 @@ func (c *CLI) manageUnits() {
 			return
 		}
 	}
+}
+
+func (c *CLI) getDefaultCurrency() string {
+	val, err := c.settings.Get("default.currency")
+	if err != nil || val == "" {
+		return "CZK"
+	}
+	return val
+}
+
+func (c *CLI) getDefaultDueDays() string {
+	val, err := c.settings.Get("default.due_days")
+	if err != nil || val == "" {
+		return "14"
+	}
+	return val
+}
+
+func (c *CLI) getDefaultDueDaysInt() int {
+	val := c.getDefaultDueDays()
+	n := 0
+	fmt.Sscanf(val, "%d", &n)
+	if n <= 0 {
+		return 14
+	}
+	return n
+}
+
+func (c *CLI) changeDefaultCurrency() {
+	c.clearScreen()
+	fmt.Printf("=== %s ===\n\n", i18n.T("settings.change_currency"))
+
+	currencies := []string{"CZK", "EUR", "USD", "GBP", "PLN", "CHF", "BTC"}
+	current := c.getDefaultCurrency()
+
+	for idx, cur := range currencies {
+		marker := "  "
+		if cur == current {
+			marker = "* "
+		}
+		fmt.Printf("  %s%d) %s\n", marker, idx+1, cur)
+	}
+	fmt.Printf("\n  %s\n\n", i18n.T("action.back"))
+
+	choice := c.prompt(i18n.T("prompt.choose_option"))
+
+	if choice == "0" || choice == "" {
+		return
+	}
+
+	idx := 0
+	fmt.Sscanf(choice, "%d", &idx)
+
+	var newCurrency string
+	if idx >= 1 && idx <= len(currencies) {
+		newCurrency = currencies[idx-1]
+	} else {
+		// Allow typing a custom currency code
+		newCurrency = strings.ToUpper(strings.TrimSpace(choice))
+	}
+
+	if newCurrency == "" {
+		return
+	}
+
+	c.settings.Set("default.currency", newCurrency)
+	c.printSuccess(i18n.Tf("success.currency_changed", newCurrency))
+	c.waitEnter()
+}
+
+func (c *CLI) changeDefaultDueDays() {
+	c.clearScreen()
+	fmt.Printf("=== %s ===\n\n", i18n.T("settings.change_due_days"))
+
+	options := []string{"7", "14", "30", "60"}
+	current := c.getDefaultDueDays()
+
+	for idx, opt := range options {
+		marker := "  "
+		if opt == current {
+			marker = "* "
+		}
+		fmt.Printf("  %s%d) %s %s\n", marker, idx+1, opt, i18n.T("settings.days"))
+	}
+	fmt.Printf("\n  %s\n\n", i18n.T("action.back"))
+
+	choice := c.prompt(i18n.T("prompt.choose_option"))
+
+	idx := 0
+	fmt.Sscanf(choice, "%d", &idx)
+	if idx < 1 || idx > len(options) {
+		return
+	}
+
+	newDays := options[idx-1]
+	c.settings.Set("default.due_days", newDays)
+	c.printSuccess(i18n.Tf("success.due_days_changed", newDays))
+	c.waitEnter()
 }
 
 func langName(lang i18n.Lang) string {

@@ -19,7 +19,7 @@ func NewBankAccount(supplierID string) *BankAccount {
 	return &BankAccount{
 		SupplierID: supplierID,
 		Currency:   "CZK",
-		IsDefault:  true,
+		IsDefault:  false,
 		QRType:     "spayd",
 	}
 }

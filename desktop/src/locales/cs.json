@@ -85,6 +85,10 @@
   "invoice.create_first_bank_account": "Vytvořit bankovní účet",
   "invoice.no_suppliers_create": "Zatím žádní dodavatelé — klikněte pro vytvoření",
 
+  "invoice.currency_mismatch": "Bankovní účet je v {bank}, ale faktura je nastavena na {invoice}. Zvažte změnu účtu nebo měny.",
+  "invoice.add_currency": "Přidat měnu",
+  "invoice.currency_code": "Kód měny",
+
   "invoice.missing_fields_title": "Chybějící údaje",
   "invoice.missing_fields_msg": "Vyberte dodavatele, odběratele a bankovní účet",
   "invoice.missing_items_title": "Chybějící položky",
@@ -324,6 +328,11 @@
 
   "notify.bank_account_created": "Bankovní účet vytvořen",
   "notify.bank_account_created_msg": "Bankovní účet byl úspěšně vytvořen",
+
+  "settings.dashboard": "Přehled",
+  "settings.dashboard_desc": "Vyberte, které widgety se zobrazí na přehledové stránce",
+  "settings.pdf_output_hint": "Logo, QR kód a další nastavení se konfigurují přímo u jednotlivých šablon.",
+  "settings.go_to_templates": "Spravovat šablony PDF",
 
   "settings.units": "Jednotky",
   "settings.units_desc": "Spravujte jednotky pro položky faktur",

@@ -325,6 +325,11 @@
   "notify.bank_account_created": "Bankový účet vytvorený",
   "notify.bank_account_created_msg": "Bankový účet bol úspešne vytvorený",
 
+  "settings.dashboard": "Prehľad",
+  "settings.dashboard_desc": "Vyberte, ktoré widgety sa zobrazia na prehľadovej stránke",
+  "settings.pdf_output_hint": "Logo, QR kód a ďalšie nastavenia sa konfigurujú priamo pri jednotlivých šablónach.",
+  "settings.go_to_templates": "Spravovať šablóny PDF",
+
   "settings.units": "Jednotky",
   "settings.units_desc": "Spravujte jednotky pre položky faktúr",
   "settings.add_unit": "Pridať jednotku",
@@ -337,6 +342,10 @@
   "invoice.supplier": "Dodávateľ",
   "invoice.filter_supplier": "Filter dodávateľa",
   "invoice.all_suppliers": "Všetci dodávatelia",
+
+  "invoice.currency_mismatch": "Bankový účet používa {bank}, ale mena faktúry je {invoice}. Zvážte zmenu účtu alebo meny.",
+  "invoice.add_currency": "Pridať menu",
+  "invoice.currency_code": "Kód meny",
 
   "health.disconnected_title": "Spojenie stratené",
   "health.disconnected_message": "Backend neodpovedá. Reštartujte prosím TidyBill."
