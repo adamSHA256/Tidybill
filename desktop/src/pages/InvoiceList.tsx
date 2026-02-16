@@ -13,12 +13,15 @@ import {
   Loader,
   Center,
 } from '@mantine/core'
-import { IconSearch, IconPlus } from '@tabler/icons-react'
-import { useState } from 'react'
+import { IconSearch, IconPlus, IconArrowsSort, IconSortAscending, IconSortDescending } from '@tabler/icons-react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { api, formatMoney, formatDate } from '../api/client'
+import { api, formatMoney, formatDate, type Invoice } from '../api/client'
 import { useT } from '../i18n'
+
+type SortField = 'invoice_number' | 'issue_date' | 'due_date' | 'total'
+type SortDir = 'asc' | 'desc'
 
 const statusColors: Record<string, string> = {
   draft: 'gray',
@@ -34,6 +37,8 @@ export function InvoiceList() {
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [supplierFilter, setSupplierFilter] = useState<string | null>(null)
+  const [sortField, setSortField] = useState<SortField | null>(null)
+  const [sortDir, setSortDir] = useState<SortDir>('asc')
   const navigate = useNavigate()
   const { t } = useT()
 
@@ -59,15 +64,45 @@ export function InvoiceList() {
     ...(suppliers || []).map((s) => ({ value: s.id, label: s.name })),
   ]
 
-  const filtered = (invoices || []).filter((inv) => {
-    if (search) {
-      const q = search.toLowerCase()
-      return inv.invoice_number.toLowerCase().includes(q) ||
-        (inv.customer?.name || '').toLowerCase().includes(q) ||
-        (inv.supplier?.name || '').toLowerCase().includes(q)
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) {
+      if (sortDir === 'asc') setSortDir('desc')
+      else { setSortField(null); setSortDir('asc') }
+    } else {
+      setSortField(field)
+      setSortDir('asc')
     }
-    return true
-  })
+  }
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) return <IconArrowsSort size={14} style={{ opacity: 0.3 }} />
+    return sortDir === 'asc' ? <IconSortAscending size={14} /> : <IconSortDescending size={14} />
+  }
+
+  const filtered = useMemo(() => {
+    let result = (invoices || []).filter((inv) => {
+      if (search) {
+        const q = search.toLowerCase()
+        return inv.invoice_number.toLowerCase().includes(q) ||
+          (inv.customer?.name || '').toLowerCase().includes(q)
+      }
+      return true
+    })
+
+    if (sortField) {
+      const cmp = (a: Invoice, b: Invoice): number => {
+        switch (sortField) {
+          case 'invoice_number': return a.invoice_number.localeCompare(b.invoice_number)
+          case 'issue_date': return a.issue_date.localeCompare(b.issue_date)
+          case 'due_date': return a.due_date.localeCompare(b.due_date)
+          case 'total': return a.total - b.total
+        }
+      }
+      result = [...result].sort((a, b) => sortDir === 'asc' ? cmp(a, b) : cmp(b, a))
+    }
+
+    return result
+  }, [invoices, search, sortField, sortDir])
 
   return (
     <Stack gap="lg">
@@ -118,11 +153,19 @@ export function InvoiceList() {
           <Table>
             <Table.Thead>
               <Table.Tr>
-                <Table.Th>{t('invoice.number')}</Table.Th>
+                <Table.Th style={{ cursor: 'pointer' }} onClick={() => toggleSort('invoice_number')}>
+                  <Group gap={4} wrap="nowrap">{t('invoice.number')} <SortIcon field="invoice_number" /></Group>
+                </Table.Th>
                 <Table.Th>{t('invoice.customer')}</Table.Th>
-                <Table.Th>{t('invoice.issue_date')}</Table.Th>
-                <Table.Th>{t('invoice.due_date')}</Table.Th>
-                <Table.Th>{t('invoice.amount')}</Table.Th>
+                <Table.Th style={{ cursor: 'pointer' }} onClick={() => toggleSort('issue_date')}>
+                  <Group gap={4} wrap="nowrap">{t('invoice.issue_date')} <SortIcon field="issue_date" /></Group>
+                </Table.Th>
+                <Table.Th style={{ cursor: 'pointer' }} onClick={() => toggleSort('due_date')}>
+                  <Group gap={4} wrap="nowrap">{t('invoice.due_date')} <SortIcon field="due_date" /></Group>
+                </Table.Th>
+                <Table.Th style={{ cursor: 'pointer' }} onClick={() => toggleSort('total')}>
+                  <Group gap={4} wrap="nowrap">{t('invoice.amount')} <SortIcon field="total" /></Group>
+                </Table.Th>
                 <Table.Th>{t('invoice.status')}</Table.Th>
               </Table.Tr>
             </Table.Thead>
