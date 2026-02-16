@@ -254,36 +254,51 @@ func (c *CLI) selectCustomerWithBack() (*model.Customer, bool) {
 	if len(customers) == 0 {
 		fmt.Println(i18n.T("info.no_customers_create"))
 		cust := c.createCustomer()
-		return cust, cust == nil
+		if cust != nil {
+			return cust, false
+		}
+		// After failed/cancelled creation, re-check if any exist now
+		customers, _ = c.customers.List()
+		if len(customers) == 0 {
+			return nil, true
+		}
+		// Fall through to selection loop below
 	}
 
-	fmt.Println()
-	fmt.Println(i18n.T("prompt.select_customer"))
-	for i, cust := range customers {
-		fmt.Printf("  %d) %s\n", i+1, cust.Name)
+	for {
+		fmt.Println()
+		fmt.Println(i18n.T("prompt.select_customer"))
+		for i, cust := range customers {
+			fmt.Printf("  %d) %s\n", i+1, cust.Name)
+		}
+		fmt.Println("  " + i18n.T("action.new_customer"))
+		fmt.Println("  " + i18n.T("action.back"))
+		fmt.Println()
+
+		choice := c.prompt(i18n.T("prompt.choice"))
+
+		if choice == "0" {
+			return nil, true
+		}
+
+		if choice == "n" || choice == "N" {
+			cust := c.createCustomer()
+			if cust != nil {
+				return cust, false
+			}
+			// Refresh list in case user cancelled but created one earlier
+			customers, _ = c.customers.List()
+			continue
+		}
+
+		idx := 0
+		fmt.Sscanf(choice, "%d", &idx)
+		if idx > 0 && idx <= len(customers) {
+			return customers[idx-1], false
+		}
+
+		c.printError(i18n.T("error.invalid_option"))
 	}
-	fmt.Println("  " + i18n.T("action.new_customer"))
-	fmt.Println("  " + i18n.T("action.back"))
-	fmt.Println()
-
-	choice := c.prompt(i18n.T("prompt.choice"))
-
-	if choice == "0" {
-		return nil, true
-	}
-
-	if choice == "n" || choice == "N" {
-		cust := c.createCustomer()
-		return cust, cust == nil
-	}
-
-	idx := 0
-	fmt.Sscanf(choice, "%d", &idx)
-	if idx > 0 && idx <= len(customers) {
-		return customers[idx-1], false
-	}
-
-	return nil, false
 }
 
 func (c *CLI) editCustomerNotes(cust *model.Customer) {

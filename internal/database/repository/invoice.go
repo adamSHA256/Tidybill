@@ -78,7 +78,7 @@ func (r *InvoiceRepository) GetByID(id string) (*model.Invoice, error) {
 	return inv, err
 }
 
-func (r *InvoiceRepository) List(status model.InvoiceStatus, customerID string) ([]*model.Invoice, error) {
+func (r *InvoiceRepository) List(status model.InvoiceStatus, customerID string, supplierID ...string) ([]*model.Invoice, error) {
 	query := `SELECT id, invoice_number, supplier_id, customer_id, bank_account_id, status,
 		issue_date, due_date, paid_date, taxable_date, payment_method, variable_symbol,
 		currency, exchange_rate, subtotal, vat_total, total, notes, internal_notes,
@@ -92,6 +92,10 @@ func (r *InvoiceRepository) List(status model.InvoiceStatus, customerID string) 
 	if customerID != "" {
 		query += " AND customer_id = ?"
 		args = append(args, customerID)
+	}
+	if len(supplierID) > 0 && supplierID[0] != "" {
+		query += " AND supplier_id = ?"
+		args = append(args, supplierID[0])
 	}
 	query += " ORDER BY issue_date DESC, invoice_number DESC"
 

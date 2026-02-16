@@ -307,6 +307,19 @@
   "notify.bank_account_created": "Bank account created",
   "notify.bank_account_created_msg": "Bank account was created successfully",
 
+  "settings.units": "Units",
+  "settings.units_desc": "Manage units for invoice items",
+  "settings.add_unit": "Add unit",
+  "settings.default_unit_label": "default",
+  "settings.unit_placeholder": "New unit (e.g. pkg, m, l)",
+  "settings.save_units": "Save units",
+  "notify.units_saved": "Units saved",
+  "notify.units_saved_msg": "Units have been updated",
+
+  "invoice.supplier": "Supplier",
+  "invoice.filter_supplier": "Filter by supplier",
+  "invoice.all_suppliers": "All suppliers",
+
   "health.disconnected_title": "Connection Lost",
   "health.disconnected_message": "The backend is not responding. Please restart TidyBill."
 }

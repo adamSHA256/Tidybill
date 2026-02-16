@@ -47,6 +47,12 @@ export function ItemCatalog() {
     queryFn: api.getItemCategories,
   })
 
+  const { data: units } = useQuery({
+    queryKey: ['units'],
+    queryFn: api.getUnits,
+  })
+  const unitOptions = (units || []).map((u) => u.name)
+
   const createMutation = useMutation({
     mutationFn: (data: Partial<Item>) =>
       editingItem ? api.updateItem(editingItem.id, data) : api.createItem(data),
@@ -210,8 +216,8 @@ export function ItemCatalog() {
           <Group grow>
             <NumberInput label={t('item.default_price')} min={0} value={defaultPrice}
               onChange={(val) => setDefaultPrice(Number(val) || 0)} />
-            <Select label={t('item.unit_label')} data={['ks', 'hod', 'den', 'm\u00B2']}
-              value={defaultUnit} onChange={(v) => setDefaultUnit(v || 'ks')} />
+            <Select label={t('item.unit_label')} data={unitOptions.length > 0 ? unitOptions : ['ks', 'hod', 'den', 'm\u00B2']}
+              value={defaultUnit} onChange={(v) => setDefaultUnit(v || unitOptions[0] || 'ks')} />
           </Group>
           <Group grow>
             <Select label={t('item.vat_rate')} data={['0', '12', '21']}

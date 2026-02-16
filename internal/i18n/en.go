@@ -460,6 +460,15 @@ var messagesEN = map[string]string{
 	"success.directories_updated": "Directories updated",
 	"error.directory_invalid":    "Cannot create directory: %v",
 
+	// ── Units ──────────────────────────────────────────────────────────
+	"settings.add_unit_or_type": "  or type a custom unit",
+	"settings.manage_units":    "Manage units",
+	"settings.units_title":     "MANAGE UNITS",
+	"settings.add_unit":        "Add unit",
+	"settings.remove_unit":     "Remove unit",
+	"settings.set_default_unit": "Set default unit",
+	"success.units_updated":    "Units updated",
+
 	// ── Errors (new) ────────────────────────────────────────────────────
 	"error.invalid_option":  "Invalid option",
 	"error.no_bank_accounts": "No bank accounts",

@@ -7,6 +7,7 @@ import {
   Badge,
   Button,
   TextInput,
+  Select,
   SegmentedControl,
   Stack,
   Loader,
@@ -32,23 +33,38 @@ const statusColors: Record<string, string> = {
 export function InvoiceList() {
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
+  const [supplierFilter, setSupplierFilter] = useState<string | null>(null)
   const navigate = useNavigate()
   const { t } = useT()
 
+  const { data: suppliers } = useQuery({
+    queryKey: ['suppliers'],
+    queryFn: api.getSuppliers,
+  })
+
   const { data: invoices, isLoading } = useQuery({
-    queryKey: ['invoices', filter === 'all' ? undefined : filter],
-    queryFn: () => api.getInvoices(filter === 'all' ? undefined : { status: filter }),
+    queryKey: ['invoices', filter === 'all' ? undefined : filter, supplierFilter],
+    queryFn: () => api.getInvoices({
+      ...(filter !== 'all' ? { status: filter } : {}),
+      ...(supplierFilter ? { supplier_id: supplierFilter } : {}),
+    }),
   })
 
   if (isLoading) {
     return <Center h={300}><Loader /></Center>
   }
 
+  const supplierOptions = [
+    { value: '', label: t('invoice.all_suppliers') },
+    ...(suppliers || []).map((s) => ({ value: s.id, label: s.name })),
+  ]
+
   const filtered = (invoices || []).filter((inv) => {
     if (search) {
       const q = search.toLowerCase()
       return inv.invoice_number.toLowerCase().includes(q) ||
-        (inv.customer?.name || '').toLowerCase().includes(q)
+        (inv.customer?.name || '').toLowerCase().includes(q) ||
+        (inv.supplier?.name || '').toLowerCase().includes(q)
     }
     return true
   })
@@ -81,6 +97,16 @@ export function InvoiceList() {
           onChange={(e) => setSearch(e.currentTarget.value)}
           style={{ flex: 1, maxWidth: 300 }}
         />
+        {(suppliers || []).length > 1 && (
+          <Select
+            placeholder={t('invoice.filter_supplier')}
+            data={supplierOptions}
+            value={supplierFilter || ''}
+            onChange={(v) => setSupplierFilter(v || null)}
+            clearable
+            w={200}
+          />
+        )}
       </Group>
 
       <Paper p="md" radius="md" withBorder>
@@ -93,6 +119,7 @@ export function InvoiceList() {
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>{t('invoice.number')}</Table.Th>
+                <Table.Th>{t('invoice.supplier')}</Table.Th>
                 <Table.Th>{t('invoice.customer')}</Table.Th>
                 <Table.Th>{t('invoice.issue_date')}</Table.Th>
                 <Table.Th>{t('invoice.due_date')}</Table.Th>
@@ -107,6 +134,7 @@ export function InvoiceList() {
                 return (
                   <Table.Tr key={inv.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/invoices/${inv.id}`)}>
                     <Table.Td fw={600} ff="monospace" fz="sm">{inv.invoice_number}</Table.Td>
+                    <Table.Td fz="sm">{inv.supplier?.name || '—'}</Table.Td>
                     <Table.Td fz="sm">{inv.customer?.name || '—'}</Table.Td>
                     <Table.Td fz="sm">{formatDate(inv.issue_date)}</Table.Td>
                     <Table.Td fz="sm" c={isOverdue ? 'red' : undefined}>{formatDate(inv.due_date)}</Table.Td>

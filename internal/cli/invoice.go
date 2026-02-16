@@ -201,7 +201,16 @@ func (c *CLI) createInvoice() {
 			continue
 		}
 
-		if choice == "d" || choice == "D" || choice == "" {
+		if choice == "d" || choice == "D" {
+			break
+		}
+
+		if choice == "" {
+			if len(items) == 0 {
+				c.printError(i18n.T("error.invoice_no_items"))
+				fmt.Println()
+				continue
+			}
 			break
 		}
 
@@ -397,11 +406,7 @@ func (c *CLI) addInvoiceItemWithBack(invoiceID string, position int, catalogItem
 	item.Description = desc
 
 	item.Quantity = c.promptFloat(i18n.T("prompt.quantity"), 1)
-	if defaultUnit != "" {
-		item.Unit = c.promptDefault(i18n.T("prompt.unit"), defaultUnit)
-	} else {
-		item.Unit = c.promptDefault(i18n.T("prompt.unit"), i18n.T("default.unit_pcs"))
-	}
+	item.Unit = c.selectUnit(defaultUnit)
 	item.UnitPrice = c.promptFloat(i18n.T("prompt.unit_price"), defaultPrice)
 	item.VATRate = c.promptFloat(i18n.T("prompt.vat_rate"), defaultVAT)
 
