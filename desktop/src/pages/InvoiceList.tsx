@@ -55,15 +55,6 @@ export function InvoiceList() {
     }),
   })
 
-  if (isLoading) {
-    return <Center h={300}><Loader /></Center>
-  }
-
-  const supplierOptions = [
-    { value: '', label: t('invoice.all_suppliers') },
-    ...(suppliers || []).map((s) => ({ value: s.id, label: s.name })),
-  ]
-
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
       if (sortDir === 'asc') setSortDir('desc')
@@ -103,6 +94,15 @@ export function InvoiceList() {
 
     return result
   }, [invoices, search, sortField, sortDir])
+
+  if (isLoading) {
+    return <Center h={300}><Loader /></Center>
+  }
+
+  const supplierOptions = [
+    { value: '', label: t('invoice.all_suppliers') },
+    ...(suppliers || []).map((s) => ({ value: s.id, label: s.name })),
+  ]
 
   return (
     <Stack gap="lg">
