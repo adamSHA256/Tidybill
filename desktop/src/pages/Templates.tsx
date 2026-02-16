@@ -11,18 +11,23 @@ import {
   Center,
   SimpleGrid,
   TextInput,
+  Modal,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { IconEye, IconStar, IconStarFilled } from '@tabler/icons-react'
+import { IconEye, IconStar, IconStarFilled, IconCopy, IconCode, IconTrash, IconLock } from '@tabler/icons-react'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { api, getApiBase, openInBrowser, type PDFTemplate } from '../api/client'
 import { useT } from '../i18n'
 
 export function Templates() {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const [generatingAll, setGeneratingAll] = useState(false)
   const [generatingId, setGeneratingId] = useState<string | null>(null)
+  const [duplicateModal, setDuplicateModal] = useState<string | null>(null)
+  const [duplicateName, setDuplicateName] = useState('')
   const { t } = useT()
 
   const { data: templates, isLoading } = useQuery({
@@ -46,6 +51,31 @@ export function Templates() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['templates'] })
       notifications.show({ title: t('notify.template_default_set'), message: t('notify.template_default_msg'), color: 'green' })
+    },
+    onError: (err: Error) => {
+      notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
+    },
+  })
+
+  const duplicateMutation = useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) =>
+      api.duplicateTemplate(id, name),
+    onSuccess: (newTmpl) => {
+      queryClient.invalidateQueries({ queryKey: ['templates'] })
+      setDuplicateModal(null)
+      setDuplicateName('')
+      notifications.show({ title: t('template.duplicated'), message: newTmpl.name, color: 'green' })
+    },
+    onError: (err: Error) => {
+      notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: api.deleteTemplate,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['templates'] })
+      notifications.show({ title: t('template.deleted'), message: '', color: 'green' })
     },
     onError: (err: Error) => {
       notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
@@ -82,6 +112,12 @@ export function Templates() {
     }
   }
 
+  const handleDuplicate = (id: string) => {
+    if (duplicateName.trim()) {
+      duplicateMutation.mutate({ id, name: duplicateName.trim() })
+    }
+  }
+
   if (isLoading) {
     return <Center h={300}><Loader /></Center>
   }
@@ -111,10 +147,40 @@ export function Templates() {
             onUpdate={(data) => updateMutation.mutate({ id: tmpl.id, data })}
             onSetDefault={() => setDefaultMutation.mutate(tmpl.id)}
             onGeneratePreview={() => handleGeneratePreview(tmpl.id)}
+            onDuplicate={() => { setDuplicateModal(tmpl.id); setDuplicateName(tmpl.name + ` (${t('template.copy_suffix')})`) }}
+            onEditCode={() => navigate(`/template-editor/${tmpl.id}`)}
+            onDelete={() => { if (window.confirm(t('template.delete_confirm').replace('{name}', tmpl.name))) deleteMutation.mutate(tmpl.id) }}
             generating={generatingId === tmpl.id}
           />
         ))}
       </SimpleGrid>
+
+      <Modal
+        opened={duplicateModal !== null}
+        onClose={() => setDuplicateModal(null)}
+        title={t('template.duplicate_title')}
+      >
+        <Stack>
+          <TextInput
+            label={t('template.new_name')}
+            value={duplicateName}
+            onChange={(e) => setDuplicateName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && duplicateModal) handleDuplicate(duplicateModal) }}
+            autoFocus
+          />
+          <Group justify="flex-end">
+            <Button variant="light" onClick={() => setDuplicateModal(null)}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              onClick={() => duplicateModal && handleDuplicate(duplicateModal)}
+              loading={duplicateMutation.isPending}
+            >
+              {t('template.duplicate_btn')}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   )
 }
@@ -125,6 +191,9 @@ function TemplateCard({
   onUpdate,
   onSetDefault,
   onGeneratePreview,
+  onDuplicate,
+  onEditCode,
+  onDelete,
   generating,
 }: {
   template: PDFTemplate
@@ -132,6 +201,9 @@ function TemplateCard({
   onUpdate: (data: Partial<PDFTemplate>) => void
   onSetDefault: () => void
   onGeneratePreview: () => void
+  onDuplicate: () => void
+  onEditCode: () => void
+  onDelete: () => void
   generating: boolean
 }) {
   const [editing, setEditing] = useState(false)
@@ -148,24 +220,34 @@ function TemplateCard({
     <Paper p="md" radius="md" withBorder>
       <Stack gap="sm">
         <Group justify="space-between">
-          {editing ? (
-            <TextInput
-              size="sm"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onBlur={handleNameSave}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleNameSave() }}
-              autoFocus
-              styles={{ input: { fontWeight: 600 } }}
-            />
-          ) : (
-            <Text fw={600} size="lg" onClick={() => setEditing(true)} style={{ cursor: 'pointer' }}>
-              {tmpl.name}
-            </Text>
-          )}
-          {tmpl.is_default && (
-            <Badge color="blue" variant="light">{t('template.default')}</Badge>
-          )}
+          <Group gap="xs">
+            {editing ? (
+              <TextInput
+                size="sm"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onBlur={handleNameSave}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleNameSave() }}
+                autoFocus
+                styles={{ input: { fontWeight: 600 } }}
+              />
+            ) : (
+              <Text fw={600} size="lg" onClick={() => setEditing(true)} style={{ cursor: 'pointer' }}>
+                {tmpl.name}
+              </Text>
+            )}
+            {tmpl.is_builtin && (
+              <IconLock size={14} style={{ opacity: 0.4 }} />
+            )}
+          </Group>
+          <Group gap={4}>
+            {tmpl.is_default && (
+              <Badge color="blue" variant="light">{t('template.default')}</Badge>
+            )}
+            {!tmpl.is_builtin && (
+              <Badge color="grape" variant="light" size="sm">{t('template.custom')}</Badge>
+            )}
+          </Group>
         </Group>
 
         <Text c="dimmed" size="sm">{tmpl.description}</Text>
@@ -213,6 +295,37 @@ function TemplateCard({
           >
             {t('template.generate_preview')}
           </Button>
+          <Button
+            size="xs"
+            variant="light"
+            color="violet"
+            leftSection={<IconCopy size={14} />}
+            onClick={onDuplicate}
+          >
+            {t('template.duplicate_btn')}
+          </Button>
+          {!tmpl.is_builtin && (
+            <>
+              <Button
+                size="xs"
+                variant="light"
+                color="indigo"
+                leftSection={<IconCode size={14} />}
+                onClick={onEditCode}
+              >
+                {t('template.edit_code')}
+              </Button>
+              <Button
+                size="xs"
+                variant="light"
+                color="red"
+                leftSection={<IconTrash size={14} />}
+                onClick={onDelete}
+              >
+                {t('common.delete')}
+              </Button>
+            </>
+          )}
         </Group>
       </Stack>
     </Paper>

@@ -7,7 +7,6 @@ import {
   ActionIcon,
   useMantineColorScheme,
   Divider,
-  Badge,
   Button,
 } from '@mantine/core'
 import {
@@ -115,14 +114,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             />
           ))}
 
-          <Divider my="sm" label={t('nav.future')} labelPosition="left" />
-
-          <NavLink
-            label={t('nav.template_designer')}
-            leftSection={<IconTemplate size={18} />}
-            disabled
-            rightSection={<Badge size="xs" variant="light" color="gray">{t('nav.later')}</Badge>}
-          />
         </MantineAppShell.Section>
 
         <MantineAppShell.Section>

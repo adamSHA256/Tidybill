@@ -97,10 +97,15 @@ func (s *Server) Router() http.Handler {
 
 	// Templates
 	mux.HandleFunc("GET /api/templates", s.listTemplates)
+	mux.HandleFunc("GET /api/templates/ai-prompt", s.getAIPrompt)
 	mux.HandleFunc("POST /api/templates/preview-all", s.generateAllPreviews)
 	mux.HandleFunc("GET /api/templates/{id}", s.getTemplate)
 	mux.HandleFunc("PUT /api/templates/{id}", s.updateTemplate)
+	mux.HandleFunc("DELETE /api/templates/{id}", s.deleteTemplate)
 	mux.HandleFunc("PUT /api/templates/{id}/default", s.setDefaultTemplate)
+	mux.HandleFunc("POST /api/templates/{id}/duplicate", s.duplicateTemplate)
+	mux.HandleFunc("GET /api/templates/{id}/source", s.getTemplateSource)
+	mux.HandleFunc("PUT /api/templates/{id}/source", s.updateTemplateSource)
 	mux.HandleFunc("POST /api/templates/{id}/preview", s.generateTemplatePreview)
 	mux.HandleFunc("GET /api/templates/{id}/preview-pdf", s.servePreviewPDF)
 

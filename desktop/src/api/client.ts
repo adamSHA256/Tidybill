@@ -162,6 +162,16 @@ export const api = {
     request<{ path: string }>(`/templates/${id}/preview`, { method: 'POST' }),
   generateAllPreviews: () =>
     request<Record<string, string>>('/templates/preview-all', { method: 'POST' }),
+  duplicateTemplate: (id: string, name: string) =>
+    request<PDFTemplate>(`/templates/${id}/duplicate`, { method: 'POST', body: JSON.stringify({ name }) }),
+  getTemplateSource: (id: string) =>
+    request<{ yaml_source: string }>(`/templates/${id}/source`),
+  updateTemplateSource: (id: string, yaml_source: string) =>
+    request<{ status: string }>(`/templates/${id}/source`, { method: 'PUT', body: JSON.stringify({ yaml_source }) }),
+  deleteTemplate: (id: string) =>
+    request<void>(`/templates/${id}`, { method: 'DELETE' }),
+  getAIPrompt: () =>
+    request<{ prompt: string }>('/templates/ai-prompt'),
 
   // Bank accounts
   updateBankAccount: (id: string, data: Partial<BankAccount>) =>
@@ -293,6 +303,9 @@ export interface PDFTemplate {
   show_notes: boolean
   preview_path: string
   sort_order: number
+  is_builtin: boolean
+  yaml_source: string
+  parent_id: string
 }
 
 export interface DashboardStats {

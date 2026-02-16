@@ -9,6 +9,130 @@ import (
 	"github.com/adamSHA256/tidybill/internal/service"
 )
 
+func (s *Server) duplicateTemplate(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	var req struct {
+		Name string `json:"name"`
+	}
+	if err := readJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON: "+err.Error())
+		return
+	}
+	if req.Name == "" {
+		writeError(w, http.StatusBadRequest, "name is required")
+		return
+	}
+
+	src, err := s.templates.GetByID(id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if src == nil {
+		writeError(w, http.StatusNotFound, "template not found")
+		return
+	}
+
+	newTmpl, err := s.templates.Duplicate(id, req.Name)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Built-in templates don't store YAML in DB - inject it into the new custom copy
+	if src.IsBuiltin {
+		yamlSrc := service.GetBuiltinYAML(src.TemplateCode)
+		if yamlSrc != "" {
+			if err := s.templates.UpdateYAMLSource(newTmpl.ID, yamlSrc); err != nil {
+				writeError(w, http.StatusInternalServerError, err.Error())
+				return
+			}
+			newTmpl.YAMLSource = yamlSrc
+		}
+	}
+
+	writeJSON(w, http.StatusCreated, newTmpl)
+}
+
+func (s *Server) getTemplateSource(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	t, err := s.templates.GetByID(id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if t == nil {
+		writeError(w, http.StatusNotFound, "template not found")
+		return
+	}
+
+	yamlSource := t.YAMLSource
+	if t.IsBuiltin && yamlSource == "" {
+		yamlSource = service.GetBuiltinYAML(t.TemplateCode)
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"yaml_source": yamlSource})
+}
+
+func (s *Server) updateTemplateSource(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	t, err := s.templates.GetByID(id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if t == nil {
+		writeError(w, http.StatusNotFound, "template not found")
+		return
+	}
+	if t.IsBuiltin {
+		writeError(w, http.StatusForbidden, "cannot edit built-in template source")
+		return
+	}
+
+	var req struct {
+		YAMLSource string `json:"yaml_source"`
+	}
+	if err := readJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON: "+err.Error())
+		return
+	}
+
+	if err := service.ValidateYAML(req.YAMLSource); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid template: "+err.Error())
+		return
+	}
+
+	if err := s.templates.UpdateYAMLSource(id, req.YAMLSource); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+func (s *Server) deleteTemplate(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	if err := s.templates.Delete(id); err != nil {
+		if strings.Contains(err.Error(), "cannot delete") {
+			writeError(w, http.StatusForbidden, err.Error())
+			return
+		}
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) getAIPrompt(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]string{"prompt": service.TemplateEditingAIPrompt})
+}
+
 func (s *Server) listTemplates(w http.ResponseWriter, r *http.Request) {
 	templates, err := s.templates.List()
 	if err != nil {
@@ -120,7 +244,11 @@ func (s *Server) generateTemplatePreview(w http.ResponseWriter, r *http.Request)
 		QRType:    "spayd",
 	}
 
-	path, err := s.pdf.GeneratePreview(t.TemplateCode, opts)
+	yamlSource := t.YAMLSource
+	if t.IsBuiltin {
+		yamlSource = ""
+	}
+	path, err := s.pdf.GeneratePreviewWithYAML(t.TemplateCode, yamlSource, opts)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "preview generation failed: "+err.Error())
 		return

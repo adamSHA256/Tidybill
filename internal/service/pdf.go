@@ -37,7 +37,11 @@ type InvoiceData struct {
 }
 
 func (s *PDFService) GenerateInvoice(data *InvoiceData, templateCode string, opts *TemplateOptions) (string, error) {
-	renderer := GetTemplateRenderer(templateCode)
+	return s.GenerateInvoiceWithYAML(data, templateCode, "", opts)
+}
+
+func (s *PDFService) GenerateInvoiceWithYAML(data *InvoiceData, templateCode, yamlSource string, opts *TemplateOptions) (string, error) {
+	renderer := s.getRenderer(templateCode, yamlSource)
 	margins := renderer.Margins()
 
 	cfgBuilder := config.NewBuilder().
@@ -74,6 +78,19 @@ func (s *PDFService) GenerateInvoice(data *InvoiceData, templateCode string, opt
 	}
 
 	return pdfPath, nil
+}
+
+// getRenderer returns the appropriate renderer for a template.
+// Built-in templates use the compiled Go code; custom templates use the YAML interpreter.
+func (s *PDFService) getRenderer(templateCode, yamlSource string) TemplateRenderer {
+	// If YAML source is provided and this is not a built-in template, use declarative renderer
+	if yamlSource != "" {
+		if r, err := NewDeclarativeRenderer(yamlSource); err == nil {
+			return r
+		}
+	}
+	// Fall back to built-in registry
+	return GetTemplateRenderer(templateCode)
 }
 
 func sanitizeDirName(name string) string {

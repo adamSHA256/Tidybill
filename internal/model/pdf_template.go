@@ -13,4 +13,7 @@ type PDFTemplate struct {
 	ShowNotes    bool   `json:"show_notes"`
 	PreviewPath  string `json:"preview_path"`
 	SortOrder    int    `json:"sort_order"`
+	IsBuiltin    bool   `json:"is_builtin"`
+	YAMLSource   string `json:"yaml_source"`
+	ParentID     string `json:"parent_id"`
 }
