@@ -20,6 +20,7 @@ import {
   Textarea,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
+import { DateInput } from '@mantine/dates'
 import { IconTrash, IconPlus, IconPackage } from '@tabler/icons-react'
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -53,8 +54,8 @@ export function InvoiceEdit() {
   const [supplierId, setSupplierId] = useState<string | null>(null)
   const [customerId, setCustomerId] = useState<string | null>(null)
   const [bankAccountId, setBankAccountId] = useState<string | null>(null)
-  const [issueDate, setIssueDate] = useState('')
-  const [dueDate, setDueDate] = useState('')
+  const [issueDate, setIssueDate] = useState<string | null>(null)
+  const [dueDate, setDueDate] = useState<string | null>(null)
   const [currency, setCurrency] = useState('CZK')
   const [invoiceNumber, setInvoiceNumber] = useState('')
   const [notes, setNotes] = useState('')
@@ -122,8 +123,8 @@ export function InvoiceEdit() {
       setSupplierId(invoice.supplier_id)
       setCustomerId(invoice.customer_id)
       setBankAccountId(invoice.bank_account_id)
-      setIssueDate(invoice.issue_date?.slice(0, 10) || '')
-      setDueDate(invoice.due_date?.slice(0, 10) || '')
+      setIssueDate(invoice.issue_date?.slice(0, 10) || null)
+      setDueDate(invoice.due_date?.slice(0, 10) || null)
       setCurrency(invoice.currency || 'CZK')
       setInvoiceNumber(invoice.invoice_number || '')
       setNotes(invoice.notes || '')
@@ -270,8 +271,8 @@ export function InvoiceEdit() {
       customer_id: customerId,
       bank_account_id: bankAccountId,
       invoice_number: invoiceNumber || undefined,
-      issue_date: issueDate,
-      due_date: dueDate,
+      issue_date: issueDate || undefined,
+      due_date: dueDate || undefined,
       currency,
       notes,
       items: items.filter((i) => i.description).map((i) => ({
@@ -363,8 +364,8 @@ export function InvoiceEdit() {
             <Text fw={500} mb="md">{t('invoice.details')}</Text>
             <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }}>
               <TextInput label={t('invoice.invoice_number')} value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.currentTarget.value)} />
-              <TextInput label={t('invoice.issue_date')} type="date" value={issueDate} onChange={(e) => setIssueDate(e.currentTarget.value)} />
-              <TextInput label={t('invoice.due_date')} type="date" value={dueDate} onChange={(e) => setDueDate(e.currentTarget.value)} />
+              <DateInput label={t('invoice.issue_date')} valueFormat="DD.MM.YYYY" value={issueDate} onChange={setIssueDate} clearable />
+              <DateInput label={t('invoice.due_date')} valueFormat="DD.MM.YYYY" value={dueDate} onChange={setDueDate} clearable />
               <Select label={t('invoice.currency')} data={['CZK', 'EUR', 'USD']} value={currency} onChange={(v) => setCurrency(v || 'CZK')} />
             </SimpleGrid>
           </Paper>

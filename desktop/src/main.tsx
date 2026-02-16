@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client'
 import { MantineProvider, createTheme, Center, Loader, Stack, Text } from '@mantine/core'
 import { Notifications } from '@mantine/notifications'
 import { ModalsProvider } from '@mantine/modals'
+import { DatesProvider } from '@mantine/dates'
+import 'dayjs/locale/cs'
+import 'dayjs/locale/sk'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
@@ -81,11 +84,13 @@ createRoot(document.getElementById('root')!).render(
       <ApiGate>
         <QueryClientProvider client={queryClient}>
           <ModalsProvider>
-            <I18nProvider>
-              <BrowserRouter>
-                <App />
-              </BrowserRouter>
-            </I18nProvider>
+            <DatesProvider settings={{ locale: 'cs' }}>
+              <I18nProvider>
+                <BrowserRouter>
+                  <App />
+                </BrowserRouter>
+              </I18nProvider>
+            </DatesProvider>
           </ModalsProvider>
         </QueryClientProvider>
       </ApiGate>
