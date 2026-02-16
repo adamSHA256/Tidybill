@@ -119,7 +119,6 @@ export function InvoiceList() {
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>{t('invoice.number')}</Table.Th>
-                <Table.Th>{t('invoice.supplier')}</Table.Th>
                 <Table.Th>{t('invoice.customer')}</Table.Th>
                 <Table.Th>{t('invoice.issue_date')}</Table.Th>
                 <Table.Th>{t('invoice.due_date')}</Table.Th>
@@ -134,7 +133,6 @@ export function InvoiceList() {
                 return (
                   <Table.Tr key={inv.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/invoices/${inv.id}`)}>
                     <Table.Td fw={600} ff="monospace" fz="sm">{inv.invoice_number}</Table.Td>
-                    <Table.Td fz="sm">{inv.supplier?.name || '—'}</Table.Td>
                     <Table.Td fz="sm">{inv.customer?.name || '—'}</Table.Td>
                     <Table.Td fz="sm">{formatDate(inv.issue_date)}</Table.Td>
                     <Table.Td fz="sm" c={isOverdue ? 'red' : undefined}>{formatDate(inv.due_date)}</Table.Td>
