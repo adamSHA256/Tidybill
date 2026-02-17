@@ -110,6 +110,10 @@ func (s *Server) Router() http.Handler {
 	mux.HandleFunc("POST /api/templates/{id}/preview", s.generateTemplatePreview)
 	mux.HandleFunc("GET /api/templates/{id}/preview-pdf", s.servePreviewPDF)
 
+	// System
+	mux.HandleFunc("GET /api/system/first-run", s.getFirstRun)
+	mux.HandleFunc("GET /api/system/locale", s.getLocale)
+
 	// Settings
 	mux.HandleFunc("GET /api/settings", s.getSettings)
 	mux.HandleFunc("PUT /api/settings", s.updateSettings)
