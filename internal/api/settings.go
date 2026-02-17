@@ -24,6 +24,7 @@ func (s *Server) getSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	dashboardWidgets, _ := s.settings.Get("dashboard.widgets")
 	customCurrencies, _ := s.settings.Get("custom.currencies")
+	customCountries, _ := s.settings.Get("custom.countries")
 	invoiceDefaultSort, _ := s.settings.Get("invoice.default_sort") // TODO: also expose in CLI settings menu
 
 	writeJSON(w, http.StatusOK, map[string]string{
@@ -35,6 +36,7 @@ func (s *Server) getSettings(w http.ResponseWriter, r *http.Request) {
 		"default_due_days":      defaultDueDays,
 		"dashboard_widgets":     dashboardWidgets,
 		"custom_currencies":     customCurrencies,
+		"custom_countries":      customCountries,
 		"invoice_default_sort":  invoiceDefaultSort,
 	})
 }
@@ -48,6 +50,7 @@ type UpdateSettingsRequest struct {
 	DefaultDueDays   *string `json:"default_due_days"`
 	DashboardWidgets    *string `json:"dashboard_widgets"`
 	CustomCurrencies    *string `json:"custom_currencies"`
+	CustomCountries     *string `json:"custom_countries"`
 	InvoiceDefaultSort  *string `json:"invoice_default_sort"` // TODO: also expose in CLI settings menu
 }
 
@@ -76,6 +79,7 @@ func (s *Server) updateSettings(w http.ResponseWriter, r *http.Request) {
 		"default.due_days":    req.DefaultDueDays,
 		"dashboard.widgets":   req.DashboardWidgets,
 		"custom.currencies":     req.CustomCurrencies,
+		"custom.countries":      req.CustomCountries,
 		"invoice.default_sort":  req.InvoiceDefaultSort,
 	}
 	for key, val := range simpleSettings {

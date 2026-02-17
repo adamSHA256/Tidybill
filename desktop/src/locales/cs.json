@@ -283,6 +283,10 @@
   "status.partially_paid": "Částečně zaplacená",
   "status.cancelled": "Zrušená",
 
+  "country.label": "Země",
+  "country.add": "Přidat zemi",
+  "country.code": "Kód země",
+
   "common.cancel": "Zrušit",
   "common.save": "Uložit",
   "common.create": "Vytvořit",

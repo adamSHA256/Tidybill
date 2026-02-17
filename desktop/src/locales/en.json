@@ -279,6 +279,10 @@
   "status.partially_paid": "Partially Paid",
   "status.cancelled": "Cancelled",
 
+  "country.label": "Country",
+  "country.add": "Add country",
+  "country.code": "Country code",
+
   "common.cancel": "Cancel",
   "common.save": "Save",
   "common.create": "Create",

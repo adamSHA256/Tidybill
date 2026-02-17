@@ -28,6 +28,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, formatMoney, type Supplier, type BankAccount, type Item, type CustomerItem } from '../api/client'
+import { CountrySelect } from '../components/CountrySelect'
 import { useT } from '../i18n'
 
 const BASE_CURRENCIES = ['CZK', 'EUR', 'USD', 'GBP', 'PLN', 'CHF']
@@ -722,7 +723,7 @@ export function InvoiceCreate() {
             <TextInput label={t('supplier.zip_label')} value={sZip}
               onChange={(e) => setSZip(e.currentTarget.value)} />
           </Group>
-          <Select label={t('supplier.country_label')} data={['CZ', 'SK', 'DE', 'AT', 'PL', 'HU']}
+          <CountrySelect label={t('supplier.country_label')}
             value={sCountry} onChange={(v) => setSCountry(v || 'CZ')} />
           <Group grow>
             <TextInput label={t('supplier.email_label')} value={sEmail}
@@ -767,7 +768,7 @@ export function InvoiceCreate() {
             <TextInput label={t('customer.zip_label')} value={cZip}
               onChange={(e) => setCZip(e.currentTarget.value)} />
           </Group>
-          <Select label={t('customer.country_label')} data={['CZ', 'SK', 'DE', 'AT', 'PL', 'HU']}
+          <CountrySelect label={t('customer.country_label')}
             value={cCountry} onChange={(v) => setCCountry(v || 'CZ')} />
           <Group grow>
             <TextInput label={t('customer.email_label')} value={cEmail}

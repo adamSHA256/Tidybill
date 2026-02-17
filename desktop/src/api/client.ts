@@ -356,6 +356,7 @@ export interface AppSettings {
   default_due_days?: string
   dashboard_widgets?: string
   custom_currencies?: string
+  custom_countries?: string
   invoice_default_sort?: string // TODO: also expose in CLI settings menu
 }
 

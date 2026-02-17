@@ -25,6 +25,7 @@ import { IconPlus, IconUpload, IconTrash, IconPencil, IconBuildingBank } from '@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, type Supplier, type BankAccount } from '../api/client'
+import { CountrySelect } from '../components/CountrySelect'
 import { useT } from '../i18n'
 
 function BankAccountsRow({ supplierId, supplierName, onEdit, onDelete, onCreate }: {
@@ -511,7 +512,7 @@ export function SupplierList() {
             <TextInput label={t('supplier.zip_label')} value={zip}
               onChange={(e) => setZip(e.currentTarget.value)} />
           </Group>
-          <Select label={t('supplier.country_label')} data={['CZ', 'SK', 'DE', 'AT', 'PL', 'HU']}
+          <CountrySelect label={t('supplier.country_label')}
             value={country} onChange={(v) => setCountry(v || 'CZ')} />
           <Group grow>
             <TextInput label={t('supplier.email_label')} value={email}

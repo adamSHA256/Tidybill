@@ -9,7 +9,6 @@ import {
   Button,
   TextInput,
   Textarea,
-  Select,
   Modal,
   Divider,
   ActionIcon,
@@ -21,6 +20,7 @@ import { IconSearch, IconPlus, IconPencil, IconTrash } from '@tabler/icons-react
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, type Customer } from '../api/client'
+import { CountrySelect } from '../components/CountrySelect'
 import { useT } from '../i18n'
 
 const avatarColors = ['blue', 'green', 'yellow', 'violet', 'orange', 'teal', 'red', 'pink']
@@ -256,7 +256,7 @@ export function CustomerList() {
             <TextInput label={t('customer.zip_label')} value={zip}
               onChange={(e) => setZip(e.currentTarget.value)} />
           </Group>
-          <Select label={t('customer.country_label')} data={['CZ', 'SK', 'DE', 'AT', 'PL', 'HU']}
+          <CountrySelect label={t('customer.country_label')}
             value={country} onChange={(v) => setCountry(v || 'CZ')} />
           <Group grow>
             <TextInput label={t('customer.email_label')} value={email}

@@ -279,6 +279,10 @@
   "status.partially_paid": "Čiastočne zaplatená",
   "status.cancelled": "Zrušená",
 
+  "country.label": "Krajina",
+  "country.add": "Pridať krajinu",
+  "country.code": "Kód krajiny",
+
   "common.cancel": "Zrušiť",
   "common.save": "Uložiť",
   "common.create": "Vytvoriť",
