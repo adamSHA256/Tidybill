@@ -30,6 +30,7 @@ func (s *Server) getSettings(w http.ResponseWriter, r *http.Request) {
 	customCurrencies, _ := s.settings.Get("custom.currencies")
 	customCountries, _ := s.settings.Get("custom.countries")
 	invoiceDefaultSort, _ := s.settings.Get("invoice.default_sort") // TODO: also expose in CLI settings menu
+	uiScale, _ := s.settings.Get("ui.scale")
 
 	writeJSON(w, http.StatusOK, map[string]string{
 		"language":             lang,
@@ -43,6 +44,7 @@ func (s *Server) getSettings(w http.ResponseWriter, r *http.Request) {
 		"custom_currencies":    customCurrencies,
 		"custom_countries":     customCountries,
 		"invoice_default_sort": invoiceDefaultSort,
+		"ui_scale":             uiScale,
 	})
 }
 
@@ -58,6 +60,7 @@ type UpdateSettingsRequest struct {
 	CustomCurrencies   *string `json:"custom_currencies"`
 	CustomCountries    *string `json:"custom_countries"`
 	InvoiceDefaultSort *string `json:"invoice_default_sort"` // TODO: also expose in CLI settings menu
+	UIScale            *string `json:"ui_scale"`
 }
 
 func (s *Server) updateSettings(w http.ResponseWriter, r *http.Request) {
@@ -88,6 +91,7 @@ func (s *Server) updateSettings(w http.ResponseWriter, r *http.Request) {
 		"custom.currencies":     req.CustomCurrencies,
 		"custom.countries":      req.CustomCountries,
 		"invoice.default_sort":  req.InvoiceDefaultSort,
+		"ui.scale":              req.UIScale,
 	}
 	for key, val := range simpleSettings {
 		if val == nil {

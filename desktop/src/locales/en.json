@@ -252,6 +252,8 @@
   "settings.language": "Language",
   "settings.default_currency": "Default Currency",
   "settings.default_currency_deprecated": "Minor setting — currency is taken from the bank account. Will be removed in a future version.",
+  "settings.ui_scale": "Interface size",
+  "settings.ui_scale_desc": "Zoom in or out the entire interface",
   "settings.date_format": "Date Format",
   "settings.coming_soon": "coming soon",
   "settings.directories": "Directories",

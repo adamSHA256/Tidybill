@@ -369,6 +369,7 @@ export interface AppSettings {
   custom_currencies?: string
   custom_countries?: string
   invoice_default_sort?: string // TODO: also expose in CLI settings menu
+  ui_scale?: string
 }
 
 export interface Unit {

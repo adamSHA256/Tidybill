@@ -12,12 +12,14 @@ import {
   TextInput,
   Button,
   Pill,
+  Slider,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, type Unit, type PDFTemplate, type VATRate, type CurrencyItem } from '../api/client'
+import { applyZoom } from '../utils/zoom'
 import { useT } from '../i18n'
 
 const langOptions = [
@@ -200,6 +202,30 @@ export function Settings() {
             onChange={(v) => { if (v) setLang(v as 'cs' | 'sk' | 'en') }}
             w={300}
           />
+          <div>
+            <Text size="sm" fw={500} mb={4}>{t('settings.ui_scale')}</Text>
+            <Text size="xs" c="dimmed" mb="xs">{t('settings.ui_scale_desc')}</Text>
+            <Slider
+              min={75}
+              max={200}
+              step={25}
+              value={Math.round((parseFloat(settings?.ui_scale || '1') || 1) * 100)}
+              onChange={(val) => {
+                const factor = val / 100
+                applyZoom(factor)
+                updateMutation.mutate({ ui_scale: String(factor) })
+              }}
+              marks={[
+                { value: 75, label: '75%' },
+                { value: 100, label: '100%' },
+                { value: 125, label: '125%' },
+                { value: 150, label: '150%' },
+                { value: 200, label: '200%' },
+              ]}
+              w={300}
+              mb="md"
+            />
+          </div>
           <Group gap="xs">
             <Select
               label={t('settings.date_format')}

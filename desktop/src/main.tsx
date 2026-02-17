@@ -10,7 +10,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import { I18nProvider } from './i18n'
-import { initApiBase } from './api/client'
+import { initApiBase, api } from './api/client'
+import { applyZoom } from './utils/zoom'
 
 import '@mantine/core/styles.css'
 import '@mantine/dates/styles.css'
@@ -51,7 +52,15 @@ function ApiGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     initApiBase()
-      .then(() => setReady(true))
+      .then(async () => {
+        // Apply saved zoom level on startup
+        try {
+          const settings = await api.getSettings()
+          const scale = parseFloat(settings.ui_scale || '1') || 1
+          if (scale !== 1) await applyZoom(scale)
+        } catch { /* ignore — settings will load later */ }
+        setReady(true)
+      })
       .catch((err) => setError(err.message))
   }, [])
 
