@@ -91,8 +91,8 @@ func (r *BankAccountRepository) Delete(id string) error {
 	return err
 }
 
-func (r *BankAccountRepository) ClearDefaultsForCurrency(supplierID, currency string) error {
-	_, err := r.db.Exec("UPDATE bank_accounts SET is_default = 0 WHERE supplier_id = ? AND currency = ?", supplierID, currency)
+func (r *BankAccountRepository) ClearDefaults(supplierID string) error {
+	_, err := r.db.Exec("UPDATE bank_accounts SET is_default = 0 WHERE supplier_id = ?", supplierID)
 	return err
 }
 

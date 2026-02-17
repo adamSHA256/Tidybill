@@ -140,9 +140,9 @@ func (s *Server) createBankAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Clear existing defaults for this currency before creating
+	// Clear existing defaults before creating
 	if ba.IsDefault {
-		if err := s.bankAccounts.ClearDefaultsForCurrency(supplierID, ba.Currency); err != nil {
+		if err := s.bankAccounts.ClearDefaults(supplierID); err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
@@ -346,9 +346,9 @@ func (s *Server) updateBankAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Clear existing defaults for this currency when setting a new default
+	// Clear existing defaults when setting a new default
 	if existing.IsDefault && !wasDefault {
-		s.bankAccounts.ClearDefaultsForCurrency(existing.SupplierID, existing.Currency)
+		s.bankAccounts.ClearDefaults(existing.SupplierID)
 	}
 
 	if err := s.bankAccounts.Update(existing); err != nil {

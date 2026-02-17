@@ -319,7 +319,7 @@ func (c *CLI) addBankAccount(supplierID string) {
 	}
 
 	if acc.IsDefault && len(existing) > 0 {
-		if err := c.bankAccs.ClearDefaultsForCurrency(supplierID, acc.Currency); err != nil {
+		if err := c.bankAccs.ClearDefaults(supplierID); err != nil {
 			c.printError(err.Error())
 			return
 		}
@@ -402,7 +402,7 @@ func (c *CLI) editBankAccount(acc *model.BankAccount) {
 			c.editBankAccountDetails(acc)
 		case "d":
 			if !acc.IsDefault {
-				c.bankAccs.ClearDefaultsForCurrency(acc.SupplierID, acc.Currency)
+				c.bankAccs.ClearDefaults(acc.SupplierID)
 				acc.IsDefault = true
 				c.bankAccs.Update(acc)
 				c.printSuccess(i18n.T("success.set_as_default"))
