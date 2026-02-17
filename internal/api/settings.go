@@ -24,16 +24,18 @@ func (s *Server) getSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	dashboardWidgets, _ := s.settings.Get("dashboard.widgets")
 	customCurrencies, _ := s.settings.Get("custom.currencies")
+	invoiceDefaultSort, _ := s.settings.Get("invoice.default_sort") // TODO: also expose in CLI settings menu
 
 	writeJSON(w, http.StatusOK, map[string]string{
-		"language":           lang,
-		"dir_logos":          dirLogos,
-		"dir_pdfs":           dirPdfs,
-		"dir_previews":       dirPreviews,
-		"default_currency":   defaultCurrency,
-		"default_due_days":   defaultDueDays,
-		"dashboard_widgets":  dashboardWidgets,
-		"custom_currencies":  customCurrencies,
+		"language":              lang,
+		"dir_logos":             dirLogos,
+		"dir_pdfs":              dirPdfs,
+		"dir_previews":          dirPreviews,
+		"default_currency":      defaultCurrency,
+		"default_due_days":      defaultDueDays,
+		"dashboard_widgets":     dashboardWidgets,
+		"custom_currencies":     customCurrencies,
+		"invoice_default_sort":  invoiceDefaultSort,
 	})
 }
 
@@ -44,8 +46,9 @@ type UpdateSettingsRequest struct {
 	DirPreviews      *string `json:"dir_previews"`
 	DefaultCurrency  *string `json:"default_currency"`
 	DefaultDueDays   *string `json:"default_due_days"`
-	DashboardWidgets *string `json:"dashboard_widgets"`
-	CustomCurrencies *string `json:"custom_currencies"`
+	DashboardWidgets    *string `json:"dashboard_widgets"`
+	CustomCurrencies    *string `json:"custom_currencies"`
+	InvoiceDefaultSort  *string `json:"invoice_default_sort"` // TODO: also expose in CLI settings menu
 }
 
 func (s *Server) updateSettings(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +75,8 @@ func (s *Server) updateSettings(w http.ResponseWriter, r *http.Request) {
 		"default.currency":    req.DefaultCurrency,
 		"default.due_days":    req.DefaultDueDays,
 		"dashboard.widgets":   req.DashboardWidgets,
-		"custom.currencies":   req.CustomCurrencies,
+		"custom.currencies":     req.CustomCurrencies,
+		"invoice.default_sort":  req.InvoiceDefaultSort,
 	}
 	for key, val := range simpleSettings {
 		if val == nil {

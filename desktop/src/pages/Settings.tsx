@@ -217,6 +217,21 @@ export function Settings() {
             onChange={(v) => { if (v) updateMutation.mutate({ default_due_days: v }) }}
             w={300}
           />
+          {/* TODO: also expose this setting in CLI settings menu */}
+          <Select
+            label={t('settings.invoice_default_sort')}
+            description={t('settings.invoice_default_sort_desc')}
+            data={[
+              { value: 'created_at', label: t('invoice.created_at') },
+              { value: 'issue_date', label: t('invoice.issue_date') },
+              { value: 'due_date', label: t('invoice.due_date') },
+              { value: 'invoice_number', label: t('invoice.number') },
+              { value: 'total', label: t('invoice.amount') },
+            ]}
+            value={settings?.invoice_default_sort || 'created_at'}
+            onChange={(v) => { if (v) updateMutation.mutate({ invoice_default_sort: v }) }}
+            w={300}
+          />
           <Group>
             <Switch label={t('settings.auto_number')} defaultChecked disabled />
             {comingSoonBadge}

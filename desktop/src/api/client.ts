@@ -176,6 +176,8 @@ export const api = {
   // Bank accounts
   updateBankAccount: (id: string, data: Partial<BankAccount>) =>
     request<BankAccount>(`/bank-accounts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteBankAccount: (id: string) =>
+    request<void>(`/bank-accounts/${id}`, { method: 'DELETE' }),
 
   // Settings
   getSettings: () => request<AppSettings>('/settings'),
@@ -354,6 +356,7 @@ export interface AppSettings {
   default_due_days?: string
   dashboard_widgets?: string
   custom_currencies?: string
+  invoice_default_sort?: string // TODO: also expose in CLI settings menu
 }
 
 export interface Unit {
