@@ -23,15 +23,11 @@ func (c *CLI) settingsMenu() {
 		currentLang := i18n.GetLang()
 		fmt.Printf("  %s %s\n", i18n.T("settings.current_language"), langName(currentLang))
 
-		currency := c.getDefaultCurrency()
-		fmt.Printf("  %s %s\n", i18n.T("settings.current_currency"), currency)
-
 		dueDays := c.getDefaultDueDays()
 		fmt.Printf("  %s %s\n", i18n.T("settings.current_due_days"), dueDays)
 		fmt.Println()
 
 		fmt.Printf("  L) %s\n", i18n.T("settings.change_language"))
-		fmt.Printf("  M) %s\n", i18n.T("settings.change_currency"))
 		fmt.Printf("  S) %s\n", i18n.T("settings.change_due_days"))
 		fmt.Printf("  %s\n", i18n.T("action.change_directories"))
 		fmt.Printf("  U) %s\n", i18n.T("settings.manage_units"))
@@ -43,8 +39,6 @@ func (c *CLI) settingsMenu() {
 		switch strings.ToLower(choice) {
 		case "l":
 			c.changeLanguage()
-		case "m":
-			c.changeDefaultCurrency()
 		case "s":
 			c.changeDefaultDueDays()
 		case "d":

@@ -466,6 +466,13 @@ func (s *Server) generateInvoicePDF(w http.ResponseWriter, r *http.Request) {
 		templateCode = req.TemplateID
 	}
 
+	// If no template specified, use the user's default template from DB
+	if templateCode == "" {
+		if defTmpl, err := s.templates.GetDefault(); err == nil && defTmpl != nil {
+			templateCode = defTmpl.ID
+		}
+	}
+
 	// Look up template settings from DB
 	opts := &service.TemplateOptions{
 		ShowLogo:  true,

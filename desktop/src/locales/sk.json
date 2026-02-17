@@ -246,6 +246,7 @@
   "settings.general": "Všeobecné",
   "settings.language": "Jazyk",
   "settings.default_currency": "Predvolená mena",
+  "settings.default_currency_deprecated": "Menej dôležité nastavenie — mena sa preberá z bankového účtu. Bude odstránené v budúcej verzii.",
   "settings.date_format": "Formát dátumu",
   "settings.coming_soon": "pripravujeme",
   "settings.directories": "Adresáre",

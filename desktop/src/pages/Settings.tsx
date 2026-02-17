@@ -159,28 +159,31 @@ export function Settings() {
             onChange={(v) => { if (v) setLang(v as 'cs' | 'sk' | 'en') }}
             w={300}
           />
-          <Select
-            label={t('settings.default_currency')}
-            data={[
-              ...([...new Set([...BASE_CURRENCIES, ...(() => { try { return JSON.parse(settings?.custom_currencies || '[]') } catch { return [] } })()])])
-                .map((c) => ({ value: c, label: c })),
-              { value: ADD_CURRENCY, label: `+ ${t('invoice.add_currency')}` },
-            ]}
-            value={localCurrency}
-            onChange={(v) => {
-              if (v === ADD_CURRENCY) {
-                setNewCurrencyCode('')
-                setCurrencyModalOpen(true)
-                return
-              }
-              if (v) {
-                setLocalCurrency(v)
-                updateMutation.mutate({ default_currency: v })
-              }
-            }}
-            searchable
-            w={300}
-          />
+          <div>
+            <Select
+              label={t('settings.default_currency')}
+              description={t('settings.default_currency_deprecated')}
+              data={[
+                ...([...new Set([...BASE_CURRENCIES, ...(() => { try { return JSON.parse(settings?.custom_currencies || '[]') } catch { return [] } })()])])
+                  .map((c) => ({ value: c, label: c })),
+                { value: ADD_CURRENCY, label: `+ ${t('invoice.add_currency')}` },
+              ]}
+              value={localCurrency}
+              onChange={(v) => {
+                if (v === ADD_CURRENCY) {
+                  setNewCurrencyCode('')
+                  setCurrencyModalOpen(true)
+                  return
+                }
+                if (v) {
+                  setLocalCurrency(v)
+                  updateMutation.mutate({ default_currency: v })
+                }
+              }}
+              searchable
+              w={300}
+            />
+          </div>
           <Group gap="xs">
             <Select
               label={t('settings.date_format')}

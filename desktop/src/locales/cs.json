@@ -250,6 +250,7 @@
   "settings.general": "Obecné",
   "settings.language": "Jazyk",
   "settings.default_currency": "Výchozí měna",
+  "settings.default_currency_deprecated": "Méně důležité nastavení — měna se přebírá z bankovního účtu. Bude odstraněno v budoucí verzi.",
   "settings.date_format": "Formát data",
   "settings.coming_soon": "připravujeme",
   "settings.directories": "Adresáře",
