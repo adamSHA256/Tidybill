@@ -399,5 +399,14 @@
   "invoice.currency_code": "Kód meny",
 
   "health.disconnected_title": "Spojenie stratené",
-  "health.disconnected_message": "Backend neodpovedá. Reštartujte prosím TidyBill."
+  "health.disconnected_message": "Backend neodpovedá. Reštartujte prosím TidyBill.",
+
+  "settings.payment_types": "Typy platieb",
+  "settings.payment_types_desc": "Správa typov platieb pre faktúry",
+  "settings.payment_type_placeholder": "Nový typ platby",
+  "settings.save_payment_types": "Uložiť typy platieb",
+  "notify.payment_types_saved": "Typy platieb uložené",
+  "notify.payment_types_saved_msg": "Typy platieb boli aktualizované",
+  "invoice.taxable_date": "DUZP",
+  "invoice.payment_method": "Forma úhrady"
 }

@@ -504,6 +504,19 @@ var messagesEN = map[string]string{
 	"settings.set_default_unit": "Set default unit",
 	"success.units_updated":    "Units updated",
 
+	// ── Payment Types ──────────────────────────────────────────────────
+	"prompt.taxable_date_confirm":      "Taxable supply date (DD.MM.YYYY)",
+	"payment_type.bank_transfer":       "Bank transfer",
+	"payment_type.cash":                "Cash",
+	"pdf.cash":                         "Cash",
+	"settings.manage_payment_types":    "Manage payment types",
+	"settings.payment_types_title":     "PAYMENT TYPES",
+	"settings.add_payment_type":        "Add payment type",
+	"settings.remove_payment_type":     "Remove payment type",
+	"settings.set_default_payment_type": "Set default type",
+	"success.payment_types_updated":    "Payment types updated",
+	"settings.add_payment_type_or_type": "  or type a custom payment type",
+
 	// ── Errors (new) ────────────────────────────────────────────────────
 	"error.invalid_option":  "Invalid option",
 	"error.no_bank_accounts": "No bank accounts",

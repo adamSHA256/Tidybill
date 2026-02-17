@@ -107,7 +107,7 @@ func (t *DefaultTemplate) addParties(m core.Maroto, data *InvoiceData) {
 			text.New(i18n.T("pdf.due_date"), props.Text{Size: 9, Top: 6}),
 			text.New(data.Invoice.DueDate.Format("02.01.2006"), props.Text{Size: 9, Style: fontstyle.Bold, Top: 6, Left: 28}),
 			text.New(i18n.T("pdf.payment_method"), props.Text{Size: 9, Top: 12}),
-			text.New(i18n.T("pdf.bank_transfer"), props.Text{Size: 9, Style: fontstyle.Bold, Top: 12, Left: 28}),
+			text.New(data.Invoice.PaymentMethod, props.Text{Size: 9, Style: fontstyle.Bold, Top: 12, Left: 28}),
 			text.New(i18n.T("pdf.bank_account"), props.Text{Size: 9, Top: 20}),
 			text.New(data.BankAccount.AccountNumber, props.Text{Size: 9, Style: fontstyle.Bold, Top: 20, Left: 28}),
 			text.New(i18n.T("pdf.iban"), props.Text{Size: 9, Top: 26}),

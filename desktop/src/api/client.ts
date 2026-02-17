@@ -189,6 +189,11 @@ export const api = {
   updateUnits: (units: Unit[]) =>
     request<Unit[]>('/units', { method: 'PUT', body: JSON.stringify(units) }),
 
+  // Payment Types
+  getPaymentTypes: () => request<PaymentType[]>('/payment-types'),
+  updatePaymentTypes: (types: PaymentType[]) =>
+    request<PaymentType[]>('/payment-types', { method: 'PUT', body: JSON.stringify(types) }),
+
   // VAT Rates
   getVATRates: () => request<VATRate[]>('/vat-rates'),
   updateVATRates: (rates: VATRate[]) =>
@@ -377,6 +382,11 @@ export interface Unit {
   is_default?: boolean
 }
 
+export interface PaymentType {
+  name: string
+  is_default?: boolean
+}
+
 export interface VATRate {
   rate: number
   name?: string
@@ -393,6 +403,8 @@ export interface CreateInvoiceRequest {
   invoice_number?: string
   issue_date?: string
   due_date?: string
+  taxable_date?: string
+  payment_method?: string
   currency?: string
   notes?: string
   items: {

@@ -104,6 +104,8 @@ type CreateInvoiceRequest struct {
 	InvoiceNumber string               `json:"invoice_number"`
 	IssueDate     string               `json:"issue_date"`
 	DueDate       string               `json:"due_date"`
+	TaxableDate   string               `json:"taxable_date"`
+	PaymentMethod string               `json:"payment_method"`
 	Currency      string               `json:"currency"`
 	Notes         string               `json:"notes"`
 	InternalNotes string               `json:"internal_notes"`
@@ -183,9 +185,31 @@ func (s *Server) createInvoice(w http.ResponseWriter, r *http.Request) {
 			inv.TaxableDate = t
 		}
 	}
+	if req.TaxableDate != "" {
+		if t, err := time.Parse("2006-01-02", req.TaxableDate); err == nil {
+			inv.TaxableDate = t
+		}
+	}
 	if req.DueDate != "" {
 		if t, err := time.Parse("2006-01-02", req.DueDate); err == nil {
 			inv.DueDate = t
+		}
+	}
+
+	// Set payment method
+	if req.PaymentMethod != "" {
+		inv.PaymentMethod = req.PaymentMethod
+	} else {
+		// Use default from payment types
+		pts := s.loadPaymentTypes()
+		for _, pt := range pts {
+			if pt.IsDefault {
+				inv.PaymentMethod = pt.Name
+				break
+			}
+		}
+		if inv.PaymentMethod == "" && len(pts) > 0 {
+			inv.PaymentMethod = pts[0].Name
 		}
 	}
 
@@ -305,10 +329,18 @@ func (s *Server) updateInvoice(w http.ResponseWriter, r *http.Request) {
 			existing.TaxableDate = t
 		}
 	}
+	if req.TaxableDate != "" {
+		if t, err := time.Parse("2006-01-02", req.TaxableDate); err == nil {
+			existing.TaxableDate = t
+		}
+	}
 	if req.DueDate != "" {
 		if t, err := time.Parse("2006-01-02", req.DueDate); err == nil {
 			existing.DueDate = t
 		}
+	}
+	if req.PaymentMethod != "" {
+		existing.PaymentMethod = req.PaymentMethod
 	}
 
 	// Replace items if provided

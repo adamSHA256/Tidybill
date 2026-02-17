@@ -118,6 +118,10 @@ func (s *Server) Router() http.Handler {
 	mux.HandleFunc("GET /api/units", s.getUnits)
 	mux.HandleFunc("PUT /api/units", s.updateUnits)
 
+	// Payment Types
+	mux.HandleFunc("GET /api/payment-types", s.getPaymentTypes)
+	mux.HandleFunc("PUT /api/payment-types", s.updatePaymentTypes)
+
 	// VAT Rates
 	mux.HandleFunc("GET /api/vat-rates", s.getVATRates)
 	mux.HandleFunc("PUT /api/vat-rates", s.updateVATRates)

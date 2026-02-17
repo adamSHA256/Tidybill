@@ -33,6 +33,7 @@ const CREATE_NEW = '__create_new__'
 const ADD_CURRENCY = '__add_currency__'
 const ADD_VAT_RATE = '__add_vat_rate__'
 const ADD_UNIT = '__add_unit__'
+const ADD_PAYMENT_TYPE = '__add_payment_type__'
 
 interface ItemForm {
   item_id: string
@@ -59,9 +60,11 @@ export function InvoiceEdit() {
   const [customerId, setCustomerId] = useState<string | null>(null)
   const [bankAccountId, setBankAccountId] = useState<string | null>(null)
   const [issueDate, setIssueDate] = useState<string | null>(null)
+  const [taxableDate, setTaxableDate] = useState<string | null>(null)
   const [dueDate, setDueDate] = useState<string | null>(null)
   const [currency, setCurrency] = useState('CZK')
   const [invoiceNumber, setInvoiceNumber] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<string | null>(null)
   const [notes, setNotes] = useState('')
   const [items, setItems] = useState<ItemForm[]>([{ ...emptyItem }])
 
@@ -74,6 +77,8 @@ export function InvoiceEdit() {
   const [unitModalOpen, setUnitModalOpen] = useState(false)
   const [newUnitValue, setNewUnitValue] = useState('')
   const [unitTargetIndex, setUnitTargetIndex] = useState<number>(-1)
+  const [paymentTypeModalOpen, setPaymentTypeModalOpen] = useState(false)
+  const [newPaymentTypeName, setNewPaymentTypeName] = useState('')
   const [currencyModalOpen, setCurrencyModalOpen] = useState(false)
   const [newCurrencyCode, setNewCurrencyCode] = useState('')
   const [currencyTarget, setCurrencyTarget] = useState<'invoice' | 'bank'>('invoice')
@@ -142,6 +147,11 @@ export function InvoiceEdit() {
   })
   const unitOptions = (units || []).map((u) => u.name)
 
+  const { data: paymentTypes } = useQuery({
+    queryKey: ['payment-types'],
+    queryFn: api.getPaymentTypes,
+  })
+
   const { data: currenciesList } = useQuery({
     queryKey: ['currencies'],
     queryFn: api.getCurrencies,
@@ -160,9 +170,11 @@ export function InvoiceEdit() {
       setCustomerId(invoice.customer_id)
       setBankAccountId(invoice.bank_account_id)
       setIssueDate(invoice.issue_date?.slice(0, 10) || null)
+      setTaxableDate(invoice.taxable_date?.slice(0, 10) || null)
       setDueDate(invoice.due_date?.slice(0, 10) || null)
       setCurrency(invoice.currency || 'CZK')
       setInvoiceNumber(invoice.invoice_number || '')
+      setPaymentMethod(invoice.payment_method || null)
       setNotes(invoice.notes || '')
       if (invoice.items && invoice.items.length > 0) {
         setItems(invoice.items.map((item) => ({
@@ -348,6 +360,34 @@ export function InvoiceEdit() {
     setCurrencyModalOpen(false)
   }
 
+  // Build payment type select data with "Add new" option
+  const paymentTypeSelectData = [
+    ...(paymentTypes || []).map((pt) => ({ value: pt.name, label: pt.name })),
+    { value: ADD_PAYMENT_TYPE, label: `+ ${t('settings.payment_type_placeholder')}` },
+  ]
+
+  const handlePaymentTypeSelect = (val: string | null) => {
+    if (val === ADD_PAYMENT_TYPE) {
+      setNewPaymentTypeName('')
+      setPaymentTypeModalOpen(true)
+      return
+    }
+    setPaymentMethod(val)
+  }
+
+  const handleAddPaymentType = () => {
+    const name = newPaymentTypeName.trim()
+    if (!name) return
+    const current = paymentTypes || []
+    if (!current.some((pt) => pt.name === name)) {
+      api.updatePaymentTypes([...current, { name }]).then(() => {
+        queryClient.invalidateQueries({ queryKey: ['payment-types'] })
+      })
+    }
+    setPaymentMethod(name)
+    setPaymentTypeModalOpen(false)
+  }
+
   const addItem = () => setItems([...items, { ...emptyItem, vat_rate: defaultVatRate }])
   const removeItem = (index: number) => {
     if (items.length > 1) setItems(items.filter((_, i) => i !== index))
@@ -397,7 +437,9 @@ export function InvoiceEdit() {
       bank_account_id: bankAccountId,
       invoice_number: invoiceNumber || undefined,
       issue_date: issueDate || undefined,
+      taxable_date: taxableDate ?? issueDate ?? undefined,
       due_date: dueDate || undefined,
+      payment_method: paymentMethod || undefined,
       currency,
       notes,
       items: items.filter((i) => i.description).map((i) => ({
@@ -487,11 +529,13 @@ export function InvoiceEdit() {
 
           <Paper p="md" radius="md" withBorder>
             <Text fw={500} mb="md">{t('invoice.details')}</Text>
-            <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }}>
+            <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
               <TextInput label={t('invoice.invoice_number')} value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.currentTarget.value)} />
               <DateInput label={t('invoice.issue_date')} valueFormat="DD.MM.YYYY" value={issueDate} onChange={setIssueDate} clearable />
+              <DateInput label={t('invoice.taxable_date')} valueFormat="DD.MM.YYYY" value={taxableDate ?? issueDate} onChange={setTaxableDate} clearable />
               <DateInput label={t('invoice.due_date')} valueFormat="DD.MM.YYYY" value={dueDate} onChange={setDueDate} clearable />
               <Select label={t('invoice.currency')} data={currencyData} value={currency} onChange={(v) => handleCurrencySelect(v, 'invoice')} searchable />
+              <Select label={t('invoice.payment_method')} data={paymentTypeSelectData} value={paymentMethod} onChange={handlePaymentTypeSelect} searchable />
             </SimpleGrid>
           </Paper>
 
@@ -783,6 +827,21 @@ export function InvoiceEdit() {
               <Group justify="end">
                 <Button variant="default" onClick={() => setCurrencyModalOpen(false)}>{t('common.cancel')}</Button>
                 <Button onClick={handleAddCurrency} disabled={!newCurrencyCode.trim()}>{t('common.save')}</Button>
+              </Group>
+            </Stack>
+          </Modal>
+
+          {/* Add payment type modal */}
+          <Modal opened={paymentTypeModalOpen} onClose={() => setPaymentTypeModalOpen(false)}
+            title={t('settings.payment_type_placeholder')} size="xs">
+            <Stack gap="md">
+              <TextInput label={t('invoice.payment_method')} placeholder={t('settings.payment_type_placeholder')}
+                value={newPaymentTypeName} onChange={(e) => setNewPaymentTypeName(e.currentTarget.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleAddPaymentType() }}
+              />
+              <Group justify="end">
+                <Button variant="default" onClick={() => setPaymentTypeModalOpen(false)}>{t('common.cancel')}</Button>
+                <Button onClick={handleAddPaymentType} disabled={!newPaymentTypeName.trim()}>{t('common.save')}</Button>
               </Group>
             </Stack>
           </Modal>

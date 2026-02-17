@@ -399,5 +399,14 @@
   "invoice.all_suppliers": "Všichni dodavatelé",
 
   "health.disconnected_title": "Spojení ztraceno",
-  "health.disconnected_message": "Backend neodpovídá. Restartujte prosím TidyBill."
+  "health.disconnected_message": "Backend neodpovídá. Restartujte prosím TidyBill.",
+
+  "settings.payment_types": "Typy plateb",
+  "settings.payment_types_desc": "Správa typů plateb pro faktury",
+  "settings.payment_type_placeholder": "Nový typ platby",
+  "settings.save_payment_types": "Uložit typy plateb",
+  "notify.payment_types_saved": "Typy plateb uloženy",
+  "notify.payment_types_saved_msg": "Typy plateb byly aktualizovány",
+  "invoice.taxable_date": "DÚZP",
+  "invoice.payment_method": "Forma úhrady"
 }

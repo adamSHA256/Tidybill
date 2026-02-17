@@ -31,6 +31,7 @@ func (c *CLI) settingsMenu() {
 		fmt.Printf("  S) %s\n", i18n.T("settings.change_due_days"))
 		fmt.Printf("  %s\n", i18n.T("action.change_directories"))
 		fmt.Printf("  U) %s\n", i18n.T("settings.manage_units"))
+		fmt.Printf("  P) %s\n", i18n.T("settings.manage_payment_types"))
 		fmt.Printf("  %s\n", i18n.T("action.back"))
 		fmt.Println()
 
@@ -45,6 +46,8 @@ func (c *CLI) settingsMenu() {
 			c.changeDirectories()
 		case "u":
 			c.manageUnits()
+		case "p":
+			c.managePaymentTypes()
 		case "0", "q":
 			return
 		}
@@ -401,6 +404,166 @@ func (c *CLI) changeDefaultDueDays() {
 	c.settings.Set("default.due_days", newDays)
 	c.printSuccess(i18n.Tf("success.due_days_changed", newDays))
 	c.waitEnter()
+}
+
+// ── Payment Types ──────────────────────────────────────────────────
+
+type cliPaymentType struct {
+	Name      string `json:"name"`
+	IsDefault bool   `json:"is_default,omitempty"`
+}
+
+func (c *CLI) loadPaymentTypes() []cliPaymentType {
+	raw, err := c.settings.Get("payment_types")
+	if err != nil || raw == "" {
+		return []cliPaymentType{
+			{Name: i18n.T("payment_type.bank_transfer"), IsDefault: true},
+			{Name: i18n.T("payment_type.cash")},
+		}
+	}
+	var types []cliPaymentType
+	if err := json.Unmarshal([]byte(raw), &types); err != nil {
+		return []cliPaymentType{{Name: i18n.T("payment_type.bank_transfer"), IsDefault: true}}
+	}
+	return types
+}
+
+func (c *CLI) savePaymentTypes(types []cliPaymentType) error {
+	data, err := json.Marshal(types)
+	if err != nil {
+		return err
+	}
+	return c.settings.Set("payment_types", string(data))
+}
+
+func (c *CLI) selectPaymentType() string {
+	types := c.loadPaymentTypes()
+
+	defaultName := ""
+	for _, pt := range types {
+		if pt.IsDefault {
+			defaultName = pt.Name
+			break
+		}
+	}
+	if defaultName == "" && len(types) > 0 {
+		defaultName = types[0].Name
+	}
+
+	fmt.Println()
+	fmt.Printf("  %s:\n", i18n.T("pdf.payment_method"))
+	for i, pt := range types {
+		marker := "  "
+		if pt.Name == defaultName {
+			marker = "* "
+		}
+		fmt.Printf("  %s%d) %s\n", marker, i+1, pt.Name)
+	}
+	fmt.Printf("  %s\n", i18n.T("settings.add_payment_type_or_type"))
+	fmt.Println()
+
+	input := c.promptDefault(i18n.T("prompt.choice"), "")
+	if input == "" {
+		return defaultName
+	}
+
+	idx := 0
+	fmt.Sscanf(input, "%d", &idx)
+	if idx > 0 && idx <= len(types) {
+		return types[idx-1].Name
+	}
+
+	return input
+}
+
+func (c *CLI) managePaymentTypes() {
+	for {
+		c.clearScreen()
+		fmt.Printf("=== %s ===\n\n", i18n.T("settings.payment_types_title"))
+
+		types := c.loadPaymentTypes()
+		for i, pt := range types {
+			def := ""
+			if pt.IsDefault {
+				def = " " + i18n.T("label.default_upper")
+			}
+			fmt.Printf("  %d) %s%s\n", i+1, pt.Name, def)
+		}
+		fmt.Println()
+
+		fmt.Printf("  A) %s\n", i18n.T("settings.add_payment_type"))
+		fmt.Printf("  R) %s\n", i18n.T("settings.remove_payment_type"))
+		fmt.Printf("  D) %s\n", i18n.T("settings.set_default_payment_type"))
+		fmt.Printf("  %s\n\n", i18n.T("action.back"))
+
+		choice := c.prompt(i18n.T("prompt.choose_option"))
+
+		switch strings.ToLower(choice) {
+		case "a":
+			name := c.prompt(i18n.T("prompt.name"))
+			if name == "" || name == "0" {
+				continue
+			}
+			types = append(types, cliPaymentType{Name: name})
+			if err := c.savePaymentTypes(types); err != nil {
+				c.printError(err.Error())
+			} else {
+				c.printSuccess(i18n.T("success.payment_types_updated"))
+			}
+			c.waitEnter()
+
+		case "r":
+			if len(types) <= 1 {
+				c.printError(i18n.T("error.invalid_option"))
+				c.waitEnter()
+				continue
+			}
+			numStr := c.prompt(i18n.T("prompt.choose_option"))
+			idx := 0
+			fmt.Sscanf(numStr, "%d", &idx)
+			idx--
+			if idx < 0 || idx >= len(types) {
+				continue
+			}
+			types = append(types[:idx], types[idx+1:]...)
+			hasDefault := false
+			for _, pt := range types {
+				if pt.IsDefault {
+					hasDefault = true
+				}
+			}
+			if !hasDefault && len(types) > 0 {
+				types[0].IsDefault = true
+			}
+			if err := c.savePaymentTypes(types); err != nil {
+				c.printError(err.Error())
+			} else {
+				c.printSuccess(i18n.T("success.payment_types_updated"))
+			}
+			c.waitEnter()
+
+		case "d":
+			numStr := c.prompt(i18n.T("prompt.choose_option"))
+			idx := 0
+			fmt.Sscanf(numStr, "%d", &idx)
+			idx--
+			if idx < 0 || idx >= len(types) {
+				continue
+			}
+			for i := range types {
+				types[i].IsDefault = (i == idx)
+			}
+			if err := c.savePaymentTypes(types); err != nil {
+				c.printError(err.Error())
+			} else {
+				c.printSuccess(i18n.T("success.payment_types_updated"))
+			}
+			c.waitEnter()
+
+		case "0", "q":
+			return
+		}
+	}
 }
 
 func langName(lang i18n.Lang) string {

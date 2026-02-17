@@ -106,7 +106,7 @@ layout:
             style: { size: 9, bold: true, top: 6, left: 35 }
           - text: "{{ label \"pdf.payment_method\" }}"
             style: { size: 9, top: 12 }
-          - text: "{{ label \"pdf.bank_transfer\" }}"
+          - text: "{{ .Invoice.PaymentMethod }}"
             style: { size: 9, bold: true, top: 12, left: 35 }
           - text: "{{ label \"pdf.bank_account\" }}"
             style: { size: 9, top: 20 }
@@ -388,7 +388,7 @@ layout:
   - row: 5
     cols:
       - width: 4
-        text: "{{ label \"pdf.payment_method\" }} {{ label \"pdf.bank_transfer\" }}"
+        text: "{{ label \"pdf.payment_method\" }} {{ .Invoice.PaymentMethod }}"
         style: { size: 9, left: 2 }
       - width: 8
 
@@ -623,7 +623,7 @@ layout:
         text: "{{ .Invoice.VariableSymbol }}"
         style: { size: 10, bold: true }
       - width: 3
-        text: "{{ label \"pdf.bank_transfer\" }}"
+        text: "{{ .Invoice.PaymentMethod }}"
         style: { size: 10 }
 
   - spacer: 8

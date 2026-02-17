@@ -11,6 +11,7 @@ import (
 	"github.com/johnfercher/maroto/v2/pkg/config"
 	"github.com/johnfercher/maroto/v2/pkg/props"
 
+	"github.com/adamSHA256/tidybill/internal/i18n"
 	"github.com/adamSHA256/tidybill/internal/model"
 )
 
@@ -121,7 +122,7 @@ func buildSampleInvoiceData() *InvoiceData {
 			DueDate:        now.AddDate(0, 0, 14),
 			TaxableDate:    now,
 			VariableSymbol: "9900042",
-			PaymentMethod:  "bank_transfer",
+			PaymentMethod:  i18n.T("payment_type.bank_transfer"),
 			Currency:       "CZK",
 			Subtotal:       79600.00,
 			VATTotal:       0,

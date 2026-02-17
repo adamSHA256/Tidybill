@@ -158,7 +158,7 @@ func (t *ClassicTemplate) details(data *InvoiceData) []core.Row {
 	))
 
 	rows = append(rows, row.New(5).Add(
-		text.NewCol(4, fmt.Sprintf("%s: %s", i18n.T("pdf.payment_method"), i18n.T("pdf.bank_transfer")), props.Text{Size: 9, Left: classicPadLeft}),
+		text.NewCol(4, fmt.Sprintf("%s: %s", i18n.T("pdf.payment_method"), data.Invoice.PaymentMethod), props.Text{Size: 9, Left: classicPadLeft}),
 		col.New(8),
 	))
 

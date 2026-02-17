@@ -504,6 +504,19 @@ var messagesCS = map[string]string{
 	"settings.set_default_unit": "Nastavit výchozí jednotku",
 	"success.units_updated":    "Jednotky aktualizovány",
 
+	// ── Payment Types ──────────────────────────────────────────────────
+	"prompt.taxable_date_confirm":      "DÚZP (DD.MM.RRRR)",
+	"payment_type.bank_transfer":       "Převodem",
+	"payment_type.cash":                "Hotově",
+	"pdf.cash":                         "Hotově",
+	"settings.manage_payment_types":    "Správa typů plateb",
+	"settings.payment_types_title":     "SPRÁVA TYPŮ PLATEB",
+	"settings.add_payment_type":        "Přidat typ platby",
+	"settings.remove_payment_type":     "Odebrat typ platby",
+	"settings.set_default_payment_type": "Nastavit výchozí typ",
+	"success.payment_types_updated":    "Typy plateb aktualizovány",
+	"settings.add_payment_type_or_type": "  nebo zadejte vlastní typ platby",
+
 	// ── Errors (new) ────────────────────────────────────────────────────
 	"error.invalid_option":  "Neplatná volba",
 	"error.no_bank_accounts": "Žádné bankovní účty",

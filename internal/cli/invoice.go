@@ -194,12 +194,21 @@ func (c *CLI) createInvoice() {
 		invoice.TaxableDate = t
 	}
 
+	// Allow user to change DUZP / taxable date (default: issue date)
+	taxableDateStr := c.promptDefault(i18n.T("prompt.taxable_date_confirm"), invoice.TaxableDate.Format("02.01.2006"))
+	if t, err := time.Parse("02.01.2006", taxableDateStr); err == nil {
+		invoice.TaxableDate = t
+	}
+
 	// Allow user to change due date
 	dueDateStr := c.promptDefault(i18n.T("prompt.due_date_confirm"), invoice.DueDate.Format("02.01.2006"))
 	if t, err := time.Parse("02.01.2006", dueDateStr); err == nil {
 		invoice.DueDate = t
 	}
 	fmt.Println(i18n.Tf("label.due_date_short", invoice.DueDate.Format("02.01.2006")))
+
+	// Select payment type
+	invoice.PaymentMethod = c.selectPaymentType()
 	fmt.Println()
 
 	// Add items

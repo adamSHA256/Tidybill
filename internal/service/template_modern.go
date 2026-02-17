@@ -142,7 +142,7 @@ func (t *ModernTemplate) meta(data *InvoiceData) []core.Row {
 		text.NewCol(3, issueDate, props.Text{Size: 10, Style: fontstyle.Bold}),
 		text.NewCol(3, dueDate, props.Text{Size: 10, Style: fontstyle.Bold, Color: redAccent}),
 		text.NewCol(3, data.Invoice.VariableSymbol, props.Text{Size: 10, Style: fontstyle.Bold}),
-		text.NewCol(3, i18n.T("pdf.bank_transfer"), props.Text{Size: 10}),
+		text.NewCol(3, data.Invoice.PaymentMethod, props.Text{Size: 10}),
 	))
 
 	rows = append(rows, row.New(8))

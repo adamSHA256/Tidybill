@@ -399,5 +399,14 @@
   "invoice.currency_code": "Currency code",
 
   "health.disconnected_title": "Connection Lost",
-  "health.disconnected_message": "The backend is not responding. Please restart TidyBill."
+  "health.disconnected_message": "The backend is not responding. Please restart TidyBill.",
+
+  "settings.payment_types": "Payment types",
+  "settings.payment_types_desc": "Manage payment types for invoices",
+  "settings.payment_type_placeholder": "New payment type",
+  "settings.save_payment_types": "Save payment types",
+  "notify.payment_types_saved": "Payment types saved",
+  "notify.payment_types_saved_msg": "Payment types have been updated",
+  "invoice.taxable_date": "Taxable supply date",
+  "invoice.payment_method": "Payment method"
 }
