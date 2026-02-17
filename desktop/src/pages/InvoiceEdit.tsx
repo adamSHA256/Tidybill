@@ -30,6 +30,9 @@ import { CountrySelect } from '../components/CountrySelect'
 import { useT } from '../i18n'
 
 const CREATE_NEW = '__create_new__'
+const ADD_CURRENCY = '__add_currency__'
+const ADD_VAT_RATE = '__add_vat_rate__'
+const ADD_UNIT = '__add_unit__'
 
 interface ItemForm {
   item_id: string
@@ -65,6 +68,15 @@ export function InvoiceEdit() {
   // Modal states for inline creation
   const [customerModalOpen, setCustomerModalOpen] = useState(false)
   const [bankModalOpen, setBankModalOpen] = useState(false)
+  const [vatRateModalOpen, setVatRateModalOpen] = useState(false)
+  const [newVatRateValue, setNewVatRateValue] = useState('')
+  const [vatRateTargetIndex, setVatRateTargetIndex] = useState<number>(-1)
+  const [unitModalOpen, setUnitModalOpen] = useState(false)
+  const [newUnitValue, setNewUnitValue] = useState('')
+  const [unitTargetIndex, setUnitTargetIndex] = useState<number>(-1)
+  const [currencyModalOpen, setCurrencyModalOpen] = useState(false)
+  const [newCurrencyCode, setNewCurrencyCode] = useState('')
+  const [currencyTarget, setCurrencyTarget] = useState<'invoice' | 'bank'>('invoice')
 
   // Customer form state
   const [cName, setCName] = useState('')
@@ -117,6 +129,29 @@ export function InvoiceEdit() {
     queryKey: ['items-most-used'],
     queryFn: api.getMostUsedItems,
   })
+
+  const { data: vatRates } = useQuery({
+    queryKey: ['vat-rates'],
+    queryFn: api.getVATRates,
+  })
+  const vatRateOptions = (vatRates || []).map((r) => String(r.rate))
+
+  const { data: units } = useQuery({
+    queryKey: ['units'],
+    queryFn: api.getUnits,
+  })
+  const unitOptions = (units || []).map((u) => u.name)
+
+  const { data: currenciesList } = useQuery({
+    queryKey: ['currencies'],
+    queryFn: api.getCurrencies,
+  })
+
+  const { data: editSettings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: api.getSettings,
+  })
+  const defaultVatRate = parseFloat(editSettings?.default_vat_rate || '21') || 21
 
   // Initialize form from loaded invoice
   useEffect(() => {
@@ -224,7 +259,96 @@ export function InvoiceEdit() {
     })
   }
 
-  const addItem = () => setItems([...items, { ...emptyItem }])
+  // Build VAT rate select data with "Add new" option
+  const vatRateSelectData = [
+    ...(vatRateOptions.length > 0 ? vatRateOptions : ['0', '12', '21']).map((r) => ({ value: r, label: `${r}%` })),
+    { value: ADD_VAT_RATE, label: `+ ${t('invoice.add_vat_rate')}` },
+  ]
+
+  const handleVatRateSelect = (val: string | null, index: number) => {
+    if (val === ADD_VAT_RATE) {
+      setNewVatRateValue('')
+      setVatRateTargetIndex(index)
+      setVatRateModalOpen(true)
+      return
+    }
+    updateItem(index, 'vat_rate', Number(val))
+  }
+
+  const handleAddVatRate = () => {
+    const rate = parseFloat(newVatRateValue.trim())
+    if (isNaN(rate) || rate < 0) return
+    const currentRates = vatRates || []
+    if (!currentRates.some((r) => r.rate === rate)) {
+      api.updateVATRates([...currentRates, { rate }]).then(() => {
+        queryClient.invalidateQueries({ queryKey: ['vat-rates'] })
+      })
+    }
+    if (vatRateTargetIndex >= 0) updateItem(vatRateTargetIndex, 'vat_rate', rate)
+    setVatRateModalOpen(false)
+  }
+
+  // Build unit select data with "Add new" option
+  const unitSelectData = [
+    ...(unitOptions.length > 0 ? unitOptions : ['ks', 'hod', 'den', 'm\u00B2']).map((u) => ({ value: u, label: u })),
+    { value: ADD_UNIT, label: `+ ${t('invoice.add_unit')}` },
+  ]
+
+  const handleUnitSelect = (val: string | null, index: number) => {
+    if (val === ADD_UNIT) {
+      setNewUnitValue('')
+      setUnitTargetIndex(index)
+      setUnitModalOpen(true)
+      return
+    }
+    updateItem(index, 'unit', val || unitOptions[0] || 'ks')
+  }
+
+  const handleAddUnit = () => {
+    const name = newUnitValue.trim()
+    if (!name) return
+    const currentUnits = units || []
+    if (!currentUnits.some((u) => u.name === name)) {
+      api.updateUnits([...currentUnits, { name }]).then(() => {
+        queryClient.invalidateQueries({ queryKey: ['units'] })
+      })
+    }
+    if (unitTargetIndex >= 0) updateItem(unitTargetIndex, 'unit', name)
+    setUnitModalOpen(false)
+  }
+
+  // Build currency select data from API + "Add new"
+  const currencyData = [
+    ...(currenciesList || []).map((c) => ({ value: c.code, label: c.code })),
+    { value: ADD_CURRENCY, label: `+ ${t('invoice.add_currency')}` },
+  ]
+
+  const handleCurrencySelect = (v: string | null, target: 'invoice' | 'bank') => {
+    if (v === ADD_CURRENCY) {
+      setNewCurrencyCode('')
+      setCurrencyTarget(target)
+      setCurrencyModalOpen(true)
+      return
+    }
+    if (target === 'invoice') setCurrency(v || 'CZK')
+    else setBCurrency(v || 'CZK')
+  }
+
+  const handleAddCurrency = () => {
+    const code = newCurrencyCode.trim().toUpperCase()
+    if (!code) return
+    const currentCurrencies = currenciesList || []
+    if (!currentCurrencies.some((c) => c.code === code)) {
+      api.updateCurrencies([...currentCurrencies, { code }]).then(() => {
+        queryClient.invalidateQueries({ queryKey: ['currencies'] })
+      })
+    }
+    if (currencyTarget === 'invoice') setCurrency(code)
+    else setBCurrency(code)
+    setCurrencyModalOpen(false)
+  }
+
+  const addItem = () => setItems([...items, { ...emptyItem, vat_rate: defaultVatRate }])
   const removeItem = (index: number) => {
     if (items.length > 1) setItems(items.filter((_, i) => i !== index))
   }
@@ -367,7 +491,7 @@ export function InvoiceEdit() {
               <TextInput label={t('invoice.invoice_number')} value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.currentTarget.value)} />
               <DateInput label={t('invoice.issue_date')} valueFormat="DD.MM.YYYY" value={issueDate} onChange={setIssueDate} clearable />
               <DateInput label={t('invoice.due_date')} valueFormat="DD.MM.YYYY" value={dueDate} onChange={setDueDate} clearable />
-              <Select label={t('invoice.currency')} data={['CZK', 'EUR', 'USD']} value={currency} onChange={(v) => setCurrency(v || 'CZK')} />
+              <Select label={t('invoice.currency')} data={currencyData} value={currency} onChange={(v) => handleCurrencySelect(v, 'invoice')} searchable />
             </SimpleGrid>
           </Paper>
 
@@ -505,16 +629,16 @@ export function InvoiceEdit() {
                         onChange={(val) => updateItem(i, 'quantity', val || 0)} />
                     </Table.Td>
                     <Table.Td>
-                      <Select size="sm" data={['ks', 'hod', 'den', 'm\u00B2']} value={item.unit}
-                        onChange={(val) => updateItem(i, 'unit', val || 'ks')} />
+                      <Select size="sm" data={unitSelectData} value={item.unit}
+                        onChange={(val) => handleUnitSelect(val, i)} />
                     </Table.Td>
                     <Table.Td>
                       <NumberInput size="sm" min={0} value={item.unit_price}
                         onChange={(val) => updateItem(i, 'unit_price', val || 0)} />
                     </Table.Td>
                     <Table.Td>
-                      <Select size="sm" data={['0', '12', '21']} value={String(item.vat_rate)}
-                        onChange={(val) => updateItem(i, 'vat_rate', Number(val))} />
+                      <Select size="sm" data={vatRateSelectData} value={String(item.vat_rate)}
+                        onChange={(val) => handleVatRateSelect(val, i)} />
                     </Table.Td>
                     <Table.Td>
                       <Text size="sm" fw={600}>{formatMoney(item.quantity * item.unit_price)}</Text>
@@ -594,6 +718,36 @@ export function InvoiceEdit() {
             </Stack>
           </Modal>
 
+          {/* Add VAT rate modal */}
+          <Modal opened={vatRateModalOpen} onClose={() => setVatRateModalOpen(false)}
+            title={t('invoice.new_vat_rate')} size="xs">
+            <Stack gap="md">
+              <TextInput label={t('invoice.new_vat_rate_label')} placeholder="15"
+                value={newVatRateValue} onChange={(e) => setNewVatRateValue(e.currentTarget.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleAddVatRate() }}
+              />
+              <Group justify="end">
+                <Button variant="default" onClick={() => setVatRateModalOpen(false)}>{t('common.cancel')}</Button>
+                <Button onClick={handleAddVatRate} disabled={!newVatRateValue.trim()}>{t('common.save')}</Button>
+              </Group>
+            </Stack>
+          </Modal>
+
+          {/* Add unit modal */}
+          <Modal opened={unitModalOpen} onClose={() => setUnitModalOpen(false)}
+            title={t('invoice.new_unit')} size="xs">
+            <Stack gap="md">
+              <TextInput label={t('invoice.new_unit_label')} placeholder="bal"
+                value={newUnitValue} onChange={(e) => setNewUnitValue(e.currentTarget.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleAddUnit() }}
+              />
+              <Group justify="end">
+                <Button variant="default" onClick={() => setUnitModalOpen(false)}>{t('common.cancel')}</Button>
+                <Button onClick={handleAddUnit} disabled={!newUnitValue.trim()}>{t('common.save')}</Button>
+              </Group>
+            </Stack>
+          </Modal>
+
           {/* Bank account creation modal */}
           <Modal opened={bankModalOpen} onClose={() => setBankModalOpen(false)}
             title={t('bank_account.new_title')} size="md">
@@ -607,12 +761,28 @@ export function InvoiceEdit() {
               <Group grow>
                 <TextInput label={t('bank_account.swift_label')} value={bSwift}
                   onChange={(e) => setBSwift(e.currentTarget.value)} />
-                <Select label={t('bank_account.currency_label')} data={['CZK', 'EUR', 'USD']}
-                  value={bCurrency} onChange={(v) => setBCurrency(v || 'CZK')} />
+                <Select label={t('bank_account.currency_label')} data={currencyData}
+                  value={bCurrency} onChange={(v) => handleCurrencySelect(v, 'bank')} searchable />
               </Group>
               <Group justify="end" mt="md">
                 <Button variant="default" onClick={() => setBankModalOpen(false)}>{t('common.cancel')}</Button>
                 <Button onClick={handleSaveBank} loading={createBankMutation.isPending}>{t('common.create')}</Button>
+              </Group>
+            </Stack>
+          </Modal>
+
+          {/* Add currency modal */}
+          <Modal opened={currencyModalOpen} onClose={() => setCurrencyModalOpen(false)}
+            title={t('invoice.add_currency')} size="xs">
+            <Stack gap="md">
+              <TextInput label={t('invoice.currency_code')} placeholder="BTC"
+                value={newCurrencyCode} onChange={(e) => setNewCurrencyCode(e.currentTarget.value.toUpperCase())}
+                maxLength={10}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleAddCurrency() }}
+              />
+              <Group justify="end">
+                <Button variant="default" onClick={() => setCurrencyModalOpen(false)}>{t('common.cancel')}</Button>
+                <Button onClick={handleAddCurrency} disabled={!newCurrencyCode.trim()}>{t('common.save')}</Button>
               </Group>
             </Stack>
           </Modal>

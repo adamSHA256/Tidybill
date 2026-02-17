@@ -12,13 +12,12 @@ import {
   TextInput,
   Button,
   Pill,
-  Modal,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, type Unit, type PDFTemplate } from '../api/client'
+import { api, type Unit, type PDFTemplate, type VATRate, type CurrencyItem } from '../api/client'
 import { useT } from '../i18n'
 
 const langOptions = [
@@ -27,8 +26,6 @@ const langOptions = [
   { value: 'en', label: 'English' },
 ]
 
-const BASE_CURRENCIES = ['CZK', 'EUR', 'USD', 'GBP', 'PLN', 'CHF']
-const ADD_CURRENCY = '__add_currency__'
 
 interface DashboardWidgets {
   revenue: boolean
@@ -77,7 +74,6 @@ export function Settings() {
   const [dirLogos, setDirLogos] = useState('')
   const [dirPdfs, setDirPdfs] = useState('')
   const [dirPreviews, setDirPreviews] = useState('')
-  const [localCurrency, setLocalCurrency] = useState('')
   const [newUnitName, setNewUnitName] = useState('')
 
   const { data: units } = useQuery({
@@ -87,18 +83,35 @@ export function Settings() {
 
   const [localUnits, setLocalUnits] = useState<Unit[]>([])
   const [dashWidgets, setDashWidgets] = useState<DashboardWidgets>(defaultWidgets)
-  const [currencyModalOpen, setCurrencyModalOpen] = useState(false)
+
+  const { data: currencies } = useQuery({
+    queryKey: ['currencies'],
+    queryFn: api.getCurrencies,
+  })
+  const [localCurrencies, setLocalCurrencies] = useState<CurrencyItem[]>([])
   const [newCurrencyCode, setNewCurrencyCode] = useState('')
+
+  const { data: vatRates } = useQuery({
+    queryKey: ['vat-rates'],
+    queryFn: api.getVATRates,
+  })
+  const [localVATRates, setLocalVATRates] = useState<VATRate[]>([])
+  const [newVATRate, setNewVATRate] = useState('')
 
   useEffect(() => {
     if (settings) {
       setDirLogos(settings.dir_logos || '')
       setDirPdfs(settings.dir_pdfs || '')
       setDirPreviews(settings.dir_previews || '')
-      setLocalCurrency(settings.default_currency || 'CZK')
       setDashWidgets(parseWidgets(settings.dashboard_widgets))
     }
   }, [settings])
+
+  useEffect(() => {
+    if (currencies) {
+      setLocalCurrencies(currencies)
+    }
+  }, [currencies])
 
   useEffect(() => {
     if (units) {
@@ -106,11 +119,39 @@ export function Settings() {
     }
   }, [units])
 
+  useEffect(() => {
+    if (vatRates) {
+      setLocalVATRates(vatRates)
+    }
+  }, [vatRates])
+
   const unitsMutation = useMutation({
     mutationFn: api.updateUnits,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['units'] })
       notifications.show({ title: t('notify.units_saved'), message: t('notify.units_saved_msg'), color: 'green' })
+    },
+    onError: (err: Error) => {
+      notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
+    },
+  })
+
+  const currenciesMutation = useMutation({
+    mutationFn: api.updateCurrencies,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['currencies'] })
+      notifications.show({ title: t('notify.currencies_saved'), message: t('notify.currencies_saved_msg'), color: 'green' })
+    },
+    onError: (err: Error) => {
+      notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
+    },
+  })
+
+  const vatRatesMutation = useMutation({
+    mutationFn: api.updateVATRates,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vat-rates'] })
+      notifications.show({ title: t('notify.vat_rates_saved'), message: t('notify.vat_rates_saved_msg'), color: 'green' })
     },
     onError: (err: Error) => {
       notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
@@ -159,31 +200,6 @@ export function Settings() {
             onChange={(v) => { if (v) setLang(v as 'cs' | 'sk' | 'en') }}
             w={300}
           />
-          <div>
-            <Select
-              label={t('settings.default_currency')}
-              description={t('settings.default_currency_deprecated')}
-              data={[
-                ...([...new Set([...BASE_CURRENCIES, ...(() => { try { return JSON.parse(settings?.custom_currencies || '[]') } catch { return [] } })()])])
-                  .map((c) => ({ value: c, label: c })),
-                { value: ADD_CURRENCY, label: `+ ${t('invoice.add_currency')}` },
-              ]}
-              value={localCurrency}
-              onChange={(v) => {
-                if (v === ADD_CURRENCY) {
-                  setNewCurrencyCode('')
-                  setCurrencyModalOpen(true)
-                  return
-                }
-                if (v) {
-                  setLocalCurrency(v)
-                  updateMutation.mutate({ default_currency: v })
-                }
-              }}
-              searchable
-              w={300}
-            />
-          </div>
           <Group gap="xs">
             <Select
               label={t('settings.date_format')}
@@ -200,16 +216,14 @@ export function Settings() {
       <Paper p="md" radius="md" withBorder>
         <Text fw={500} mb="md">{t('settings.invoices')}</Text>
         <Stack gap="md">
-          <Group gap="xs">
-            <Select
-              label={t('settings.default_vat')}
-              data={['0%', '12%', '21%']}
-              defaultValue="21%"
-              w={300}
-              disabled
-            />
-            {comingSoonBadge}
-          </Group>
+          <Select
+            label={t('settings.default_vat')}
+            data={(localVATRates.length > 0 ? localVATRates : [{ rate: 0 }, { rate: 12 }, { rate: 21 }])
+              .map((r) => ({ value: String(r.rate), label: `${r.rate}%` }))}
+            value={settings?.default_vat_rate || '21'}
+            onChange={(v) => { if (v) updateMutation.mutate({ default_vat_rate: v }) }}
+            w={300}
+          />
           <Select
             label={t('settings.default_due')}
             data={['7', '14', '30', '60']}
@@ -340,6 +354,125 @@ export function Settings() {
       </Paper>
 
       <Paper p="md" radius="md" withBorder>
+        <Text fw={500} mb="xs">{t('settings.currencies')}</Text>
+        <Text c="dimmed" size="sm" mb="md">{t('settings.currencies_desc')}</Text>
+        <Stack gap="md">
+          <Group gap="xs" wrap="wrap">
+            {localCurrencies.map((c, i) => (
+              <Pill
+                key={c.code}
+                size="lg"
+                withRemoveButton={localCurrencies.length > 1}
+                onRemove={() => {
+                  setLocalCurrencies(localCurrencies.filter((_, idx) => idx !== i))
+                }}
+              >
+                {c.code}
+              </Pill>
+            ))}
+          </Group>
+          <Group>
+            <TextInput
+              placeholder={t('settings.currency_placeholder')}
+              value={newCurrencyCode}
+              onChange={(e) => setNewCurrencyCode(e.currentTarget.value.toUpperCase())}
+              w={250}
+              maxLength={10}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newCurrencyCode.trim()) {
+                  const code = newCurrencyCode.trim().toUpperCase()
+                  if (!localCurrencies.some((c) => c.code === code)) {
+                    setLocalCurrencies([...localCurrencies, { code }])
+                    setNewCurrencyCode('')
+                  }
+                }
+              }}
+            />
+            <Button
+              variant="light"
+              size="sm"
+              disabled={!newCurrencyCode.trim()}
+              onClick={() => {
+                const code = newCurrencyCode.trim().toUpperCase()
+                if (code && !localCurrencies.some((c) => c.code === code)) {
+                  setLocalCurrencies([...localCurrencies, { code }])
+                  setNewCurrencyCode('')
+                }
+              }}
+            >
+              {t('settings.add_currency')}
+            </Button>
+          </Group>
+          <Button
+            w={200}
+            onClick={() => currenciesMutation.mutate(localCurrencies)}
+            loading={currenciesMutation.isPending}
+          >
+            {t('settings.save_currencies')}
+          </Button>
+        </Stack>
+      </Paper>
+
+      <Paper p="md" radius="md" withBorder>
+        <Text fw={500} mb="xs">{t('settings.vat_rates')}</Text>
+        <Text c="dimmed" size="sm" mb="md">{t('settings.vat_rates_desc')}</Text>
+        <Stack gap="md">
+          <Group gap="xs" wrap="wrap">
+            {localVATRates.map((r, i) => (
+              <Pill
+                key={`${r.rate}-${i}`}
+                size="lg"
+                withRemoveButton={localVATRates.length > 1}
+                onRemove={() => {
+                  setLocalVATRates(localVATRates.filter((_, idx) => idx !== i))
+                }}
+              >
+                {r.rate}%{r.name ? ` (${r.name})` : ''}
+              </Pill>
+            ))}
+          </Group>
+          <Group>
+            <TextInput
+              placeholder={t('settings.vat_rate_placeholder')}
+              value={newVATRate}
+              onChange={(e) => setNewVATRate(e.currentTarget.value)}
+              w={250}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newVATRate.trim()) {
+                  const rate = parseFloat(newVATRate.trim())
+                  if (!isNaN(rate) && rate >= 0 && !localVATRates.some((r) => r.rate === rate)) {
+                    setLocalVATRates([...localVATRates, { rate }])
+                    setNewVATRate('')
+                  }
+                }
+              }}
+            />
+            <Button
+              variant="light"
+              size="sm"
+              disabled={!newVATRate.trim()}
+              onClick={() => {
+                const rate = parseFloat(newVATRate.trim())
+                if (!isNaN(rate) && rate >= 0 && !localVATRates.some((r) => r.rate === rate)) {
+                  setLocalVATRates([...localVATRates, { rate }])
+                  setNewVATRate('')
+                }
+              }}
+            >
+              {t('settings.add_vat_rate')}
+            </Button>
+          </Group>
+          <Button
+            w={200}
+            onClick={() => vatRatesMutation.mutate(localVATRates)}
+            loading={vatRatesMutation.isPending}
+          >
+            {t('settings.save_vat_rates')}
+          </Button>
+        </Stack>
+      </Paper>
+
+      <Paper p="md" radius="md" withBorder>
         <Text fw={500} mb="md">{t('settings.dashboard')}</Text>
         <Text c="dimmed" size="sm" mb="md">{t('settings.dashboard_desc')}</Text>
         <Stack gap="sm">
@@ -401,38 +534,6 @@ export function Settings() {
         </Stack>
       </Paper>
 
-      {/* Add currency modal */}
-      <Modal opened={currencyModalOpen} onClose={() => setCurrencyModalOpen(false)}
-        title={t('invoice.add_currency')} size="xs">
-        <Stack gap="md">
-          <TextInput label={t('invoice.currency_code')} placeholder="BTC"
-            value={newCurrencyCode} onChange={(e) => setNewCurrencyCode(e.currentTarget.value.toUpperCase())}
-            maxLength={10}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && newCurrencyCode.trim()) {
-                const code = newCurrencyCode.trim().toUpperCase()
-                const existing: string[] = (() => { try { return JSON.parse(settings?.custom_currencies || '[]') } catch { return [] } })()
-                const updated = [...new Set([...existing, code])]
-                updateMutation.mutate({ custom_currencies: JSON.stringify(updated), default_currency: code })
-                setLocalCurrency(code)
-                setCurrencyModalOpen(false)
-              }
-            }}
-          />
-          <Group justify="end">
-            <Button variant="default" onClick={() => setCurrencyModalOpen(false)}>{t('common.cancel')}</Button>
-            <Button disabled={!newCurrencyCode.trim()} onClick={() => {
-              const code = newCurrencyCode.trim().toUpperCase()
-              if (!code) return
-              const existing: string[] = (() => { try { return JSON.parse(settings?.custom_currencies || '[]') } catch { return [] } })()
-              const updated = [...new Set([...existing, code])]
-              updateMutation.mutate({ custom_currencies: JSON.stringify(updated), default_currency: code })
-              setLocalCurrency(code)
-              setCurrencyModalOpen(false)
-            }}>{t('common.save')}</Button>
-          </Group>
-        </Stack>
-      </Modal>
     </Stack>
   )
 }

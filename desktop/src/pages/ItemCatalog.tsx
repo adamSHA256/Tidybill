@@ -22,6 +22,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, formatMoney, type Item } from '../api/client'
 import { useT } from '../i18n'
 
+const ADD_VAT_RATE = '__add_vat_rate__'
+const ADD_UNIT = '__add_unit__'
+
 export function ItemCatalog() {
   const [search, setSearch] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
@@ -33,6 +36,10 @@ export function ItemCatalog() {
   const [defaultUnit, setDefaultUnit] = useState('ks')
   const [defaultVATRate, setDefaultVATRate] = useState<number>(21)
   const [category, setCategory] = useState('')
+  const [vatRateModalOpen, setVatRateModalOpen] = useState(false)
+  const [newVatRateValue, setNewVatRateValue] = useState('')
+  const [unitModalOpen, setUnitModalOpen] = useState(false)
+  const [newUnitValue, setNewUnitValue] = useState('')
 
   const queryClient = useQueryClient()
   const { t } = useT()
@@ -52,6 +59,17 @@ export function ItemCatalog() {
     queryFn: api.getUnits,
   })
   const unitOptions = (units || []).map((u) => u.name)
+
+  const { data: vatRates } = useQuery({
+    queryKey: ['vat-rates'],
+    queryFn: api.getVATRates,
+  })
+  const vatRateOptions = (vatRates || []).map((r) => String(r.rate))
+
+  const { data: settings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: api.getSettings,
+  })
 
   const createMutation = useMutation({
     mutationFn: (data: Partial<Item>) =>
@@ -87,7 +105,7 @@ export function ItemCatalog() {
     setDescription('')
     setDefaultPrice(0)
     setDefaultUnit('ks')
-    setDefaultVATRate(21)
+    setDefaultVATRate(parseFloat(settings?.default_vat_rate || '21') || 21)
     setCategory('')
     setModalOpen(true)
   }
@@ -119,6 +137,32 @@ export function ItemCatalog() {
       default_vat_rate: defaultVATRate,
       category: category.trim(),
     })
+  }
+
+  const handleAddVatRate = () => {
+    const rate = parseFloat(newVatRateValue.trim())
+    if (isNaN(rate) || rate < 0) return
+    const currentRates = vatRates || []
+    if (!currentRates.some((r) => r.rate === rate)) {
+      api.updateVATRates([...currentRates, { rate }]).then(() => {
+        queryClient.invalidateQueries({ queryKey: ['vat-rates'] })
+      })
+    }
+    setDefaultVATRate(rate)
+    setVatRateModalOpen(false)
+  }
+
+  const handleAddUnit = () => {
+    const name = newUnitValue.trim()
+    if (!name) return
+    const currentUnits = units || []
+    if (!currentUnits.some((u) => u.name === name)) {
+      api.updateUnits([...currentUnits, { name }]).then(() => {
+        queryClient.invalidateQueries({ queryKey: ['units'] })
+      })
+    }
+    setDefaultUnit(name)
+    setUnitModalOpen(false)
   }
 
   if (isLoading) {
@@ -216,13 +260,28 @@ export function ItemCatalog() {
           <Group grow>
             <NumberInput label={t('item.default_price')} min={0} value={defaultPrice}
               onChange={(val) => setDefaultPrice(Number(val) || 0)} />
-            <Select label={t('item.unit_label')} data={unitOptions.length > 0 ? unitOptions : ['ks', 'hod', 'den', 'm\u00B2']}
-              value={defaultUnit} onChange={(v) => setDefaultUnit(v || unitOptions[0] || 'ks')} />
+            <Select label={t('item.unit_label')}
+              data={[
+                ...(unitOptions.length > 0 ? unitOptions : ['ks', 'hod', 'den', 'm\u00B2']).map((u) => ({ value: u, label: u })),
+                { value: ADD_UNIT, label: `+ ${t('invoice.add_unit')}` },
+              ]}
+              value={defaultUnit}
+              onChange={(v) => {
+                if (v === ADD_UNIT) { setNewUnitValue(''); setUnitModalOpen(true); return }
+                setDefaultUnit(v || unitOptions[0] || 'ks')
+              }} />
           </Group>
           <Group grow>
-            <Select label={t('item.vat_rate')} data={['0', '12', '21']}
+            <Select label={t('item.vat_rate')}
+              data={[
+                ...(vatRateOptions.length > 0 ? vatRateOptions : ['0', '12', '21']).map((r) => ({ value: r, label: `${r}%` })),
+                { value: ADD_VAT_RATE, label: `+ ${t('invoice.add_vat_rate')}` },
+              ]}
               value={String(defaultVATRate)}
-              onChange={(v) => setDefaultVATRate(Number(v) || 0)} />
+              onChange={(v) => {
+                if (v === ADD_VAT_RATE) { setNewVatRateValue(''); setVatRateModalOpen(true); return }
+                setDefaultVATRate(Number(v) || 0)
+              }} />
             <TextInput label={t('item.category_label')} placeholder={t('item.category_placeholder')}
               value={category} onChange={(e) => setCategory(e.currentTarget.value)}
               description={categoryOptions.length > 0 ? t('item.existing_categories').replace('{categories}', (categories || []).join(', ')) : undefined} />
@@ -232,6 +291,36 @@ export function ItemCatalog() {
             <Button onClick={handleSave} loading={createMutation.isPending}>
               {editingItem ? t('common.save') : t('common.create')}
             </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      {/* Add VAT rate modal */}
+      <Modal opened={vatRateModalOpen} onClose={() => setVatRateModalOpen(false)}
+        title={t('invoice.new_vat_rate')} size="xs">
+        <Stack gap="md">
+          <TextInput label={t('invoice.new_vat_rate_label')} placeholder="15"
+            value={newVatRateValue} onChange={(e) => setNewVatRateValue(e.currentTarget.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleAddVatRate() }}
+          />
+          <Group justify="end">
+            <Button variant="default" onClick={() => setVatRateModalOpen(false)}>{t('common.cancel')}</Button>
+            <Button disabled={!newVatRateValue.trim()} onClick={handleAddVatRate}>{t('common.save')}</Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      {/* Add unit modal */}
+      <Modal opened={unitModalOpen} onClose={() => setUnitModalOpen(false)}
+        title={t('invoice.new_unit')} size="xs">
+        <Stack gap="md">
+          <TextInput label={t('invoice.new_unit_label')} placeholder="bal"
+            value={newUnitValue} onChange={(e) => setNewUnitValue(e.currentTarget.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleAddUnit() }}
+          />
+          <Group justify="end">
+            <Button variant="default" onClick={() => setUnitModalOpen(false)}>{t('common.cancel')}</Button>
+            <Button disabled={!newUnitValue.trim()} onClick={handleAddUnit}>{t('common.save')}</Button>
           </Group>
         </Stack>
       </Modal>

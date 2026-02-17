@@ -21,7 +21,7 @@ import (
 type DefaultTemplate struct{}
 
 func (t *DefaultTemplate) Margins() TemplateMargins {
-	return TemplateMargins{Left: 10, Top: 10, Right: 10}
+	return TemplateMargins{Left: 15, Top: 15, Right: 15}
 }
 
 func (t *DefaultTemplate) Render(m core.Maroto, data *InvoiceData, opts *TemplateOptions) {
@@ -79,8 +79,8 @@ func (t *DefaultTemplate) addHeader(m core.Maroto, data *InvoiceData, opts *Temp
 }
 
 func (t *DefaultTemplate) addParties(m core.Maroto, data *InvoiceData) {
-	m.AddRow(5)
-	m.AddRow(80,
+	m.AddRow(3)
+	m.AddRow(58,
 		col.New(4).Add(
 			text.New(i18n.T("pdf.supplier"), props.Text{Size: 10, Style: fontstyle.Bold}),
 			text.New(data.Supplier.Name, props.Text{Size: 10, Style: fontstyle.Bold, Top: 5}),
@@ -103,17 +103,17 @@ func (t *DefaultTemplate) addParties(m core.Maroto, data *InvoiceData) {
 		),
 		col.New(4).Add(
 			text.New(i18n.T("pdf.issue_date"), props.Text{Size: 9}),
-			text.New(data.Invoice.IssueDate.Format("02.01.2006"), props.Text{Size: 9, Style: fontstyle.Bold, Left: 35}),
+			text.New(data.Invoice.IssueDate.Format("02.01.2006"), props.Text{Size: 9, Style: fontstyle.Bold, Left: 28}),
 			text.New(i18n.T("pdf.due_date"), props.Text{Size: 9, Top: 6}),
-			text.New(data.Invoice.DueDate.Format("02.01.2006"), props.Text{Size: 9, Style: fontstyle.Bold, Top: 6, Left: 35}),
+			text.New(data.Invoice.DueDate.Format("02.01.2006"), props.Text{Size: 9, Style: fontstyle.Bold, Top: 6, Left: 28}),
 			text.New(i18n.T("pdf.payment_method"), props.Text{Size: 9, Top: 12}),
-			text.New(i18n.T("pdf.bank_transfer"), props.Text{Size: 9, Style: fontstyle.Bold, Top: 12, Left: 35}),
+			text.New(i18n.T("pdf.bank_transfer"), props.Text{Size: 9, Style: fontstyle.Bold, Top: 12, Left: 28}),
 			text.New(i18n.T("pdf.bank_account"), props.Text{Size: 9, Top: 20}),
-			text.New(data.BankAccount.AccountNumber, props.Text{Size: 9, Style: fontstyle.Bold, Top: 20, Left: 35}),
+			text.New(data.BankAccount.AccountNumber, props.Text{Size: 9, Style: fontstyle.Bold, Top: 20, Left: 28}),
 			text.New(i18n.T("pdf.iban"), props.Text{Size: 9, Top: 26}),
-			text.New(data.BankAccount.IBAN, props.Text{Size: 8, Style: fontstyle.Bold, Top: 26, Left: 35}),
+			text.New(data.BankAccount.IBAN, props.Text{Size: 8, Style: fontstyle.Bold, Top: 26, Left: 28}),
 			text.New(i18n.T("pdf.variable_symbol"), props.Text{Size: 9, Top: 34}),
-			text.New(data.Invoice.VariableSymbol, props.Text{Size: 9, Style: fontstyle.Bold, Top: 34, Left: 35}),
+			text.New(data.Invoice.VariableSymbol, props.Text{Size: 9, Style: fontstyle.Bold, Top: 34, Left: 28}),
 		),
 	)
 }

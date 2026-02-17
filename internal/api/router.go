@@ -118,6 +118,14 @@ func (s *Server) Router() http.Handler {
 	mux.HandleFunc("GET /api/units", s.getUnits)
 	mux.HandleFunc("PUT /api/units", s.updateUnits)
 
+	// VAT Rates
+	mux.HandleFunc("GET /api/vat-rates", s.getVATRates)
+	mux.HandleFunc("PUT /api/vat-rates", s.updateVATRates)
+
+	// Currencies
+	mux.HandleFunc("GET /api/currencies", s.getCurrencies)
+	mux.HandleFunc("PUT /api/currencies", s.updateCurrencies)
+
 	return corsMiddleware(mux)
 }
 

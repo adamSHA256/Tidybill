@@ -31,10 +31,10 @@ import { api, formatMoney, type Supplier, type BankAccount, type Item, type Cust
 import { CountrySelect } from '../components/CountrySelect'
 import { useT } from '../i18n'
 
-const BASE_CURRENCIES = ['CZK', 'EUR', 'USD', 'GBP', 'PLN', 'CHF']
-
 const CREATE_NEW = '__create_new__'
 const ADD_CURRENCY = '__add_currency__'
+const ADD_VAT_RATE = '__add_vat_rate__'
+const ADD_UNIT = '__add_unit__'
 
 interface ItemForm {
   item_id: string
@@ -59,9 +59,11 @@ export function InvoiceCreate() {
 
   const globalDueDays = parseInt(settings?.default_due_days || '14', 10) || 14
   const globalCurrency = settings?.default_currency || 'CZK'
-  const customCurrencies: string[] = (() => {
-    try { return JSON.parse(settings?.custom_currencies || '[]') } catch { return [] }
-  })()
+
+  const { data: currenciesList } = useQuery({
+    queryKey: ['currencies'],
+    queryFn: api.getCurrencies,
+  })
 
   const [supplierId, setSupplierId] = useState<string | null>(null)
   const [customerId, setCustomerId] = useState<string | null>(null)
@@ -82,6 +84,12 @@ export function InvoiceCreate() {
   const [currencyModalOpen, setCurrencyModalOpen] = useState(false)
   const [newCurrencyCode, setNewCurrencyCode] = useState('')
   const [currencyTarget, setCurrencyTarget] = useState<'invoice' | 'bank'>('invoice')
+  const [vatRateModalOpen, setVatRateModalOpen] = useState(false)
+  const [newVatRateValue, setNewVatRateValue] = useState('')
+  const [vatRateTargetIndex, setVatRateTargetIndex] = useState<number>(-1)
+  const [unitModalOpen, setUnitModalOpen] = useState(false)
+  const [newUnitValue, setNewUnitValue] = useState('')
+  const [unitTargetIndex, setUnitTargetIndex] = useState<number>(-1)
 
   // Supplier form state
   const [sName, setSName] = useState('')
@@ -133,6 +141,13 @@ export function InvoiceCreate() {
   })
   const unitOptions = (units || []).map((u) => u.name)
 
+  const { data: vatRates } = useQuery({
+    queryKey: ['vat-rates'],
+    queryFn: api.getVATRates,
+  })
+  const vatRateOptions = (vatRates || []).map((r) => String(r.rate))
+  const defaultVatRate = parseFloat(settings?.default_vat_rate || '21') || 21
+
   // Auto-select default supplier
   const defaultSupplier = suppliers?.find((s: Supplier) => s.is_default)
   const selectedSupplierId = supplierId || defaultSupplier?.id || null
@@ -156,6 +171,14 @@ export function InvoiceCreate() {
       setInvoiceNumber(nextNumberData.invoice_number)
     }
   }, [nextNumberData])
+
+  // Initialize default VAT rate from settings for the initial empty item
+  useEffect(() => {
+    if (settings?.default_vat_rate && items.length === 1 && !items[0].description) {
+      const rate = parseFloat(settings.default_vat_rate) || 21
+      setItems([{ ...items[0], vat_rate: rate }])
+    }
+  }, [settings?.default_vat_rate]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Initialize currency from settings (will be overridden by bank account below)
   useEffect(() => {
@@ -255,15 +278,67 @@ export function InvoiceCreate() {
     },
   })
 
-  const updateSettingsMutation = useMutation({
-    mutationFn: api.updateSettings,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['settings'] }),
-  })
+  // Build VAT rate select data with "Add new" option
+  const vatRateSelectData = [
+    ...(vatRateOptions.length > 0 ? vatRateOptions : ['0', '12', '21']).map((r) => ({ value: r, label: `${r}%` })),
+    { value: ADD_VAT_RATE, label: `+ ${t('invoice.add_vat_rate')}` },
+  ]
 
-  // Build currency select data: base + custom + "Add new"
-  const allCurrencies = [...new Set([...BASE_CURRENCIES, ...customCurrencies])]
+  const handleVatRateSelect = (val: string | null, index: number) => {
+    if (val === ADD_VAT_RATE) {
+      setNewVatRateValue('')
+      setVatRateTargetIndex(index)
+      setVatRateModalOpen(true)
+      return
+    }
+    updateItem(index, 'vat_rate', Number(val))
+  }
+
+  const handleAddVatRate = () => {
+    const rate = parseFloat(newVatRateValue.trim())
+    if (isNaN(rate) || rate < 0) return
+    const currentRates = vatRates || []
+    if (!currentRates.some((r) => r.rate === rate)) {
+      api.updateVATRates([...currentRates, { rate }]).then(() => {
+        queryClient.invalidateQueries({ queryKey: ['vat-rates'] })
+      })
+    }
+    if (vatRateTargetIndex >= 0) updateItem(vatRateTargetIndex, 'vat_rate', rate)
+    setVatRateModalOpen(false)
+  }
+
+  // Build unit select data with "Add new" option
+  const unitSelectData = [
+    ...(unitOptions.length > 0 ? unitOptions : ['ks', 'hod', 'den', 'm\u00B2']).map((u) => ({ value: u, label: u })),
+    { value: ADD_UNIT, label: `+ ${t('invoice.add_unit')}` },
+  ]
+
+  const handleUnitSelect = (val: string | null, index: number) => {
+    if (val === ADD_UNIT) {
+      setNewUnitValue('')
+      setUnitTargetIndex(index)
+      setUnitModalOpen(true)
+      return
+    }
+    updateItem(index, 'unit', val || unitOptions[0] || 'ks')
+  }
+
+  const handleAddUnit = () => {
+    const name = newUnitValue.trim()
+    if (!name) return
+    const currentUnits = units || []
+    if (!currentUnits.some((u) => u.name === name)) {
+      api.updateUnits([...currentUnits, { name }]).then(() => {
+        queryClient.invalidateQueries({ queryKey: ['units'] })
+      })
+    }
+    if (unitTargetIndex >= 0) updateItem(unitTargetIndex, 'unit', name)
+    setUnitModalOpen(false)
+  }
+
+  // Build currency select data from API + "Add new"
   const currencyData = [
-    ...allCurrencies.map((c) => ({ value: c, label: c })),
+    ...(currenciesList || []).map((c) => ({ value: c.code, label: c.code })),
     { value: ADD_CURRENCY, label: `+ ${t('invoice.add_currency')}` },
   ]
 
@@ -281,10 +356,12 @@ export function InvoiceCreate() {
   const handleAddCurrency = () => {
     const code = newCurrencyCode.trim().toUpperCase()
     if (!code) return
-    // Save to custom currencies
-    const updated = [...new Set([...customCurrencies, code])]
-    updateSettingsMutation.mutate({ custom_currencies: JSON.stringify(updated) })
-    // Apply to the target field
+    const currentCurrencies = currenciesList || []
+    if (!currentCurrencies.some((c) => c.code === code)) {
+      api.updateCurrencies([...currentCurrencies, { code }]).then(() => {
+        queryClient.invalidateQueries({ queryKey: ['currencies'] })
+      })
+    }
     if (currencyTarget === 'invoice') setCurrency(code)
     else setBCurrency(code)
     setCurrencyModalOpen(false)
@@ -342,7 +419,7 @@ export function InvoiceCreate() {
     })
   }
 
-  const addItem = () => setItems([...items, { ...emptyItem }])
+  const addItem = () => setItems([...items, { ...emptyItem, vat_rate: defaultVatRate }])
   const removeItem = (index: number) => {
     if (items.length > 1) setItems(items.filter((_, i) => i !== index))
   }
@@ -651,16 +728,16 @@ export function InvoiceCreate() {
                     onChange={(val) => updateItem(i, 'quantity', val || 0)} />
                 </Table.Td>
                 <Table.Td>
-                  <Select size="sm" data={unitOptions} value={item.unit}
-                    onChange={(val) => updateItem(i, 'unit', val || unitOptions[0] || 'ks')} />
+                  <Select size="sm" data={unitSelectData} value={item.unit}
+                    onChange={(val) => handleUnitSelect(val, i)} />
                 </Table.Td>
                 <Table.Td>
                   <NumberInput size="sm" min={0} value={item.unit_price}
                     onChange={(val) => updateItem(i, 'unit_price', val || 0)} />
                 </Table.Td>
                 <Table.Td>
-                  <Select size="sm" data={['0', '12', '21']} value={String(item.vat_rate)}
-                    onChange={(val) => updateItem(i, 'vat_rate', Number(val))} />
+                  <Select size="sm" data={vatRateSelectData} value={String(item.vat_rate)}
+                    onChange={(val) => handleVatRateSelect(val, i)} />
                 </Table.Td>
                 <Table.Td>
                   <Text size="sm" fw={600}>{formatMoney(item.quantity * item.unit_price)}</Text>
@@ -820,6 +897,36 @@ export function InvoiceCreate() {
           <Group justify="end">
             <Button variant="default" onClick={() => setCurrencyModalOpen(false)}>{t('common.cancel')}</Button>
             <Button onClick={handleAddCurrency} disabled={!newCurrencyCode.trim()}>{t('common.save')}</Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      {/* Add VAT rate modal */}
+      <Modal opened={vatRateModalOpen} onClose={() => setVatRateModalOpen(false)}
+        title={t('invoice.new_vat_rate')} size="xs">
+        <Stack gap="md">
+          <TextInput label={t('invoice.new_vat_rate_label')} placeholder="15"
+            value={newVatRateValue} onChange={(e) => setNewVatRateValue(e.currentTarget.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleAddVatRate() }}
+          />
+          <Group justify="end">
+            <Button variant="default" onClick={() => setVatRateModalOpen(false)}>{t('common.cancel')}</Button>
+            <Button onClick={handleAddVatRate} disabled={!newVatRateValue.trim()}>{t('common.save')}</Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      {/* Add unit modal */}
+      <Modal opened={unitModalOpen} onClose={() => setUnitModalOpen(false)}
+        title={t('invoice.new_unit')} size="xs">
+        <Stack gap="md">
+          <TextInput label={t('invoice.new_unit_label')} placeholder="bal"
+            value={newUnitValue} onChange={(e) => setNewUnitValue(e.currentTarget.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleAddUnit() }}
+          />
+          <Group justify="end">
+            <Button variant="default" onClick={() => setUnitModalOpen(false)}>{t('common.cancel')}</Button>
+            <Button onClick={handleAddUnit} disabled={!newUnitValue.trim()}>{t('common.save')}</Button>
           </Group>
         </Stack>
       </Modal>
