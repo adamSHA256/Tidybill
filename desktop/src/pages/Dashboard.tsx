@@ -82,7 +82,9 @@ export function Dashboard() {
     return <Center h={300}><Loader /></Center>
   }
 
-  const recentInvoices = (invoices || []).slice(0, 5)
+  const recentInvoices = [...(invoices || [])]
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    .slice(0, 5)
   const overdueInvoices = (invoices || []).filter(
     (inv: Invoice) => {
       if (inv.status === 'paid' || inv.status === 'cancelled') return false

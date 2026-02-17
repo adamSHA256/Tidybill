@@ -37,8 +37,8 @@ export function InvoiceList() {
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [supplierFilter, setSupplierFilter] = useState<string | null>(null)
-  const [sortField, setSortField] = useState<SortField | null>(null)
-  const [sortDir, setSortDir] = useState<SortDir>('asc')
+  const [sortField, setSortField] = useState<SortField | null>('issue_date')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
   const navigate = useNavigate()
   const { t } = useT()
 
