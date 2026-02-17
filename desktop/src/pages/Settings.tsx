@@ -17,7 +17,7 @@ import { notifications } from '@mantine/notifications'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, type Unit, type PDFTemplate, type VATRate, type CurrencyItem } from '../api/client'
+import { api, type Unit, type PDFTemplate, type VATRate, type CurrencyItem, type PaymentType } from '../api/client'
 import { useT } from '../i18n'
 
 const langOptions = [
@@ -98,6 +98,13 @@ export function Settings() {
   const [localVATRates, setLocalVATRates] = useState<VATRate[]>([])
   const [newVATRate, setNewVATRate] = useState('')
 
+  const { data: paymentTypes } = useQuery({
+    queryKey: ['payment-types'],
+    queryFn: api.getPaymentTypes,
+  })
+  const [localPaymentTypes, setLocalPaymentTypes] = useState<PaymentType[]>([])
+  const [newPaymentTypeName, setNewPaymentTypeName] = useState('')
+
   useEffect(() => {
     if (settings) {
       setDirLogos(settings.dir_logos || '')
@@ -124,6 +131,12 @@ export function Settings() {
       setLocalVATRates(vatRates)
     }
   }, [vatRates])
+
+  useEffect(() => {
+    if (paymentTypes) {
+      setLocalPaymentTypes(paymentTypes)
+    }
+  }, [paymentTypes])
 
   const unitsMutation = useMutation({
     mutationFn: api.updateUnits,
@@ -152,6 +165,18 @@ export function Settings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vat-rates'] })
       notifications.show({ title: t('notify.vat_rates_saved'), message: t('notify.vat_rates_saved_msg'), color: 'green' })
+    },
+    onError: (err: Error) => {
+      notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
+    },
+  })
+
+  // @ts-ignore unused until UI is added
+  const paymentTypesMutation = useMutation({
+    mutationFn: api.updatePaymentTypes,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payment-types'] })
+      notifications.show({ title: t('notify.payment_types_saved'), message: t('notify.payment_types_saved_msg'), color: 'green' })
     },
     onError: (err: Error) => {
       notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
@@ -468,6 +493,71 @@ export function Settings() {
             loading={vatRatesMutation.isPending}
           >
             {t('settings.save_vat_rates')}
+          </Button>
+        </Stack>
+      </Paper>
+
+      <Paper p="md" radius="md" withBorder>
+        <Text fw={500} mb="xs">{t('settings.payment_types')}</Text>
+        <Text c="dimmed" size="sm" mb="md">{t('settings.payment_types_desc')}</Text>
+        <Stack gap="md">
+          <Group gap="xs" wrap="wrap">
+            {localPaymentTypes.map((pt, i) => (
+              <Pill
+                key={`${pt.name}-${i}`}
+                size="lg"
+                withRemoveButton={localPaymentTypes.length > 1}
+                onRemove={() => {
+                  const next = localPaymentTypes.filter((_, idx) => idx !== i)
+                  if (pt.is_default && next.length > 0) next[0].is_default = true
+                  setLocalPaymentTypes(next)
+                }}
+                onClick={() => {
+                  setLocalPaymentTypes(localPaymentTypes.map((p, idx) => ({ ...p, is_default: idx === i })))
+                }}
+                style={{ cursor: 'pointer' }}
+              >
+                {pt.name}{pt.is_default ? ` (${t('settings.default_unit_label')})` : ''}
+              </Pill>
+            ))}
+          </Group>
+          <Group>
+            <TextInput
+              placeholder={t('settings.payment_type_placeholder')}
+              value={newPaymentTypeName}
+              onChange={(e) => setNewPaymentTypeName(e.currentTarget.value)}
+              w={250}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newPaymentTypeName.trim()) {
+                  const name = newPaymentTypeName.trim()
+                  if (!localPaymentTypes.some((pt) => pt.name === name)) {
+                    setLocalPaymentTypes([...localPaymentTypes, { name }])
+                    setNewPaymentTypeName('')
+                  }
+                }
+              }}
+            />
+            <Button
+              variant="light"
+              size="sm"
+              disabled={!newPaymentTypeName.trim()}
+              onClick={() => {
+                const name = newPaymentTypeName.trim()
+                if (name && !localPaymentTypes.some((pt) => pt.name === name)) {
+                  setLocalPaymentTypes([...localPaymentTypes, { name }])
+                  setNewPaymentTypeName('')
+                }
+              }}
+            >
+              {t('settings.add_unit')}
+            </Button>
+          </Group>
+          <Button
+            w={200}
+            onClick={() => paymentTypesMutation.mutate(localPaymentTypes)}
+            loading={paymentTypesMutation.isPending}
+          >
+            {t('settings.save_payment_types')}
           </Button>
         </Stack>
       </Paper>
