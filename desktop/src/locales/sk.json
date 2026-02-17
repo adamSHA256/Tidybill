@@ -140,6 +140,8 @@
   "customer.email_label": "Email",
   "customer.phone_label": "Telefón",
   "customer.notes_label": "Poznámky",
+  "customer.default_due_days_label": "Splatnosť (dni)",
+  "customer.default_due_days_desc": "0 = použije sa predvolené nastavenie",
   "customer.missing_name_title": "Chýbajúce údaje",
   "customer.missing_name_msg": "Názov odberateľa je povinný",
   "customer.delete_title": "Zmazať odberateľa",

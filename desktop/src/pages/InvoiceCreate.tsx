@@ -116,6 +116,7 @@ export function InvoiceCreate() {
   const [cCountry, setCCountry] = useState('CZ')
   const [cEmail, setCEmail] = useState('')
   const [cPhone, setCPhone] = useState('')
+  const [cDueDays, setCDueDays] = useState<number>(0)
   const [cNotes, setCNotes] = useState('')
 
   // Bank account form state
@@ -377,7 +378,7 @@ export function InvoiceCreate() {
 
   const openCustomerModal = () => {
     setCName(''); setCIco(''); setCDic(''); setCStreet(''); setCCity(''); setCZip('')
-    setCCountry('CZ'); setCEmail(''); setCPhone(''); setCNotes('')
+    setCCountry('CZ'); setCEmail(''); setCPhone(''); setCDueDays(0); setCNotes('')
     setCustomerModalOpen(true)
   }
 
@@ -405,7 +406,7 @@ export function InvoiceCreate() {
     }
     createCustomerMutation.mutate({
       name: cName, ico: cIco, dic: cDic, street: cStreet, city: cCity, zip: cZip,
-      country: cCountry, email: cEmail, phone: cPhone, notes: cNotes,
+      country: cCountry, email: cEmail, phone: cPhone, default_due_days: cDueDays, notes: cNotes,
     })
   }
 
@@ -853,6 +854,10 @@ export function InvoiceCreate() {
             <TextInput label={t('customer.phone_label')} value={cPhone}
               onChange={(e) => setCPhone(e.currentTarget.value)} />
           </Group>
+          <NumberInput label={t('customer.default_due_days_label')}
+            description={t('customer.default_due_days_desc')}
+            value={cDueDays} onChange={(v) => setCDueDays(Number(v) || 0)}
+            min={0} max={365} w={200} />
           <Textarea label={t('customer.notes_label')} value={cNotes}
             onChange={(e) => setCNotes(e.currentTarget.value)} minRows={2} />
           <Group justify="end" mt="md">
