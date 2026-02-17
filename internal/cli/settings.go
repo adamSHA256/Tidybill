@@ -333,6 +333,8 @@ func (c *CLI) changeDefaultCurrency() {
 	c.clearScreen()
 	fmt.Printf("=== %s ===\n\n", i18n.T("settings.change_currency"))
 
+	// TODO: Dynamic currencies (add/remove) not yet implemented in CLI — uses hardcoded list.
+	// The GUI version manages currencies dynamically via the /api/currencies endpoint.
 	currencies := []string{"CZK", "EUR", "USD", "GBP", "PLN", "CHF", "BTC"}
 	current := c.getDefaultCurrency()
 

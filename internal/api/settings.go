@@ -22,22 +22,27 @@ func (s *Server) getSettings(w http.ResponseWriter, r *http.Request) {
 	if defaultDueDays == "" {
 		defaultDueDays = "14"
 	}
+	defaultVatRate, _ := s.settings.Get("default.vat_rate")
+	if defaultVatRate == "" {
+		defaultVatRate = "21"
+	}
 	dashboardWidgets, _ := s.settings.Get("dashboard.widgets")
 	customCurrencies, _ := s.settings.Get("custom.currencies")
 	customCountries, _ := s.settings.Get("custom.countries")
 	invoiceDefaultSort, _ := s.settings.Get("invoice.default_sort") // TODO: also expose in CLI settings menu
 
 	writeJSON(w, http.StatusOK, map[string]string{
-		"language":              lang,
-		"dir_logos":             dirLogos,
-		"dir_pdfs":              dirPdfs,
-		"dir_previews":          dirPreviews,
-		"default_currency":      defaultCurrency,
-		"default_due_days":      defaultDueDays,
-		"dashboard_widgets":     dashboardWidgets,
-		"custom_currencies":     customCurrencies,
-		"custom_countries":      customCountries,
-		"invoice_default_sort":  invoiceDefaultSort,
+		"language":             lang,
+		"dir_logos":            dirLogos,
+		"dir_pdfs":             dirPdfs,
+		"dir_previews":         dirPreviews,
+		"default_currency":     defaultCurrency,
+		"default_due_days":     defaultDueDays,
+		"default_vat_rate":     defaultVatRate,
+		"dashboard_widgets":    dashboardWidgets,
+		"custom_currencies":    customCurrencies,
+		"custom_countries":     customCountries,
+		"invoice_default_sort": invoiceDefaultSort,
 	})
 }
 
@@ -48,10 +53,11 @@ type UpdateSettingsRequest struct {
 	DirPreviews      *string `json:"dir_previews"`
 	DefaultCurrency  *string `json:"default_currency"`
 	DefaultDueDays   *string `json:"default_due_days"`
-	DashboardWidgets    *string `json:"dashboard_widgets"`
-	CustomCurrencies    *string `json:"custom_currencies"`
-	CustomCountries     *string `json:"custom_countries"`
-	InvoiceDefaultSort  *string `json:"invoice_default_sort"` // TODO: also expose in CLI settings menu
+	DefaultVatRate     *string `json:"default_vat_rate"`
+	DashboardWidgets   *string `json:"dashboard_widgets"`
+	CustomCurrencies   *string `json:"custom_currencies"`
+	CustomCountries    *string `json:"custom_countries"`
+	InvoiceDefaultSort *string `json:"invoice_default_sort"` // TODO: also expose in CLI settings menu
 }
 
 func (s *Server) updateSettings(w http.ResponseWriter, r *http.Request) {
@@ -77,6 +83,7 @@ func (s *Server) updateSettings(w http.ResponseWriter, r *http.Request) {
 	simpleSettings := map[string]*string{
 		"default.currency":    req.DefaultCurrency,
 		"default.due_days":    req.DefaultDueDays,
+		"default.vat_rate":    req.DefaultVatRate,
 		"dashboard.widgets":   req.DashboardWidgets,
 		"custom.currencies":     req.CustomCurrencies,
 		"custom.countries":      req.CustomCountries,

@@ -188,6 +188,16 @@ export const api = {
   getUnits: () => request<Unit[]>('/units'),
   updateUnits: (units: Unit[]) =>
     request<Unit[]>('/units', { method: 'PUT', body: JSON.stringify(units) }),
+
+  // VAT Rates
+  getVATRates: () => request<VATRate[]>('/vat-rates'),
+  updateVATRates: (rates: VATRate[]) =>
+    request<VATRate[]>('/vat-rates', { method: 'PUT', body: JSON.stringify(rates) }),
+
+  // Currencies
+  getCurrencies: () => request<CurrencyItem[]>('/currencies'),
+  updateCurrencies: (currencies: CurrencyItem[]) =>
+    request<CurrencyItem[]>('/currencies', { method: 'PUT', body: JSON.stringify(currencies) }),
 }
 
 // Types matching Go models exactly
@@ -354,6 +364,7 @@ export interface AppSettings {
   dir_previews?: string
   default_currency?: string
   default_due_days?: string
+  default_vat_rate?: string
   dashboard_widgets?: string
   custom_currencies?: string
   custom_countries?: string
@@ -363,6 +374,15 @@ export interface AppSettings {
 export interface Unit {
   name: string
   is_default?: boolean
+}
+
+export interface VATRate {
+  rate: number
+  name?: string
+}
+
+export interface CurrencyItem {
+  code: string
 }
 
 export interface CreateInvoiceRequest {

@@ -115,6 +115,9 @@ func (c *CLI) createItem() *model.Item {
 
 	item.Description = desc
 
+	// TODO: Dynamic VAT rates from settings (GET /api/vat-rates) are not implemented in CLI.
+	// The GUI version manages custom VAT rates and a default rate via settings.
+	// CLI still uses hardcoded 21% default for VAT payers.
 	defaultVAT := 0.0
 	supplier, _ := c.suppliers.GetByID(c.currentSupp)
 	if supplier != nil && supplier.IsVATPayer {
