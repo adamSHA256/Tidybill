@@ -20,7 +20,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api, formatMoney, formatDate, type Invoice } from '../api/client'
 import { useT } from '../i18n'
 
-type SortField = 'invoice_number' | 'issue_date' | 'due_date' | 'total'
+type SortField = 'invoice_number' | 'issue_date' | 'created_at' | 'total'
 type SortDir = 'asc' | 'desc'
 
 const statusColors: Record<string, string> = {
@@ -37,7 +37,7 @@ export function InvoiceList() {
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [supplierFilter, setSupplierFilter] = useState<string | null>(null)
-  const [sortField, setSortField] = useState<SortField | null>('issue_date')
+  const [sortField, setSortField] = useState<SortField | null>('created_at')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const navigate = useNavigate()
   const { t } = useT()
@@ -85,7 +85,7 @@ export function InvoiceList() {
         switch (sortField) {
           case 'invoice_number': return a.invoice_number.localeCompare(b.invoice_number)
           case 'issue_date': return a.issue_date.localeCompare(b.issue_date)
-          case 'due_date': return a.due_date.localeCompare(b.due_date)
+          case 'created_at': return a.created_at.localeCompare(b.created_at)
           case 'total': return a.total - b.total
         }
       }
@@ -160,8 +160,8 @@ export function InvoiceList() {
                 <Table.Th style={{ cursor: 'pointer' }} onClick={() => toggleSort('issue_date')}>
                   <Group gap={4} wrap="nowrap">{t('invoice.issue_date')} <SortIcon field="issue_date" /></Group>
                 </Table.Th>
-                <Table.Th style={{ cursor: 'pointer' }} onClick={() => toggleSort('due_date')}>
-                  <Group gap={4} wrap="nowrap">{t('invoice.due_date')} <SortIcon field="due_date" /></Group>
+                <Table.Th style={{ cursor: 'pointer' }} onClick={() => toggleSort('created_at')}>
+                  <Group gap={4} wrap="nowrap">{t('invoice.created_at')} <SortIcon field="created_at" /></Group>
                 </Table.Th>
                 <Table.Th style={{ cursor: 'pointer' }} onClick={() => toggleSort('total')}>
                   <Group gap={4} wrap="nowrap">{t('invoice.amount')} <SortIcon field="total" /></Group>
@@ -170,15 +170,12 @@ export function InvoiceList() {
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
-              {filtered.map((inv) => {
-                const isOverdue = inv.status !== 'paid' && inv.status !== 'cancelled' &&
-                  new Date(inv.due_date) < new Date()
-                return (
+              {filtered.map((inv) => (
                   <Table.Tr key={inv.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/invoices/${inv.id}`)}>
                     <Table.Td fw={600} ff="monospace" fz="sm">{inv.invoice_number}</Table.Td>
                     <Table.Td fz="sm">{inv.customer?.name || '—'}</Table.Td>
                     <Table.Td fz="sm">{formatDate(inv.issue_date)}</Table.Td>
-                    <Table.Td fz="sm" c={isOverdue ? 'red' : undefined}>{formatDate(inv.due_date)}</Table.Td>
+                    <Table.Td fz="sm">{formatDate(inv.created_at)}</Table.Td>
                     <Table.Td fz="sm" fw={600}>{formatMoney(inv.total)}</Table.Td>
                     <Table.Td>
                       <Badge color={statusColors[inv.status]} size="sm" variant="light">
@@ -186,8 +183,7 @@ export function InvoiceList() {
                       </Badge>
                     </Table.Td>
                   </Table.Tr>
-                )
-              })}
+              ))}
             </Table.Tbody>
           </Table>
         )}
