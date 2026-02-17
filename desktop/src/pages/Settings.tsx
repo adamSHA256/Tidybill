@@ -213,7 +213,9 @@ export function Settings() {
               onChange={(val) => {
                 const factor = val / 100
                 applyZoom(factor)
-                updateMutation.mutate({ ui_scale: String(factor) })
+                api.updateSettings({ ui_scale: String(factor) }).then(() => {
+                  queryClient.invalidateQueries({ queryKey: ['settings'] })
+                })
               }}
               marks={[
                 { value: 75, label: '75%' },
