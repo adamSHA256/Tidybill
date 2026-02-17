@@ -45,6 +45,7 @@ func (s *Server) getSettings(w http.ResponseWriter, r *http.Request) {
 		"custom_countries":     customCountries,
 		"invoice_default_sort": invoiceDefaultSort,
 		"ui_scale":             uiScale,
+		"default_pdf_dir":      s.cfg.PDFDir,
 	})
 }
 

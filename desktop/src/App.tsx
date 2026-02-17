@@ -1,6 +1,10 @@
+import { useState } from 'react'
 import { Routes, Route } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { Center, Loader } from '@mantine/core'
 import { AppShell } from './components/AppShell'
 import { ApiHealthGuard } from './components/ApiHealthGuard'
+import { SetupWizard } from './pages/SetupWizard'
 import { Dashboard } from './pages/Dashboard'
 import { InvoiceList } from './pages/InvoiceList'
 import { InvoiceCreate } from './pages/InvoiceCreate'
@@ -12,25 +16,43 @@ import { ItemCatalog } from './pages/ItemCatalog'
 import { Settings } from './pages/Settings'
 import { Templates } from './pages/Templates'
 import { TemplateEditor } from './pages/TemplateEditor'
+import { api } from './api/client'
 
 export default function App() {
+  const [wizardDone, setWizardDone] = useState(false)
+
+  const { data: firstRunData, isLoading } = useQuery({
+    queryKey: ['first-run'],
+    queryFn: api.getFirstRun,
+  })
+
+  const showWizard = !wizardDone && firstRunData?.first_run === true
+
   return (
     <ApiHealthGuard>
-      <AppShell>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/invoices" element={<InvoiceList />} />
-          <Route path="/invoices/new" element={<InvoiceCreate />} />
-          <Route path="/invoices/:id" element={<InvoiceDetail />} />
-          <Route path="/invoices/:id/edit" element={<InvoiceEdit />} />
-          <Route path="/customers" element={<CustomerList />} />
-          <Route path="/suppliers" element={<SupplierList />} />
-          <Route path="/items" element={<ItemCatalog />} />
-          <Route path="/templates" element={<Templates />} />
-          <Route path="/template-editor/:id" element={<TemplateEditor />} />
-          <Route path="/settings" element={<Settings />} />
-        </Routes>
-      </AppShell>
+      {isLoading ? (
+        <Center h="100vh">
+          <Loader />
+        </Center>
+      ) : showWizard ? (
+        <SetupWizard onComplete={() => setWizardDone(true)} />
+      ) : (
+        <AppShell>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/invoices" element={<InvoiceList />} />
+            <Route path="/invoices/new" element={<InvoiceCreate />} />
+            <Route path="/invoices/:id" element={<InvoiceDetail />} />
+            <Route path="/invoices/:id/edit" element={<InvoiceEdit />} />
+            <Route path="/customers" element={<CustomerList />} />
+            <Route path="/suppliers" element={<SupplierList />} />
+            <Route path="/items" element={<ItemCatalog />} />
+            <Route path="/templates" element={<Templates />} />
+            <Route path="/template-editor/:id" element={<TemplateEditor />} />
+            <Route path="/settings" element={<Settings />} />
+          </Routes>
+        </AppShell>
+      )}
     </ApiHealthGuard>
   )
 }

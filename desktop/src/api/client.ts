@@ -59,6 +59,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  // System
+  getFirstRun: () => request<{ first_run: boolean }>('/system/first-run'),
+  getLocale: () => request<{ detected_lang: string }>('/system/locale'),
+
   // Dashboard
   getDashboardStats: () => request<DashboardStats>('/dashboard/stats'),
 
@@ -375,6 +379,7 @@ export interface AppSettings {
   custom_countries?: string
   invoice_default_sort?: string // TODO: also expose in CLI settings menu
   ui_scale?: string
+  default_pdf_dir?: string
 }
 
 export interface Unit {
