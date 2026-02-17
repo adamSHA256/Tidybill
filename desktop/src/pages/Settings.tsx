@@ -12,7 +12,7 @@ import {
   TextInput,
   Button,
   Pill,
-  Slider,
+  SegmentedControl,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -205,27 +205,22 @@ export function Settings() {
           <div>
             <Text size="sm" fw={500} mb={4}>{t('settings.ui_scale')}</Text>
             <Text size="xs" c="dimmed" mb="xs">{t('settings.ui_scale_desc')}</Text>
-            <Slider
-              min={75}
-              max={200}
-              step={25}
-              value={Math.round((parseFloat(settings?.ui_scale || '1') || 1) * 100)}
+            <SegmentedControl
+              value={String(Math.round((parseFloat(settings?.ui_scale || '1') || 1) * 100))}
               onChange={(val) => {
-                const factor = val / 100
+                const factor = Number(val) / 100
                 applyZoom(factor)
                 api.updateSettings({ ui_scale: String(factor) }).then(() => {
                   queryClient.invalidateQueries({ queryKey: ['settings'] })
                 })
               }}
-              marks={[
-                { value: 75, label: '75%' },
-                { value: 100, label: '100%' },
-                { value: 125, label: '125%' },
-                { value: 150, label: '150%' },
-                { value: 200, label: '200%' },
+              data={[
+                { value: '100', label: '100%' },
+                { value: '125', label: '125%' },
+                { value: '150', label: '150%' },
+                { value: '175', label: '175%' },
+                { value: '200', label: '200%' },
               ]}
-              w={300}
-              mb="md"
             />
           </div>
           <Group gap="xs">
