@@ -21,6 +21,8 @@ import {
   IconPackage,
   IconPlus,
 } from '@tabler/icons-react'
+import { useQuery } from '@tanstack/react-query'
+import { api } from '../api/client'
 import { useT } from '../i18n'
 
 function TidyBillLogo({ colorScheme }: { colorScheme: string }) {
@@ -47,7 +49,7 @@ const navKeys = [
   { key: 'nav.dashboard', icon: IconDashboard, path: '/' },
   { key: 'nav.invoices', icon: IconFileInvoice, path: '/invoices' },
   { key: 'nav.customers', icon: IconUsers, path: '/customers' },
-  { key: 'nav.suppliers', icon: IconBuildingStore, path: '/suppliers' },
+  { key: 'nav.suppliers', pluralKey: 'nav.suppliers_plural', icon: IconBuildingStore, path: '/suppliers' },
 ]
 
 const toolKeys = [
@@ -60,6 +62,19 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
   const { colorScheme, toggleColorScheme } = useMantineColorScheme()
   const { t } = useT()
+
+  const { data: suppliers } = useQuery({
+    queryKey: ['suppliers'],
+    queryFn: api.getSuppliers,
+  })
+  const supplierCount = (suppliers || []).length
+
+  const getNavLabel = (item: typeof navKeys[number]) => {
+    if (item.pluralKey && supplierCount > 1) {
+      return t(item.pluralKey)
+    }
+    return t(item.key)
+  }
 
   return (
     <MantineAppShell
@@ -93,7 +108,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {navKeys.map((item) => (
             <NavLink
               key={item.path}
-              label={t(item.key)}
+              label={getNavLabel(item)}
               leftSection={<item.icon size={18} />}
               active={location.pathname === item.path}
               onClick={() => navigate(item.path)}

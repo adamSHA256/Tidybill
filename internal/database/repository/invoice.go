@@ -264,3 +264,9 @@ func (r *InvoiceRepository) CountByBankAccount(bankAccountID string) (int, error
 	err := r.db.QueryRow("SELECT COUNT(*) FROM invoices WHERE bank_account_id = ?", bankAccountID).Scan(&count)
 	return count, err
 }
+
+func (r *InvoiceRepository) CountBySupplier(supplierID string) (int, error) {
+	var count int
+	err := r.db.QueryRow("SELECT COUNT(*) FROM invoices WHERE supplier_id = ?", supplierID).Scan(&count)
+	return count, err
+}

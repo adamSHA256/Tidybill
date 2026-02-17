@@ -85,6 +85,7 @@ func (s *Server) Router() http.Handler {
 	mux.HandleFunc("GET /api/suppliers/{id}/bank-accounts", s.listBankAccounts)
 	mux.HandleFunc("POST /api/suppliers/{id}/bank-accounts", s.createBankAccount)
 	mux.HandleFunc("PUT /api/bank-accounts/{id}", s.updateBankAccount)
+	mux.HandleFunc("DELETE /api/bank-accounts/{id}", s.deleteBankAccount)
 
 	// Items catalog
 	mux.HandleFunc("GET /api/items", s.listItems)

@@ -91,6 +91,16 @@ func (s *Server) updateSupplier(w http.ResponseWriter, r *http.Request) {
 func (s *Server) deleteSupplier(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
+	invCount, err := s.invoices.CountBySupplier(id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if invCount > 0 {
+		writeError(w, http.StatusConflict, fmt.Sprintf("supplier has %d invoice(s) and cannot be deleted", invCount))
+		return
+	}
+
 	if err := s.suppliers.Delete(id); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -347,4 +357,45 @@ func (s *Server) updateBankAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, existing)
+}
+
+func (s *Server) deleteBankAccount(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	existing, err := s.bankAccounts.GetByID(id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if existing == nil {
+		writeError(w, http.StatusNotFound, "bank account not found")
+		return
+	}
+
+	count, err := s.bankAccounts.CountBySupplier(existing.SupplierID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if count <= 1 {
+		writeError(w, http.StatusConflict, "cannot delete the last bank account")
+		return
+	}
+
+	invCount, err := s.invoices.CountByBankAccount(id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if invCount > 0 {
+		writeError(w, http.StatusConflict, fmt.Sprintf("account is used by %d invoice(s)", invCount))
+		return
+	}
+
+	if err := s.bankAccounts.Delete(id); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
