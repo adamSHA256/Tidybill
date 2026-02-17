@@ -144,6 +144,8 @@
   "customer.email_label": "Email",
   "customer.phone_label": "Telefon",
   "customer.notes_label": "Poznámky",
+  "customer.default_due_days_label": "Splatnost (dny)",
+  "customer.default_due_days_desc": "0 = použije se výchozí nastavení",
   "customer.missing_name_title": "Chybějící údaje",
   "customer.missing_name_msg": "Název odběratele je povinný",
   "customer.delete_title": "Smazat odběratele",

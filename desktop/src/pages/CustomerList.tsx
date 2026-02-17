@@ -8,6 +8,7 @@ import {
   Avatar,
   Button,
   TextInput,
+  NumberInput,
   Textarea,
   Modal,
   Divider,
@@ -42,6 +43,7 @@ export function CustomerList() {
   const [country, setCountry] = useState('CZ')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
+  const [defaultDueDays, setDefaultDueDays] = useState<number>(0)
   const [notes, setNotes] = useState('')
 
   const queryClient = useQueryClient()
@@ -93,6 +95,7 @@ export function CustomerList() {
     setCountry('CZ')
     setEmail('')
     setPhone('')
+    setDefaultDueDays(0)
     setNotes('')
     setModalOpen(true)
   }
@@ -108,6 +111,7 @@ export function CustomerList() {
     setCountry(customer.country || 'CZ')
     setEmail(customer.email)
     setPhone(customer.phone)
+    setDefaultDueDays(customer.default_due_days || 0)
     setNotes(customer.notes)
     setModalOpen(true)
   }
@@ -132,6 +136,7 @@ export function CustomerList() {
       country,
       email: email.trim(),
       phone: phone.trim(),
+      default_due_days: defaultDueDays,
       notes: notes.trim(),
     })
   }
@@ -264,6 +269,10 @@ export function CustomerList() {
             <TextInput label={t('customer.phone_label')} value={phone}
               onChange={(e) => setPhone(e.currentTarget.value)} />
           </Group>
+          <NumberInput label={t('customer.default_due_days_label')}
+            description={t('customer.default_due_days_desc')}
+            value={defaultDueDays} onChange={(v) => setDefaultDueDays(Number(v) || 0)}
+            min={0} max={365} w={200} />
           <Textarea label={t('customer.notes_label')} value={notes}
             onChange={(e) => setNotes(e.currentTarget.value)} minRows={2} />
           <Group justify="end" mt="md">

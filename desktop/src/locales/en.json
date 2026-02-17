@@ -140,6 +140,8 @@
   "customer.email_label": "Email",
   "customer.phone_label": "Phone",
   "customer.notes_label": "Notes",
+  "customer.default_due_days_label": "Payment due (days)",
+  "customer.default_due_days_desc": "0 = use global default",
   "customer.missing_name_title": "Missing fields",
   "customer.missing_name_msg": "Customer name is required",
   "customer.delete_title": "Delete Customer",
