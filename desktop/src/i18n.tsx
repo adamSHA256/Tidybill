@@ -43,6 +43,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     api.updateSettings({ language: newLang }).then(() => {
       queryClient.invalidateQueries({ queryKey: ['settings'] })
       queryClient.invalidateQueries({ queryKey: ['templates'] })
+      queryClient.invalidateQueries({ queryKey: ['payment-types'] })
     })
   }
 

@@ -410,20 +410,46 @@ func (c *CLI) changeDefaultDueDays() {
 
 type cliPaymentType struct {
 	Name      string `json:"name"`
+	Code      string `json:"code,omitempty"`
 	IsDefault bool   `json:"is_default,omitempty"`
 }
+
+var builtinPaymentCodes = []string{"bank_transfer", "cash"}
 
 func (c *CLI) loadPaymentTypes() []cliPaymentType {
 	raw, err := c.settings.Get("payment_types")
 	if err != nil || raw == "" {
 		return []cliPaymentType{
-			{Name: i18n.T("payment_type.bank_transfer"), IsDefault: true},
-			{Name: i18n.T("payment_type.cash")},
+			{Code: "bank_transfer", Name: i18n.T("payment_type.bank_transfer"), IsDefault: true},
+			{Code: "cash", Name: i18n.T("payment_type.cash")},
 		}
 	}
 	var types []cliPaymentType
 	if err := json.Unmarshal([]byte(raw), &types); err != nil {
-		return []cliPaymentType{{Name: i18n.T("payment_type.bank_transfer"), IsDefault: true}}
+		return []cliPaymentType{{Code: "bank_transfer", Name: i18n.T("payment_type.bank_transfer"), IsDefault: true}}
+	}
+	return resolveCliPaymentTypes(types)
+}
+
+func resolveCliPaymentTypes(types []cliPaymentType) []cliPaymentType {
+	for i := range types {
+		if types[i].Code != "" {
+			types[i].Name = i18n.T("payment_type." + types[i].Code)
+		}
+	}
+	present := make(map[string]bool)
+	for _, t := range types {
+		if t.Code != "" {
+			present[t.Code] = true
+		}
+	}
+	for _, code := range builtinPaymentCodes {
+		if !present[code] {
+			types = append(types, cliPaymentType{
+				Code: code,
+				Name: i18n.T("payment_type." + code),
+			})
+		}
 	}
 	return types
 }
@@ -523,6 +549,11 @@ func (c *CLI) managePaymentTypes() {
 			fmt.Sscanf(numStr, "%d", &idx)
 			idx--
 			if idx < 0 || idx >= len(types) {
+				continue
+			}
+			if types[idx].Code != "" {
+				c.printError(i18n.T("error.builtin_cannot_delete"))
+				c.waitEnter()
 				continue
 			}
 			types = append(types[:idx], types[idx+1:]...)

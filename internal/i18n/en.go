@@ -521,7 +521,8 @@ var messagesEN = map[string]string{
 
 	// ── Errors (new) ────────────────────────────────────────────────────
 	"error.invalid_option":  "Invalid option",
-	"error.no_bank_accounts": "No bank accounts",
+	"error.no_bank_accounts":      "No bank accounts",
+	"error.builtin_cannot_delete": "Built-in type, cannot be deleted",
 
 	// ── PDF Template Names ──────────────────────────────────────────────
 	"template.name.default": "Tables",

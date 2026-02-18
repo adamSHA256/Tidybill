@@ -521,7 +521,8 @@ var messagesCS = map[string]string{
 
 	// ── Errors (new) ────────────────────────────────────────────────────
 	"error.invalid_option":  "Neplatná volba",
-	"error.no_bank_accounts": "Žádné bankovní účty",
+	"error.no_bank_accounts":      "Žádné bankovní účty",
+	"error.builtin_cannot_delete": "Vestavěný typ, nelze smazat",
 
 	// ── PDF Template Names ──────────────────────────────────────────────
 	"template.name.default": "Tabulková",

@@ -528,7 +528,7 @@ export function Settings() {
               <Pill
                 key={pt.name}
                 size="lg"
-                withRemoveButton={localPaymentTypes.length > 1}
+                withRemoveButton={!pt.code && localPaymentTypes.length > 1}
                 onRemove={() => {
                   const next = localPaymentTypes.filter((_, idx) => idx !== i)
                   if (pt.is_default && next.length > 0) next[0].is_default = true

@@ -389,6 +389,7 @@ export interface Unit {
 
 export interface PaymentType {
   name: string
+  code?: string
   is_default?: boolean
 }
 
