@@ -39,7 +39,7 @@ func (t *ClassicTemplate) Render(m core.Maroto, data *InvoiceData, opts *Templat
 	m.AddRow(8)
 	m.AddRow(1, line.NewCol(12))
 	m.AddRow(5)
-	m.AddRows(t.details(data, lang)...)
+	m.AddRows(t.details(data, opts, lang)...)
 	m.AddRow(8)
 	m.AddRows(t.items(data, lang)...)
 	m.AddRow(5)
@@ -128,7 +128,7 @@ func (t *ClassicTemplate) parties(data *InvoiceData, lang i18n.Lang) []core.Row 
 	return rows
 }
 
-func (t *ClassicTemplate) details(data *InvoiceData, lang i18n.Lang) []core.Row {
+func (t *ClassicTemplate) details(data *InvoiceData, opts *TemplateOptions, lang i18n.Lang) []core.Row {
 	var rows []core.Row
 	issueDate := data.Invoice.IssueDate.Format("02.01.2006")
 	dueDate := data.Invoice.DueDate.Format("02.01.2006")
@@ -140,23 +140,43 @@ func (t *ClassicTemplate) details(data *InvoiceData, lang i18n.Lang) []core.Row 
 		text.NewCol(4, i18n.TForLang(lang, "pdf.dates")+":", props.Text{Size: 11, Style: fontstyle.Bold, Right: classicPadRight}),
 	))
 
-	rows = append(rows, row.New(5).Add(
-		text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.bank_account"), data.BankAccount.AccountNumber), props.Text{Size: 9, Left: classicPadLeft}),
-		col.New(4),
-		text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.issue_date"), issueDate), props.Text{Size: 9, Right: classicPadRight}),
-	))
+	if opts.HasBankInfo {
+		rows = append(rows, row.New(5).Add(
+			text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.bank_account"), data.BankAccount.AccountNumber), props.Text{Size: 9, Left: classicPadLeft}),
+			col.New(4),
+			text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.issue_date"), issueDate), props.Text{Size: 9, Right: classicPadRight}),
+		))
 
-	rows = append(rows, row.New(5).Add(
-		text.NewCol(4, fmt.Sprintf("IBAN: %s", data.BankAccount.IBAN), props.Text{Size: 9, Left: classicPadLeft}),
-		col.New(4),
-		text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.due_date"), dueDate), props.Text{Size: 9, Style: fontstyle.Bold, Right: classicPadRight}),
-	))
+		rows = append(rows, row.New(5).Add(
+			text.NewCol(4, fmt.Sprintf("IBAN: %s", data.BankAccount.IBAN), props.Text{Size: 9, Left: classicPadLeft}),
+			col.New(4),
+			text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.due_date"), dueDate), props.Text{Size: 9, Style: fontstyle.Bold, Right: classicPadRight}),
+		))
 
-	rows = append(rows, row.New(5).Add(
-		text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.variable_symbol"), data.Invoice.VariableSymbol), props.Text{Size: 9, Style: fontstyle.Bold, Left: classicPadLeft}),
-		col.New(4),
-		text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.taxable_date"), taxDate), props.Text{Size: 9, Right: classicPadRight}),
-	))
+		rows = append(rows, row.New(5).Add(
+			text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.variable_symbol"), data.Invoice.VariableSymbol), props.Text{Size: 9, Style: fontstyle.Bold, Left: classicPadLeft}),
+			col.New(4),
+			text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.taxable_date"), taxDate), props.Text{Size: 9, Right: classicPadRight}),
+		))
+	} else {
+		rows = append(rows, row.New(5).Add(
+			col.New(4),
+			col.New(4),
+			text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.issue_date"), issueDate), props.Text{Size: 9, Right: classicPadRight}),
+		))
+
+		rows = append(rows, row.New(5).Add(
+			col.New(4),
+			col.New(4),
+			text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.due_date"), dueDate), props.Text{Size: 9, Style: fontstyle.Bold, Right: classicPadRight}),
+		))
+
+		rows = append(rows, row.New(5).Add(
+			col.New(4),
+			col.New(4),
+			text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.taxable_date"), taxDate), props.Text{Size: 9, Right: classicPadRight}),
+		))
+	}
 
 	rows = append(rows, row.New(5).Add(
 		text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.payment_method"), data.Invoice.PaymentMethod), props.Text{Size: 9, Left: classicPadLeft}),

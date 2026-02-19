@@ -14,10 +14,11 @@ type TemplateRenderer interface {
 
 // TemplateOptions holds per-render configuration
 type TemplateOptions struct {
-	ShowLogo  bool
-	ShowQR    bool
-	ShowNotes bool
-	QRType    string // "spayd", "pay_by_square", "epc", "none"
+	ShowLogo    bool
+	ShowQR      bool
+	ShowNotes   bool
+	QRType      string // "spayd", "pay_by_square", "epc", "none"
+	HasBankInfo bool
 }
 
 // TemplateMargins defines the page margins for a template

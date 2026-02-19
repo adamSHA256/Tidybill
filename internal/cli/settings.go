@@ -416,32 +416,47 @@ func (c *CLI) changeDefaultDueDays() {
 // ── Payment Types ──────────────────────────────────────────────────
 
 type cliPaymentType struct {
-	Name      string `json:"name"`
-	Code      string `json:"code,omitempty"`
-	IsDefault bool   `json:"is_default,omitempty"`
+	Name             string `json:"name"`
+	Code             string `json:"code,omitempty"`
+	IsDefault        bool   `json:"is_default,omitempty"`
+	RequiresBankInfo *bool  `json:"requires_bank_info,omitempty"`
 }
 
 var builtinPaymentCodes = []string{"bank_transfer", "cash"}
+
+func cliBoolPtr(b bool) *bool { return &b }
 
 func (c *CLI) loadPaymentTypes() []cliPaymentType {
 	raw, err := c.settings.Get("payment_types")
 	if err != nil || raw == "" {
 		return []cliPaymentType{
-			{Code: "bank_transfer", Name: i18n.T("payment_type.bank_transfer"), IsDefault: true},
-			{Code: "cash", Name: i18n.T("payment_type.cash")},
+			{Code: "bank_transfer", Name: i18n.T("payment_type.bank_transfer"), IsDefault: true, RequiresBankInfo: cliBoolPtr(true)},
+			{Code: "cash", Name: i18n.T("payment_type.cash"), RequiresBankInfo: cliBoolPtr(false)},
 		}
 	}
 	var types []cliPaymentType
 	if err := json.Unmarshal([]byte(raw), &types); err != nil {
-		return []cliPaymentType{{Code: "bank_transfer", Name: i18n.T("payment_type.bank_transfer"), IsDefault: true}}
+		return []cliPaymentType{{Code: "bank_transfer", Name: i18n.T("payment_type.bank_transfer"), IsDefault: true, RequiresBankInfo: cliBoolPtr(true)}}
 	}
 	return resolveCliPaymentTypes(types)
+}
+
+var cliBuiltinRequiresBank = map[string]bool{
+	"bank_transfer": true,
+	"cash":          false,
 }
 
 func resolveCliPaymentTypes(types []cliPaymentType) []cliPaymentType {
 	for i := range types {
 		if types[i].Code != "" {
 			types[i].Name = i18n.T("payment_type." + types[i].Code)
+			if rb, ok := cliBuiltinRequiresBank[types[i].Code]; ok {
+				types[i].RequiresBankInfo = cliBoolPtr(rb)
+			}
+		}
+		// Custom types without explicit flag default to true
+		if types[i].Code == "" && types[i].RequiresBankInfo == nil {
+			types[i].RequiresBankInfo = cliBoolPtr(true)
 		}
 	}
 	present := make(map[string]bool)
@@ -453,8 +468,9 @@ func resolveCliPaymentTypes(types []cliPaymentType) []cliPaymentType {
 	for _, code := range builtinPaymentCodes {
 		if !present[code] {
 			types = append(types, cliPaymentType{
-				Code: code,
-				Name: i18n.T("payment_type." + code),
+				Code:             code,
+				Name:             i18n.T("payment_type." + code),
+				RequiresBankInfo: cliBoolPtr(cliBuiltinRequiresBank[code]),
 			})
 		}
 	}
@@ -470,43 +486,50 @@ func (c *CLI) savePaymentTypes(types []cliPaymentType) error {
 }
 
 func (c *CLI) selectPaymentType() string {
+	pt := c.selectPaymentTypeStruct()
+	return pt.Name
+}
+
+func (c *CLI) selectPaymentTypeStruct() cliPaymentType {
 	types := c.loadPaymentTypes()
 
-	defaultName := ""
-	for _, pt := range types {
+	defaultIdx := 0
+	for i, pt := range types {
 		if pt.IsDefault {
-			defaultName = pt.Name
+			defaultIdx = i
 			break
 		}
-	}
-	if defaultName == "" && len(types) > 0 {
-		defaultName = types[0].Name
 	}
 
 	fmt.Println()
 	fmt.Printf("  %s:\n", i18n.T("pdf.payment_method"))
 	for i, pt := range types {
 		marker := "  "
-		if pt.Name == defaultName {
+		if i == defaultIdx {
 			marker = "* "
 		}
-		fmt.Printf("  %s%d) %s\n", marker, i+1, pt.Name)
+		bankInfo := ""
+		if pt.RequiresBankInfo != nil && !*pt.RequiresBankInfo {
+			bankInfo = " [" + i18n.T("label.no_bank_info") + "]"
+		}
+		fmt.Printf("  %s%d) %s%s\n", marker, i+1, pt.Name, bankInfo)
 	}
 	fmt.Printf("  %s\n", i18n.T("settings.add_payment_type_or_type"))
 	fmt.Println()
 
 	input := c.promptDefault(i18n.T("prompt.choice"), "")
 	if input == "" {
-		return defaultName
+		return types[defaultIdx]
 	}
 
 	idx := 0
 	fmt.Sscanf(input, "%d", &idx)
 	if idx > 0 && idx <= len(types) {
-		return types[idx-1].Name
+		return types[idx-1]
 	}
 
-	return input
+	// Custom typed payment type name — defaults to requires_bank_info=true
+	return cliPaymentType{Name: input, RequiresBankInfo: cliBoolPtr(true)}
 }
 
 func (c *CLI) managePaymentTypes() {
@@ -520,7 +543,11 @@ func (c *CLI) managePaymentTypes() {
 			if pt.IsDefault {
 				def = " " + i18n.T("label.default_upper")
 			}
-			fmt.Printf("  %d) %s%s\n", i+1, pt.Name, def)
+			bankInfo := ""
+			if pt.RequiresBankInfo != nil && !*pt.RequiresBankInfo {
+				bankInfo = " [" + i18n.T("label.no_bank_info") + "]"
+			}
+			fmt.Printf("  %d) %s%s%s\n", i+1, pt.Name, def, bankInfo)
 		}
 		fmt.Println()
 
@@ -537,7 +564,12 @@ func (c *CLI) managePaymentTypes() {
 			if name == "" || name == "0" {
 				continue
 			}
-			types = append(types, cliPaymentType{Name: name})
+			requiresBank := true
+			rbInput := c.promptDefault(i18n.T("prompt.requires_bank_info"), "Y")
+			if strings.ToLower(rbInput) == "n" {
+				requiresBank = false
+			}
+			types = append(types, cliPaymentType{Name: name, RequiresBankInfo: cliBoolPtr(requiresBank)})
 			if err := c.savePaymentTypes(types); err != nil {
 				c.printError(err.Error())
 			} else {

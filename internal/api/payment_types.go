@@ -8,24 +8,39 @@ import (
 )
 
 type PaymentType struct {
-	Name      string `json:"name"`
-	Code      string `json:"code,omitempty"`
-	IsDefault bool   `json:"is_default,omitempty"`
+	Name             string `json:"name"`
+	Code             string `json:"code,omitempty"`
+	IsDefault        bool   `json:"is_default,omitempty"`
+	RequiresBankInfo *bool  `json:"requires_bank_info,omitempty"`
 }
 
 var builtinPaymentCodes = []string{"bank_transfer", "cash"}
 
+func boolPtr(b bool) *bool { return &b }
+
 func defaultPaymentTypes() []PaymentType {
 	return []PaymentType{
-		{Code: "bank_transfer", Name: i18n.T("payment_type.bank_transfer"), IsDefault: true},
-		{Code: "cash", Name: i18n.T("payment_type.cash")},
+		{Code: "bank_transfer", Name: i18n.T("payment_type.bank_transfer"), IsDefault: true, RequiresBankInfo: boolPtr(true)},
+		{Code: "cash", Name: i18n.T("payment_type.cash"), RequiresBankInfo: boolPtr(false)},
 	}
+}
+
+var builtinRequiresBank = map[string]bool{
+	"bank_transfer": true,
+	"cash":          false,
 }
 
 func resolvePaymentTypes(types []PaymentType) []PaymentType {
 	for i := range types {
 		if types[i].Code != "" {
 			types[i].Name = i18n.T("payment_type." + types[i].Code)
+			if rb, ok := builtinRequiresBank[types[i].Code]; ok {
+				types[i].RequiresBankInfo = boolPtr(rb)
+			}
+		}
+		// Custom types without explicit flag default to true
+		if types[i].Code == "" && types[i].RequiresBankInfo == nil {
+			types[i].RequiresBankInfo = boolPtr(true)
 		}
 	}
 	present := make(map[string]bool)
@@ -37,8 +52,9 @@ func resolvePaymentTypes(types []PaymentType) []PaymentType {
 	for _, code := range builtinPaymentCodes {
 		if !present[code] {
 			types = append(types, PaymentType{
-				Code: code,
-				Name: i18n.T("payment_type." + code),
+				Code:             code,
+				Name:             i18n.T("payment_type." + code),
+				RequiresBankInfo: boolPtr(builtinRequiresBank[code]),
 			})
 		}
 	}

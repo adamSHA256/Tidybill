@@ -405,6 +405,7 @@ export interface PaymentType {
   name: string
   code?: string
   is_default?: boolean
+  requires_bank_info?: boolean
 }
 
 export interface VATRate {
@@ -425,12 +426,13 @@ export interface CurrencyItem {
 export interface CreateInvoiceRequest {
   customer_id: string
   supplier_id: string
-  bank_account_id: string
+  bank_account_id?: string
   invoice_number?: string
   issue_date?: string
   due_date?: string
   taxable_date?: string
   payment_method?: string
+  variable_symbol?: string
   currency?: string
   notes?: string
   items: {

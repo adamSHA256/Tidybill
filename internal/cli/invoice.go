@@ -152,12 +152,6 @@ func (c *CLI) createInvoice() {
 		return
 	}
 
-	// Select bank account (if more than one)
-	bankAcc, goBack := c.selectBankAccountForInvoice(supplier.ID)
-	if goBack || bankAcc == nil {
-		return
-	}
-
 	// Generate invoice number (user can override)
 	invNumber, err := c.invoices.GetNextNumber(supplier.ID, supplier.InvoicePrefix)
 	if err != nil {
@@ -167,11 +161,44 @@ func (c *CLI) createInvoice() {
 	}
 	invNumber = c.promptDefault(i18n.T("prompt.invoice_number"), invNumber)
 
+	// Select payment method (before bank account — determines if bank info is needed)
+	selectedPaymentType := c.selectPaymentTypeStruct()
+	requiresBankInfo := selectedPaymentType.RequiresBankInfo == nil || *selectedPaymentType.RequiresBankInfo
+
+	// Conditionally select bank account
+	var bankAcc *model.BankAccount
+	if requiresBankInfo {
+		var bankGoBack bool
+		bankAcc, bankGoBack = c.selectBankAccountForInvoice(supplier.ID)
+		if bankGoBack || bankAcc == nil {
+			return
+		}
+	}
+
+	bankAccountID := ""
+	if bankAcc != nil {
+		bankAccountID = bankAcc.ID
+	}
+
 	// Create invoice
-	invoice := model.NewInvoice(supplier.ID, customer.ID, bankAcc.ID)
+	invoice := model.NewInvoice(supplier.ID, customer.ID, bankAccountID)
 	invoice.InvoiceNumber = invNumber
-	invoice.VariableSymbol = repository.GenerateVariableSymbol(invNumber)
-	invoice.Currency = bankAcc.Currency
+	invoice.PaymentMethod = selectedPaymentType.Name
+
+	if requiresBankInfo {
+		invoice.VariableSymbol = repository.GenerateVariableSymbol(invNumber)
+		// Allow user to override VS
+		invoice.VariableSymbol = c.promptDefault(i18n.T("prompt.variable_symbol"), invoice.VariableSymbol)
+		invoice.Currency = bankAcc.Currency
+	} else {
+		invoice.VariableSymbol = ""
+		// Prefer supplier's default bank account currency, fall back to global default
+		if defBank, err := c.bankAccs.GetDefaultForSupplier(supplier.ID); err == nil && defBank != nil {
+			invoice.Currency = defBank.Currency
+		} else {
+			invoice.Currency = c.getDefaultCurrency()
+		}
+	}
 
 	// Due date: use customer default, fall back to global setting
 	dueDays := customer.DefaultDueDays
@@ -184,8 +211,9 @@ func (c *CLI) createInvoice() {
 	fmt.Println(i18n.Tf("label.invoice_number", invoice.InvoiceNumber))
 	fmt.Println(i18n.Tf("label.customer_short", customer.Name))
 
-	// Allow user to change currency (default from bank account)
-	invoice.Currency = c.promptDefault(i18n.T("prompt.currency"), bankAcc.Currency)
+	// Allow user to change currency
+	defaultCurrency := invoice.Currency
+	invoice.Currency = c.promptDefault(i18n.T("prompt.currency"), defaultCurrency)
 
 	// Allow user to change issue date (default: today)
 	issueDateStr := c.promptDefault(i18n.T("prompt.issue_date_confirm"), invoice.IssueDate.Format("02.01.2006"))
@@ -206,9 +234,6 @@ func (c *CLI) createInvoice() {
 		invoice.DueDate = t
 	}
 	fmt.Println(i18n.Tf("label.due_date_short", invoice.DueDate.Format("02.01.2006")))
-
-	// Select payment type
-	invoice.PaymentMethod = c.selectPaymentType()
 	fmt.Println()
 
 	// Add items
@@ -885,10 +910,16 @@ func (c *CLI) generatePDF(inv *model.Invoice) {
 		return
 	}
 
-	bankAcc, err := c.bankAccs.GetByID(inv.BankAccountID)
-	if err != nil || bankAcc == nil {
-		c.printError(i18n.T("error.load_bank_account"))
-		return
+	var bankAcc *model.BankAccount
+	if inv.BankAccountID != "" {
+		bankAcc, err = c.bankAccs.GetByID(inv.BankAccountID)
+		if err != nil || bankAcc == nil {
+			c.printError(i18n.T("error.load_bank_account"))
+			return
+		}
+	}
+	if bankAcc == nil {
+		bankAcc = &model.BankAccount{} // empty sentinel
 	}
 
 	items, err := c.invItems.GetByInvoice(inv.ID)
@@ -896,6 +927,8 @@ func (c *CLI) generatePDF(inv *model.Invoice) {
 		c.printError(i18n.T("error.load_items"))
 		return
 	}
+
+	hasBankInfo := bankAcc.AccountNumber != "" || bankAcc.IBAN != ""
 
 	fmt.Println(i18n.T("info.generating_pdf"))
 
@@ -908,10 +941,11 @@ func (c *CLI) generatePDF(inv *model.Invoice) {
 	}
 
 	opts := &service.TemplateOptions{
-		ShowLogo:  true,
-		ShowQR:    true,
-		ShowNotes: true,
-		QRType:    bankAcc.QRType,
+		ShowLogo:    true,
+		ShowQR:      hasBankInfo,
+		ShowNotes:   true,
+		QRType:      bankAcc.QRType,
+		HasBankInfo: hasBankInfo,
 	}
 
 	// Resolve template: use invoice's template, fall back to user's default

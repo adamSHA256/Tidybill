@@ -542,6 +542,12 @@ var messagesEN = map[string]string{
 	"preview.item2":         "Consulting and requirements analysis",
 	"preview.item3":         "Server administration (monthly)",
 
+	// ── Payment / Bank ──────────────────────────────────────────────────
+	"prompt.requires_bank_info": "Requires bank info? (Y/n)",
+	"prompt.variable_symbol":    "Variable symbol",
+	"label.requires_bank_info":  "Requires bank info",
+	"label.no_bank_info":        "no bank",
+
 	// ── About ───────────────────────────────────────────────────────────
 	"menu.about":          "About",
 	"heading.about":       "ABOUT TIDYBILL",

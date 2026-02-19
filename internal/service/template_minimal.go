@@ -33,7 +33,7 @@ func (t *MinimalTemplate) Render(m core.Maroto, data *InvoiceData, opts *Templat
 	m.AddRow(20)
 	m.AddRows(t.parties(data, lang)...)
 	m.AddRow(15)
-	m.AddRows(t.payment(data, lang)...)
+	m.AddRows(t.payment(data, opts, lang)...)
 	m.AddRow(15)
 	m.AddRows(t.items(data)...)
 	m.AddRow(10)
@@ -90,17 +90,24 @@ func (t *MinimalTemplate) parties(data *InvoiceData, lang i18n.Lang) []core.Row 
 	return rows
 }
 
-func (t *MinimalTemplate) payment(data *InvoiceData, lang i18n.Lang) []core.Row {
+func (t *MinimalTemplate) payment(data *InvoiceData, opts *TemplateOptions, lang i18n.Lang) []core.Row {
 	var rows []core.Row
 	dueDate := data.Invoice.DueDate.Format("02.01.2006")
 
 	rows = append(rows, row.New(1).Add(line.NewCol(12, props.Line{Color: minLineColor})))
 
-	rows = append(rows, row.New(8).Add(
-		text.NewCol(3, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.due_date"), dueDate), props.Text{Size: 9, Style: fontstyle.Bold, Top: 2}),
-		text.NewCol(3, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.variable_symbol_short"), data.Invoice.VariableSymbol), props.Text{Size: 9, Top: 2}),
-		text.NewCol(6, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.bank_account"), data.BankAccount.AccountNumber), props.Text{Size: 9, Align: align.Right, Top: 2}),
-	))
+	if opts.HasBankInfo {
+		rows = append(rows, row.New(8).Add(
+			text.NewCol(3, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.due_date"), dueDate), props.Text{Size: 9, Style: fontstyle.Bold, Top: 2}),
+			text.NewCol(3, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.variable_symbol_short"), data.Invoice.VariableSymbol), props.Text{Size: 9, Top: 2}),
+			text.NewCol(6, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.bank_account"), data.BankAccount.AccountNumber), props.Text{Size: 9, Align: align.Right, Top: 2}),
+		))
+	} else {
+		rows = append(rows, row.New(8).Add(
+			text.NewCol(6, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.due_date"), dueDate), props.Text{Size: 9, Style: fontstyle.Bold, Top: 2}),
+			col.New(6),
+		))
+	}
 
 	rows = append(rows, row.New(1).Add(line.NewCol(12, props.Line{Color: minLineColor})))
 	return rows

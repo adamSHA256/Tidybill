@@ -27,8 +27,8 @@ func (t *DefaultTemplate) Margins() TemplateMargins {
 func (t *DefaultTemplate) Render(m core.Maroto, data *InvoiceData, opts *TemplateOptions) {
 	lang := invoiceLang(data)
 	t.addHeader(m, data, opts, lang)
-	t.addParties(m, data, lang)
-	t.addPaymentBar(m, data, lang)
+	t.addParties(m, data, opts, lang)
+	t.addPaymentBar(m, data, opts, lang)
 	t.addItemsTable(m, data, lang)
 	t.addTotals(m, data, lang)
 	t.addFooter(m, data, opts, lang)
@@ -79,9 +79,33 @@ func (t *DefaultTemplate) addHeader(m core.Maroto, data *InvoiceData, opts *Temp
 	)
 }
 
-func (t *DefaultTemplate) addParties(m core.Maroto, data *InvoiceData, lang i18n.Lang) {
+func (t *DefaultTemplate) addParties(m core.Maroto, data *InvoiceData, opts *TemplateOptions, lang i18n.Lang) {
 	m.AddRow(3)
-	m.AddRow(58,
+
+	// Build the right column (dates, payment method, optionally bank info)
+	rightTexts := []core.Component{
+		text.New(i18n.TForLang(lang, "pdf.issue_date"), props.Text{Size: 9}),
+		text.New(data.Invoice.IssueDate.Format("02.01.2006"), props.Text{Size: 9, Style: fontstyle.Bold, Left: 28}),
+		text.New(i18n.TForLang(lang, "pdf.due_date"), props.Text{Size: 9, Top: 6}),
+		text.New(data.Invoice.DueDate.Format("02.01.2006"), props.Text{Size: 9, Style: fontstyle.Bold, Top: 6, Left: 28}),
+		text.New(i18n.TForLang(lang, "pdf.payment_method"), props.Text{Size: 9, Top: 12}),
+		text.New(data.Invoice.PaymentMethod, props.Text{Size: 9, Style: fontstyle.Bold, Top: 12, Left: 28}),
+	}
+
+	rowHeight := 40.0
+	if opts.HasBankInfo {
+		rightTexts = append(rightTexts,
+			text.New(i18n.TForLang(lang, "pdf.bank_account"), props.Text{Size: 9, Top: 20}),
+			text.New(data.BankAccount.AccountNumber, props.Text{Size: 9, Style: fontstyle.Bold, Top: 20, Left: 28}),
+			text.New(i18n.TForLang(lang, "pdf.iban"), props.Text{Size: 9, Top: 26}),
+			text.New(data.BankAccount.IBAN, props.Text{Size: 8, Style: fontstyle.Bold, Top: 26, Left: 28}),
+			text.New(i18n.TForLang(lang, "pdf.variable_symbol"), props.Text{Size: 9, Top: 34}),
+			text.New(data.Invoice.VariableSymbol, props.Text{Size: 9, Style: fontstyle.Bold, Top: 34, Left: 28}),
+		)
+		rowHeight = 58
+	}
+
+	m.AddRow(rowHeight,
 		col.New(4).Add(
 			text.New(i18n.TForLang(lang, "pdf.supplier"), props.Text{Size: 10, Style: fontstyle.Bold}),
 			text.New(data.Supplier.Name, props.Text{Size: 10, Style: fontstyle.Bold, Top: 5}),
@@ -102,40 +126,46 @@ func (t *DefaultTemplate) addParties(m core.Maroto, data *InvoiceData, lang i18n
 			text.New(i18n.TfForLang(lang, "pdf.ico", data.Customer.ICO), props.Text{Size: 9, Top: 26}),
 			text.New(i18n.TfForLang(lang, "pdf.dic", data.Customer.DIC), props.Text{Size: 9, Top: 30}),
 		),
-		col.New(4).Add(
-			text.New(i18n.TForLang(lang, "pdf.issue_date"), props.Text{Size: 9}),
-			text.New(data.Invoice.IssueDate.Format("02.01.2006"), props.Text{Size: 9, Style: fontstyle.Bold, Left: 28}),
-			text.New(i18n.TForLang(lang, "pdf.due_date"), props.Text{Size: 9, Top: 6}),
-			text.New(data.Invoice.DueDate.Format("02.01.2006"), props.Text{Size: 9, Style: fontstyle.Bold, Top: 6, Left: 28}),
-			text.New(i18n.TForLang(lang, "pdf.payment_method"), props.Text{Size: 9, Top: 12}),
-			text.New(data.Invoice.PaymentMethod, props.Text{Size: 9, Style: fontstyle.Bold, Top: 12, Left: 28}),
-			text.New(i18n.TForLang(lang, "pdf.bank_account"), props.Text{Size: 9, Top: 20}),
-			text.New(data.BankAccount.AccountNumber, props.Text{Size: 9, Style: fontstyle.Bold, Top: 20, Left: 28}),
-			text.New(i18n.TForLang(lang, "pdf.iban"), props.Text{Size: 9, Top: 26}),
-			text.New(data.BankAccount.IBAN, props.Text{Size: 8, Style: fontstyle.Bold, Top: 26, Left: 28}),
-			text.New(i18n.TForLang(lang, "pdf.variable_symbol"), props.Text{Size: 9, Top: 34}),
-			text.New(data.Invoice.VariableSymbol, props.Text{Size: 9, Style: fontstyle.Bold, Top: 34, Left: 28}),
-		),
+		col.New(4).Add(rightTexts...),
 	)
 }
 
-func (t *DefaultTemplate) addPaymentBar(m core.Maroto, data *InvoiceData, lang i18n.Lang) {
+func (t *DefaultTemplate) addPaymentBar(m core.Maroto, data *InvoiceData, opts *TemplateOptions, lang i18n.Lang) {
 	grayBg := &props.Color{Red: 240, Green: 240, Blue: 240}
+	cellStyle := &props.Cell{BackgroundColor: grayBg, BorderType: border.Full, BorderColor: &props.Color{Red: 200, Green: 200, Blue: 200}}
+	labelColor := &props.Color{Red: 100, Green: 100, Blue: 100}
 
-	m.AddRow(15,
-		col.New(4).Add(
-			text.New(i18n.TForLang(lang, "pdf.variable_symbol"), props.Text{Size: 8, Color: &props.Color{Red: 100, Green: 100, Blue: 100}}),
-			text.New(data.Invoice.VariableSymbol, props.Text{Size: 10, Style: fontstyle.Bold, Top: 4}),
-		).WithStyle(&props.Cell{BackgroundColor: grayBg, BorderType: border.Full, BorderColor: &props.Color{Red: 200, Green: 200, Blue: 200}}),
-		col.New(4).Add(
-			text.New(i18n.TForLang(lang, "pdf.due_date"), props.Text{Size: 8, Color: &props.Color{Red: 100, Green: 100, Blue: 100}}),
-			text.New(data.Invoice.DueDate.Format("02.01.2006"), props.Text{Size: 10, Style: fontstyle.Bold, Top: 4}),
-		).WithStyle(&props.Cell{BackgroundColor: grayBg, BorderType: border.Full, BorderColor: &props.Color{Red: 200, Green: 200, Blue: 200}}),
-		col.New(4).Add(
-			text.New(i18n.TForLang(lang, "pdf.amount_due"), props.Text{Size: 8, Color: &props.Color{Red: 100, Green: 100, Blue: 100}}),
-			text.New(formatMoneyDefault(data.Invoice.Total, data.Invoice.Currency), props.Text{Size: 10, Style: fontstyle.Bold, Top: 4}),
-		).WithStyle(&props.Cell{BackgroundColor: grayBg, BorderType: border.Full, BorderColor: &props.Color{Red: 200, Green: 200, Blue: 200}}),
-	)
+	if opts.HasBankInfo {
+		m.AddRow(15,
+			col.New(4).Add(
+				text.New(i18n.TForLang(lang, "pdf.variable_symbol"), props.Text{Size: 8, Color: labelColor}),
+				text.New(data.Invoice.VariableSymbol, props.Text{Size: 10, Style: fontstyle.Bold, Top: 4}),
+			).WithStyle(cellStyle),
+			col.New(4).Add(
+				text.New(i18n.TForLang(lang, "pdf.due_date"), props.Text{Size: 8, Color: labelColor}),
+				text.New(data.Invoice.DueDate.Format("02.01.2006"), props.Text{Size: 10, Style: fontstyle.Bold, Top: 4}),
+			).WithStyle(cellStyle),
+			col.New(4).Add(
+				text.New(i18n.TForLang(lang, "pdf.amount_due"), props.Text{Size: 8, Color: labelColor}),
+				text.New(formatMoneyDefault(data.Invoice.Total, data.Invoice.Currency), props.Text{Size: 10, Style: fontstyle.Bold, Top: 4}),
+			).WithStyle(cellStyle),
+		)
+	} else {
+		m.AddRow(15,
+			col.New(4).Add(
+				text.New(i18n.TForLang(lang, "pdf.payment_method"), props.Text{Size: 8, Color: labelColor}),
+				text.New(data.Invoice.PaymentMethod, props.Text{Size: 10, Style: fontstyle.Bold, Top: 4}),
+			).WithStyle(cellStyle),
+			col.New(4).Add(
+				text.New(i18n.TForLang(lang, "pdf.due_date"), props.Text{Size: 8, Color: labelColor}),
+				text.New(data.Invoice.DueDate.Format("02.01.2006"), props.Text{Size: 10, Style: fontstyle.Bold, Top: 4}),
+			).WithStyle(cellStyle),
+			col.New(4).Add(
+				text.New(i18n.TForLang(lang, "pdf.amount_due"), props.Text{Size: 8, Color: labelColor}),
+				text.New(formatMoneyDefault(data.Invoice.Total, data.Invoice.Currency), props.Text{Size: 10, Style: fontstyle.Bold, Top: 4}),
+			).WithStyle(cellStyle),
+		)
+	}
 	m.AddRow(5)
 }
 

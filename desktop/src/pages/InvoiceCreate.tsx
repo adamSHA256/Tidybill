@@ -48,6 +48,10 @@ interface ItemForm {
 
 const emptyItem: ItemForm = { item_id: '', description: '', quantity: 1, unit: 'ks', unit_price: 0, vat_rate: 21 }
 
+function generateVariableSymbol(invoiceNumber: string): string {
+  return invoiceNumber.replace(/-/g, '').replace(/^[A-Z]+/, '')
+}
+
 export function InvoiceCreate() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -90,6 +94,9 @@ export function InvoiceCreate() {
   const [items, setItems] = useState<ItemForm[]>([{ ...emptyItem }])
   const [dueDateChangedByCustomer, setDueDateChangedByCustomer] = useState(false)
   const dueDateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [variableSymbol, setVariableSymbol] = useState('')
+  const [vsChangedByInvoiceNumber, setVsChangedByInvoiceNumber] = useState(false)
+  const vsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Modal states
   const [supplierModalOpen, setSupplierModalOpen] = useState(false)
@@ -190,6 +197,21 @@ export function InvoiceCreate() {
     }
   }, [nextNumberData])
 
+  // Auto-generate variable symbol when invoice number changes
+  useEffect(() => {
+    if (invoiceNumber) {
+      const newVs = generateVariableSymbol(invoiceNumber)
+      setVariableSymbol((prev) => {
+        if (prev && prev !== newVs) {
+          setVsChangedByInvoiceNumber(true)
+          if (vsTimerRef.current) clearTimeout(vsTimerRef.current)
+          vsTimerRef.current = setTimeout(() => setVsChangedByInvoiceNumber(false), 10000)
+        }
+        return newVs
+      })
+    }
+  }, [invoiceNumber])
+
   // Initialize default VAT rate from VAT rates array for the initial empty item
   useEffect(() => {
     if (vatRates && vatRates.length > 0) {
@@ -230,10 +252,11 @@ export function InvoiceCreate() {
     }
   }, [paymentTypes]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Cleanup due date change timer on unmount
+  // Cleanup timers on unmount
   useEffect(() => {
     return () => {
       if (dueDateTimerRef.current) clearTimeout(dueDateTimerRef.current)
+      if (vsTimerRef.current) clearTimeout(vsTimerRef.current)
     }
   }, [])
 
@@ -253,12 +276,27 @@ export function InvoiceCreate() {
   const defaultBank = bankAccounts?.find((b: BankAccount) => b.is_default)
   const selectedBankId = bankAccountId || defaultBank?.id || null
 
-  // Auto-set currency from default bank account when it loads
+  // Compute whether selected payment method requires bank info
+  const selectedPaymentType = paymentTypes?.find((pt) => pt.name === paymentMethod)
+  const requiresBankInfo = !selectedPaymentType || selectedPaymentType.requires_bank_info !== false
+
+  // Auto-set currency from supplier's default bank account (regardless of payment method)
   useEffect(() => {
     if (defaultBank && !bankAccountId) {
       setCurrency(defaultBank.currency)
     }
   }, [defaultBank?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // When payment method changes to non-bank, clear bank selection but keep currency from supplier
+  useEffect(() => {
+    if (!requiresBankInfo) {
+      setBankAccountId(null)
+      // Currency stays from supplier's default bank; fall back to global only if no bank exists
+      if (!defaultBank) {
+        setCurrency(globalCurrency)
+      }
+    }
+  }, [requiresBankInfo]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectedSupplier = suppliers?.find((s) => s.id === selectedSupplierId)
   const selectedCustomer = customers?.find((c) => c.id === customerId)
@@ -523,8 +561,8 @@ export function InvoiceCreate() {
   const total = subtotal + vatAmount
 
   const handleCreate = () => {
-    if (!selectedSupplierId || !customerId || !selectedBankId) {
-      notifications.show({ title: t('invoice.missing_fields_title'), message: t('invoice.missing_fields_msg'), color: 'orange' })
+    if (!selectedSupplierId || !customerId || (requiresBankInfo && !selectedBankId)) {
+      notifications.show({ title: t('invoice.missing_fields_title'), message: requiresBankInfo ? t('invoice.missing_fields_msg') : t('invoice.missing_fields_msg_no_bank'), color: 'orange' })
       return
     }
     if (items.every((i) => !i.description)) {
@@ -534,7 +572,7 @@ export function InvoiceCreate() {
     createMutation.mutate({
       supplier_id: selectedSupplierId,
       customer_id: customerId,
-      bank_account_id: selectedBankId,
+      bank_account_id: requiresBankInfo ? selectedBankId! : undefined,
       invoice_number: invoiceNumber || undefined,
       issue_date: issueDate || undefined,
       taxable_date: taxableDate ?? issueDate ?? undefined,
@@ -542,6 +580,7 @@ export function InvoiceCreate() {
       payment_method: paymentMethod || undefined,
       currency,
       notes,
+      variable_symbol: requiresBankInfo ? variableSymbol : undefined,
       items: items.filter((i) => i.description).map((i) => ({
         item_id: i.item_id || undefined,
         description: i.description,
@@ -657,6 +696,19 @@ export function InvoiceCreate() {
               <Text size="xs" c="var(--mantine-primary-color-7)" mt={4}>{t('invoice.due_date_changed_by_customer')}</Text>
             )}
           </div>
+          {requiresBankInfo && (
+            <div>
+              <TextInput
+                label={t('invoice.variable_symbol_label')}
+                value={variableSymbol}
+                onChange={(e) => setVariableSymbol(e.currentTarget.value)}
+                styles={vsChangedByInvoiceNumber ? { input: { borderColor: 'var(--mantine-primary-color-6)', borderWidth: 2 } } : undefined}
+              />
+              {vsChangedByInvoiceNumber && (
+                <Text size="xs" c="var(--mantine-primary-color-7)" mt={4}>{t('invoice.vs_changed_by_invoice_number')}</Text>
+              )}
+            </div>
+          )}
         </SimpleGrid>
         {currencyMismatch && (
           <Alert variant="light" color="orange" mt="sm" icon={<IconAlertTriangle size={16} />}>
@@ -698,19 +750,23 @@ export function InvoiceCreate() {
               <Text size="sm" c="dimmed">{selectedSupplier.street}, {selectedSupplier.city}, {selectedSupplier.zip}</Text>
             </Stack>
           )}
-          {selectedSupplierId && bankAccounts && bankAccounts.length > 0 ? (
-            <Select
-              label={t('invoice.bank_account')}
-              mt="sm"
-              data={bankData}
-              value={selectedBankId}
-              onChange={handleBankSelect}
-            />
-          ) : selectedSupplierId && bankAccounts && bankAccounts.length === 0 ? (
-            <Button variant="light" mt="sm" leftSection={<IconPlus size={14} />} onClick={openBankModal} fullWidth>
-              {t('invoice.create_first_bank_account')}
-            </Button>
-          ) : null}
+          {requiresBankInfo && (
+            <>
+              {selectedSupplierId && bankAccounts && bankAccounts.length > 0 ? (
+                <Select
+                  label={t('invoice.bank_account')}
+                  mt="sm"
+                  data={bankData}
+                  value={selectedBankId}
+                  onChange={handleBankSelect}
+                />
+              ) : selectedSupplierId && bankAccounts && bankAccounts.length === 0 ? (
+                <Button variant="light" mt="sm" leftSection={<IconPlus size={14} />} onClick={openBankModal} fullWidth>
+                  {t('invoice.create_first_bank_account')}
+                </Button>
+              ) : null}
+            </>
+          )}
         </Paper>
 
         <Paper p="md" radius="md" withBorder>

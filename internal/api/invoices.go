@@ -98,19 +98,20 @@ func (s *Server) getInvoice(w http.ResponseWriter, r *http.Request) {
 }
 
 type CreateInvoiceRequest struct {
-	CustomerID    string               `json:"customer_id"`
-	SupplierID    string               `json:"supplier_id"`
-	BankAccountID string               `json:"bank_account_id"`
-	InvoiceNumber string               `json:"invoice_number"`
-	IssueDate     string               `json:"issue_date"`
-	DueDate       string               `json:"due_date"`
-	TaxableDate   string               `json:"taxable_date"`
-	PaymentMethod string               `json:"payment_method"`
-	Currency      string               `json:"currency"`
-	Language      string               `json:"language"`
-	Notes         string               `json:"notes"`
-	InternalNotes string               `json:"internal_notes"`
-	Items         []CreateItemRequest   `json:"items"`
+	CustomerID     string             `json:"customer_id"`
+	SupplierID     string             `json:"supplier_id"`
+	BankAccountID  string             `json:"bank_account_id"`
+	InvoiceNumber  string             `json:"invoice_number"`
+	IssueDate      string             `json:"issue_date"`
+	DueDate        string             `json:"due_date"`
+	TaxableDate    string             `json:"taxable_date"`
+	PaymentMethod  string             `json:"payment_method"`
+	VariableSymbol string             `json:"variable_symbol"`
+	Currency       string             `json:"currency"`
+	Language       string             `json:"language"`
+	Notes          string             `json:"notes"`
+	InternalNotes  string             `json:"internal_notes"`
+	Items          []CreateItemRequest `json:"items"`
 }
 
 type CreateItemRequest struct {
@@ -152,9 +153,48 @@ func (s *Server) createInvoice(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	inv := model.NewInvoice(req.SupplierID, req.CustomerID, req.BankAccountID)
+	// Determine if this payment method requires bank info
+	requiresBankInfo := true
+	pts := s.loadPaymentTypes()
+	paymentMethodName := req.PaymentMethod
+	if paymentMethodName == "" {
+		for _, pt := range pts {
+			if pt.IsDefault {
+				paymentMethodName = pt.Name
+				break
+			}
+		}
+		if paymentMethodName == "" && len(pts) > 0 {
+			paymentMethodName = pts[0].Name
+		}
+	}
+	for _, pt := range pts {
+		if pt.Name == paymentMethodName {
+			if pt.RequiresBankInfo != nil {
+				requiresBankInfo = *pt.RequiresBankInfo
+			}
+			break
+		}
+	}
+
+	// Validate bank_account_id only when required
+	if requiresBankInfo && req.BankAccountID == "" {
+		writeError(w, http.StatusBadRequest, "bank_account_id is required for this payment method")
+		return
+	}
+
+	bankAccountID := req.BankAccountID
+	if !requiresBankInfo {
+		bankAccountID = ""
+	}
+
+	inv := model.NewInvoice(req.SupplierID, req.CustomerID, bankAccountID)
 	inv.InvoiceNumber = invNumber
-	inv.VariableSymbol = repository.GenerateVariableSymbol(invNumber)
+	if req.VariableSymbol != "" {
+		inv.VariableSymbol = req.VariableSymbol
+	} else {
+		inv.VariableSymbol = repository.GenerateVariableSymbol(invNumber)
+	}
 	inv.Notes = req.Notes
 
 	// Apply global defaults from settings
@@ -202,22 +242,8 @@ func (s *Server) createInvoice(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Set payment method
-	if req.PaymentMethod != "" {
-		inv.PaymentMethod = req.PaymentMethod
-	} else {
-		// Use default from payment types
-		pts := s.loadPaymentTypes()
-		for _, pt := range pts {
-			if pt.IsDefault {
-				inv.PaymentMethod = pt.Name
-				break
-			}
-		}
-		if inv.PaymentMethod == "" && len(pts) > 0 {
-			inv.PaymentMethod = pts[0].Name
-		}
-	}
+	// Set payment method (already resolved above)
+	inv.PaymentMethod = paymentMethodName
 
 	// Create invoice
 	if err := s.invoices.Create(inv); err != nil {
@@ -320,14 +346,40 @@ func (s *Server) updateInvoice(w http.ResponseWriter, r *http.Request) {
 	if req.CustomerID != "" {
 		existing.CustomerID = req.CustomerID
 	}
-	if req.BankAccountID != "" {
-		existing.BankAccountID = req.BankAccountID
+
+	// Determine if the updated payment method requires bank info
+	updatedPaymentMethod := req.PaymentMethod
+	if updatedPaymentMethod == "" {
+		updatedPaymentMethod = existing.PaymentMethod
 	}
+	updateRequiresBank := true
+	pts := s.loadPaymentTypes()
+	for _, pt := range pts {
+		if pt.Name == updatedPaymentMethod {
+			if pt.RequiresBankInfo != nil {
+				updateRequiresBank = *pt.RequiresBankInfo
+			}
+			break
+		}
+	}
+
+	if updateRequiresBank {
+		if req.BankAccountID != "" {
+			existing.BankAccountID = req.BankAccountID
+		}
+	} else {
+		existing.BankAccountID = ""
+	}
+
 	if req.Currency != "" {
 		existing.Currency = req.Currency
 	}
 	existing.Notes = req.Notes
 	existing.InternalNotes = req.InternalNotes
+
+	if req.VariableSymbol != "" {
+		existing.VariableSymbol = req.VariableSymbol
+	}
 
 	if req.IssueDate != "" {
 		if t, err := time.Parse("2006-01-02", req.IssueDate); err == nil {
@@ -473,10 +525,17 @@ func (s *Server) generateInvoicePDF(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bankAccount, err := s.bankAccounts.GetByID(inv.BankAccountID)
-	if err != nil || bankAccount == nil {
-		writeError(w, http.StatusInternalServerError, "bank account not found")
-		return
+	// Load bank account — may be empty for non-bank payment methods
+	var bankAccount *model.BankAccount
+	if inv.BankAccountID != "" {
+		bankAccount, err = s.bankAccounts.GetByID(inv.BankAccountID)
+		if err != nil || bankAccount == nil {
+			writeError(w, http.StatusInternalServerError, "bank account not found")
+			return
+		}
+	}
+	if bankAccount == nil {
+		bankAccount = &model.BankAccount{} // empty sentinel
 	}
 
 	items, err := s.invoiceItems.GetByInvoice(inv.ID)
@@ -511,12 +570,15 @@ func (s *Server) generateInvoicePDF(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	hasBankInfo := bankAccount.AccountNumber != "" || bankAccount.IBAN != ""
+
 	// Look up template settings from DB
 	opts := &service.TemplateOptions{
-		ShowLogo:  true,
-		ShowQR:    true,
-		ShowNotes: true,
-		QRType:    bankAccount.QRType,
+		ShowLogo:    true,
+		ShowQR:      hasBankInfo,
+		ShowNotes:   true,
+		QRType:      bankAccount.QRType,
+		HasBankInfo: hasBankInfo,
 	}
 	yamlSource := ""
 	if tmpl, err := s.templates.GetByID(templateCode); err == nil && tmpl != nil {

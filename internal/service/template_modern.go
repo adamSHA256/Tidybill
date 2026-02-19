@@ -35,7 +35,7 @@ func (t *ModernTemplate) Render(m core.Maroto, data *InvoiceData, opts *Template
 	m.AddRow(15)
 	m.AddRows(t.parties(data, lang)...)
 	m.AddRow(15)
-	m.AddRows(t.meta(data, lang)...)
+	m.AddRows(t.meta(data, opts, lang)...)
 	m.AddRow(15)
 	m.AddRows(t.items(data, lang)...)
 	m.AddRow(10)
@@ -128,34 +128,48 @@ func (t *ModernTemplate) parties(data *InvoiceData, lang i18n.Lang) []core.Row {
 	return rows
 }
 
-func (t *ModernTemplate) meta(data *InvoiceData, lang i18n.Lang) []core.Row {
+func (t *ModernTemplate) meta(data *InvoiceData, opts *TemplateOptions, lang i18n.Lang) []core.Row {
 	var rows []core.Row
 	issueDate := data.Invoice.IssueDate.Format("02.01.2006")
 	dueDate := data.Invoice.DueDate.Format("02.01.2006")
 
-	rows = append(rows, row.New(6).Add(
-		col.New(3).Add(text.New(i18n.TForLang(lang, "pdf.issue_date"), props.Text{Size: 8, Color: labelGray})),
-		col.New(3).Add(text.New(i18n.TForLang(lang, "pdf.due_date"), props.Text{Size: 8, Color: labelGray})),
-		col.New(3).Add(text.New(i18n.TForLang(lang, "pdf.variable_symbol"), props.Text{Size: 8, Color: labelGray})),
-		col.New(3).Add(text.New(i18n.TForLang(lang, "pdf.payment_method"), props.Text{Size: 8, Color: labelGray})),
-	))
+	if opts.HasBankInfo {
+		rows = append(rows, row.New(6).Add(
+			col.New(3).Add(text.New(i18n.TForLang(lang, "pdf.issue_date"), props.Text{Size: 8, Color: labelGray})),
+			col.New(3).Add(text.New(i18n.TForLang(lang, "pdf.due_date"), props.Text{Size: 8, Color: labelGray})),
+			col.New(3).Add(text.New(i18n.TForLang(lang, "pdf.variable_symbol"), props.Text{Size: 8, Color: labelGray})),
+			col.New(3).Add(text.New(i18n.TForLang(lang, "pdf.payment_method"), props.Text{Size: 8, Color: labelGray})),
+		))
 
-	rows = append(rows, row.New(6).Add(
-		text.NewCol(3, issueDate, props.Text{Size: 10, Style: fontstyle.Bold}),
-		text.NewCol(3, dueDate, props.Text{Size: 10, Style: fontstyle.Bold, Color: redAccent}),
-		text.NewCol(3, data.Invoice.VariableSymbol, props.Text{Size: 10, Style: fontstyle.Bold}),
-		text.NewCol(3, data.Invoice.PaymentMethod, props.Text{Size: 10}),
-	))
+		rows = append(rows, row.New(6).Add(
+			text.NewCol(3, issueDate, props.Text{Size: 10, Style: fontstyle.Bold}),
+			text.NewCol(3, dueDate, props.Text{Size: 10, Style: fontstyle.Bold, Color: redAccent}),
+			text.NewCol(3, data.Invoice.VariableSymbol, props.Text{Size: 10, Style: fontstyle.Bold}),
+			text.NewCol(3, data.Invoice.PaymentMethod, props.Text{Size: 10}),
+		))
 
-	rows = append(rows, row.New(8))
-	rows = append(rows, row.New(6).Add(
-		col.New(3).Add(text.New(i18n.TForLang(lang, "pdf.bank_account"), props.Text{Size: 8, Color: labelGray})),
-		col.New(9).Add(text.New("IBAN", props.Text{Size: 8, Color: labelGray})),
-	))
-	rows = append(rows, row.New(6).Add(
-		text.NewCol(3, data.BankAccount.AccountNumber, props.Text{Size: 10, Style: fontstyle.Bold}),
-		text.NewCol(9, data.BankAccount.IBAN, props.Text{Size: 10}),
-	))
+		rows = append(rows, row.New(8))
+		rows = append(rows, row.New(6).Add(
+			col.New(3).Add(text.New(i18n.TForLang(lang, "pdf.bank_account"), props.Text{Size: 8, Color: labelGray})),
+			col.New(9).Add(text.New("IBAN", props.Text{Size: 8, Color: labelGray})),
+		))
+		rows = append(rows, row.New(6).Add(
+			text.NewCol(3, data.BankAccount.AccountNumber, props.Text{Size: 10, Style: fontstyle.Bold}),
+			text.NewCol(9, data.BankAccount.IBAN, props.Text{Size: 10}),
+		))
+	} else {
+		rows = append(rows, row.New(6).Add(
+			col.New(4).Add(text.New(i18n.TForLang(lang, "pdf.issue_date"), props.Text{Size: 8, Color: labelGray})),
+			col.New(4).Add(text.New(i18n.TForLang(lang, "pdf.due_date"), props.Text{Size: 8, Color: labelGray})),
+			col.New(4).Add(text.New(i18n.TForLang(lang, "pdf.payment_method"), props.Text{Size: 8, Color: labelGray})),
+		))
+
+		rows = append(rows, row.New(6).Add(
+			text.NewCol(4, issueDate, props.Text{Size: 10, Style: fontstyle.Bold}),
+			text.NewCol(4, dueDate, props.Text{Size: 10, Style: fontstyle.Bold, Color: redAccent}),
+			text.NewCol(4, data.Invoice.PaymentMethod, props.Text{Size: 10}),
+		))
+	}
 
 	return rows
 }

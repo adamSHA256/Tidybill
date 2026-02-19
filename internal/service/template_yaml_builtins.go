@@ -108,17 +108,17 @@ layout:
             style: { size: 9, top: 12 }
           - text: "{{ .Invoice.PaymentMethod }}"
             style: { size: 9, bold: true, top: 12, left: 35 }
-          - text: "{{ label \"pdf.bank_account\" }}"
+          - text: "{{ if .Options.HasBankInfo }}{{ label \"pdf.bank_account\" }}{{ end }}"
             style: { size: 9, top: 20 }
-          - text: "{{ .BankAccount.AccountNumber }}"
+          - text: "{{ if .Options.HasBankInfo }}{{ .BankAccount.AccountNumber }}{{ end }}"
             style: { size: 9, bold: true, top: 20, left: 35 }
-          - text: "{{ label \"pdf.iban\" }}"
+          - text: "{{ if .Options.HasBankInfo }}{{ label \"pdf.iban\" }}{{ end }}"
             style: { size: 9, top: 26 }
-          - text: "{{ .BankAccount.IBAN }}"
+          - text: "{{ if .Options.HasBankInfo }}{{ .BankAccount.IBAN }}{{ end }}"
             style: { size: 8, bold: true, top: 26, left: 35 }
-          - text: "{{ label \"pdf.variable_symbol\" }}"
+          - text: "{{ if .Options.HasBankInfo }}{{ label \"pdf.variable_symbol\" }}{{ end }}"
             style: { size: 9, top: 34 }
-          - text: "{{ .Invoice.VariableSymbol }}"
+          - text: "{{ if .Options.HasBankInfo }}{{ .Invoice.VariableSymbol }}{{ end }}"
             style: { size: 9, bold: true, top: 34, left: 35 }
 
   # ── Payment bar ──
@@ -126,9 +126,9 @@ layout:
     cols:
       - width: 4
         texts:
-          - text: "{{ label \"pdf.variable_symbol\" }}"
+          - text: "{{ if .Options.HasBankInfo }}{{ label \"pdf.variable_symbol\" }}{{ else }}{{ label \"pdf.payment_method\" }}{{ end }}"
             style: { size: 8, color: gray }
-          - text: "{{ .Invoice.VariableSymbol }}"
+          - text: "{{ if .Options.HasBankInfo }}{{ .Invoice.VariableSymbol }}{{ else }}{{ .Invoice.PaymentMethod }}{{ end }}"
             style: { size: 10, bold: true, top: 4 }
         cell: { border: full, bg_color: header_bg, border_color: light_border }
       - width: 4
@@ -355,7 +355,8 @@ layout:
         text: "{{ label \"pdf.dates\" }}:"
         style: { size: 11, bold: true, right: 2 }
 
-  - row: 5
+  - if: ".Options.HasBankInfo"
+    row: 5
     cols:
       - width: 4
         text: "{{ label \"pdf.bank_account\" }} {{ .BankAccount.AccountNumber }}"
@@ -365,7 +366,8 @@ layout:
         text: "{{ label \"pdf.issue_date\" }} {{ .Invoice.IssueDate | date }}"
         style: { size: 9, right: 2 }
 
-  - row: 5
+  - if: ".Options.HasBankInfo"
+    row: 5
     cols:
       - width: 4
         text: "IBAN: {{ .BankAccount.IBAN }}"
@@ -375,7 +377,8 @@ layout:
         text: "{{ label \"pdf.due_date\" }} {{ .Invoice.DueDate | date }}"
         style: { size: 9, bold: true, right: 2 }
 
-  - row: 5
+  - if: ".Options.HasBankInfo"
+    row: 5
     cols:
       - width: 4
         text: "{{ label \"pdf.variable_symbol\" }} {{ .Invoice.VariableSymbol }}"
@@ -385,10 +388,30 @@ layout:
         text: "{{ label \"pdf.taxable_date\" }}: {{ .Invoice.TaxableDate | date }}"
         style: { size: 9, right: 2 }
 
-  - row: 5
+  - if: "not .Options.HasBankInfo"
+    row: 5
     cols:
       - width: 4
         text: "{{ label \"pdf.payment_method\" }} {{ .Invoice.PaymentMethod }}"
+        style: { size: 9, left: 2 }
+      - width: 4
+      - width: 4
+        text: "{{ label \"pdf.issue_date\" }} {{ .Invoice.IssueDate | date }}"
+        style: { size: 9, right: 2 }
+
+  - if: "not .Options.HasBankInfo"
+    row: 5
+    cols:
+      - width: 4
+      - width: 4
+      - width: 4
+        text: "{{ label \"pdf.due_date\" }} {{ .Invoice.DueDate | date }}"
+        style: { size: 9, bold: true, right: 2 }
+
+  - row: 5
+    cols:
+      - width: 4
+        text: "{{ if .Options.HasBankInfo }}{{ label \"pdf.payment_method\" }} {{ .Invoice.PaymentMethod }}{{ end }}"
         style: { size: 9, left: 2 }
       - width: 8
 
@@ -595,8 +618,9 @@ layout:
 
   - spacer: 15
 
-  # ── Meta ──
-  - row: 6
+  # ── Meta (with bank info) ──
+  - if: ".Options.HasBankInfo"
+    row: 6
     cols:
       - width: 3
         text: "{{ label \"pdf.issue_date\" }}"
@@ -611,7 +635,8 @@ layout:
         text: "{{ label \"pdf.payment_method\" }}"
         style: { size: 8, color: label_gray }
 
-  - row: 6
+  - if: ".Options.HasBankInfo"
+    row: 6
     cols:
       - width: 3
         text: "{{ .Invoice.IssueDate | date }}"
@@ -626,9 +651,11 @@ layout:
         text: "{{ .Invoice.PaymentMethod }}"
         style: { size: 10 }
 
-  - spacer: 8
+  - if: ".Options.HasBankInfo"
+    spacer: 8
 
-  - row: 6
+  - if: ".Options.HasBankInfo"
+    row: 6
     cols:
       - width: 3
         text: "{{ label \"pdf.bank_account\" }}"
@@ -637,13 +664,41 @@ layout:
         text: "IBAN"
         style: { size: 8, color: label_gray }
 
-  - row: 6
+  - if: ".Options.HasBankInfo"
+    row: 6
     cols:
       - width: 3
         text: "{{ .BankAccount.AccountNumber }}"
         style: { size: 10, bold: true }
       - width: 9
         text: "{{ .BankAccount.IBAN }}"
+        style: { size: 10 }
+
+  # ── Meta (without bank info) ──
+  - if: "not .Options.HasBankInfo"
+    row: 6
+    cols:
+      - width: 4
+        text: "{{ label \"pdf.issue_date\" }}"
+        style: { size: 8, color: label_gray }
+      - width: 4
+        text: "{{ label \"pdf.due_date\" }}"
+        style: { size: 8, color: label_gray }
+      - width: 4
+        text: "{{ label \"pdf.payment_method\" }}"
+        style: { size: 8, color: label_gray }
+
+  - if: "not .Options.HasBankInfo"
+    row: 6
+    cols:
+      - width: 4
+        text: "{{ .Invoice.IssueDate | date }}"
+        style: { size: 10, bold: true }
+      - width: 4
+        text: "{{ .Invoice.DueDate | date }}"
+        style: { size: 10, bold: true, color: red_accent }
+      - width: 4
+        text: "{{ .Invoice.PaymentMethod }}"
         style: { size: 10 }
 
   - spacer: 15
@@ -800,10 +855,12 @@ layout:
 
   - spacer: 15
 
-  # ── Payment info ──
-  - line: { color: line_color }
+  # ── Payment info (with bank) ──
+  - if: ".Options.HasBankInfo"
+    line: { color: line_color }
 
-  - row: 8
+  - if: ".Options.HasBankInfo"
+    row: 8
     cols:
       - width: 3
         text: "{{ label \"pdf.due_date\" }} {{ .Invoice.DueDate | date }}"
@@ -815,7 +872,26 @@ layout:
         text: "{{ label \"pdf.bank_account\" }} {{ .BankAccount.AccountNumber }}"
         style: { size: 9, align: right, top: 2 }
 
-  - line: { color: line_color }
+  - if: ".Options.HasBankInfo"
+    line: { color: line_color }
+
+  # ── Payment info (without bank) ──
+  - if: "not .Options.HasBankInfo"
+    line: { color: line_color }
+
+  - if: "not .Options.HasBankInfo"
+    row: 8
+    cols:
+      - width: 4
+        text: "{{ label \"pdf.due_date\" }} {{ .Invoice.DueDate | date }}"
+        style: { size: 9, bold: true, top: 2 }
+      - width: 4
+        text: "{{ label \"pdf.payment_method\" }} {{ .Invoice.PaymentMethod }}"
+        style: { size: 9, top: 2 }
+      - width: 4
+
+  - if: "not .Options.HasBankInfo"
+    line: { color: line_color }
 
   - spacer: 15
 

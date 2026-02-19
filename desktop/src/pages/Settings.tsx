@@ -118,6 +118,7 @@ export function Settings() {
   })
   const [localPaymentTypes, setLocalPaymentTypes] = useState<PaymentType[]>([])
   const [newPaymentTypeName, setNewPaymentTypeName] = useState('')
+  const [newPaymentTypeRequiresBank, setNewPaymentTypeRequiresBank] = useState(true)
 
   const { data: dueDaysOptions } = useQuery({
     queryKey: ['due-days'],
@@ -490,9 +491,6 @@ export function Settings() {
                   }}
                 >
                   {u.name}
-                  {u.is_default && (
-                    <Badge size="xs" variant="light" color="blue" ml={4}>{t('settings.default_unit_label')}</Badge>
-                  )}
                 </Pill>
               ))}
             </Group>
@@ -552,9 +550,6 @@ export function Settings() {
                   }}
                 >
                   {d.days}
-                  {d.is_default && (
-                    <Badge size="xs" variant="light" color="blue" ml={4}>{t('settings.default_unit_label')}</Badge>
-                  )}
                 </Pill>
               ))}
             </Group>
@@ -624,9 +619,6 @@ export function Settings() {
                   }}
                 >
                   {r.rate}%{r.name ? ` (${r.name})` : ''}
-                  {r.is_default && (
-                    <Badge size="xs" variant="light" color="blue" ml={4}>{t('settings.default_unit_label')}</Badge>
-                  )}
                 </Pill>
               ))}
             </Group>
@@ -692,12 +684,32 @@ export function Settings() {
                   }}
                 >
                   {pt.name}
-                  {pt.is_default && (
-                    <Badge size="xs" variant="light" color="blue" ml={4}>{t('settings.default_unit_label')}</Badge>
-                  )}
                 </Pill>
               ))}
             </Group>
+            <Text c="dimmed" size="sm">{t('settings.payment_types_bank_desc')}</Text>
+            {localPaymentTypes.filter((pt) => !pt.code).length === 0 ? (
+              <Text c="dimmed" size="sm" fs="italic">{t('settings.no_custom_payment_types')}</Text>
+            ) : (
+              <Stack gap="xs">
+                {localPaymentTypes.filter((pt) => !pt.code).map((pt) => {
+                  const idx = localPaymentTypes.indexOf(pt)
+                  return (
+                    <Switch
+                      key={pt.name}
+                      label={pt.name}
+                      checked={pt.requires_bank_info !== false}
+                      onChange={(e) => {
+                        setLocalPaymentTypes(localPaymentTypes.map((p, j) =>
+                          j === idx ? { ...p, requires_bank_info: e.currentTarget.checked } : p
+                        ))
+                      }}
+                      size="sm"
+                    />
+                  )
+                })}
+              </Stack>
+            )}
             <Group>
               <TextInput
                 placeholder={t('settings.payment_type_placeholder')}
@@ -708,8 +720,9 @@ export function Settings() {
                   if (e.key === 'Enter' && newPaymentTypeName.trim()) {
                     const name = newPaymentTypeName.trim()
                     if (!localPaymentTypes.some((pt) => pt.name === name)) {
-                      setLocalPaymentTypes([...localPaymentTypes, { name }])
+                      setLocalPaymentTypes([...localPaymentTypes, { name, requires_bank_info: newPaymentTypeRequiresBank }])
                       setNewPaymentTypeName('')
+                      setNewPaymentTypeRequiresBank(true)
                     }
                   }
                 }}
@@ -721,14 +734,22 @@ export function Settings() {
                 onClick={() => {
                   const name = newPaymentTypeName.trim()
                   if (name && !localPaymentTypes.some((pt) => pt.name === name)) {
-                    setLocalPaymentTypes([...localPaymentTypes, { name }])
+                    setLocalPaymentTypes([...localPaymentTypes, { name, requires_bank_info: newPaymentTypeRequiresBank }])
                     setNewPaymentTypeName('')
+                    setNewPaymentTypeRequiresBank(true)
                   }
                 }}
               >
-                {t('settings.add_unit')}
+                {t('settings.add_payment_type')}
               </Button>
             </Group>
+            <Switch
+              label={t('settings.requires_bank_info')}
+              description={t('settings.requires_bank_info_desc')}
+              checked={newPaymentTypeRequiresBank}
+              onChange={(e) => setNewPaymentTypeRequiresBank(e.currentTarget.checked)}
+              size="sm"
+            />
             <Button
               w={200}
               onClick={() => paymentTypesMutation.mutate(localPaymentTypes)}

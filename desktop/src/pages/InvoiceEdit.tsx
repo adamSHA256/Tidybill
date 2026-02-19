@@ -22,7 +22,7 @@ import {
 import { notifications } from '@mantine/notifications'
 import { DateInput } from '@mantine/dates'
 import { IconTrash, IconPlus, IconPackage } from '@tabler/icons-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, formatMoney, type BankAccount, type Item, type CustomerItem } from '../api/client'
@@ -46,6 +46,10 @@ interface ItemForm {
 
 const emptyItem: ItemForm = { item_id: '', description: '', quantity: 1, unit: 'ks', unit_price: 0, vat_rate: 21 }
 
+function generateVariableSymbol(invoiceNumber: string): string {
+  return invoiceNumber.replace(/-/g, '').replace(/^[A-Z]+/, '')
+}
+
 export function InvoiceEdit() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -66,6 +70,9 @@ export function InvoiceEdit() {
   const [invoiceNumber, setInvoiceNumber] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null)
   const [notes, setNotes] = useState('')
+  const [variableSymbol, setVariableSymbol] = useState('')
+  const [vsChangedByInvoiceNumber, setVsChangedByInvoiceNumber] = useState(false)
+  const vsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [items, setItems] = useState<ItemForm[]>([{ ...emptyItem }])
 
   // Modal states for inline creation
@@ -163,6 +170,11 @@ export function InvoiceEdit() {
     queryFn: api.getSettings,
   })
   const defaultVatRate = parseFloat(editSettings?.default_vat_rate || '21') || 21
+  const globalCurrency = editSettings?.default_currency || 'CZK'
+
+  // Compute whether selected payment method requires bank info
+  const selectedPaymentType = paymentTypes?.find((pt) => pt.name === paymentMethod)
+  const requiresBankInfo = !selectedPaymentType || selectedPaymentType.requires_bank_info !== false
 
   // Initialize form from loaded invoice
   useEffect(() => {
@@ -177,6 +189,7 @@ export function InvoiceEdit() {
       setInvoiceNumber(invoice.invoice_number || '')
       setPaymentMethod(invoice.payment_method || null)
       setNotes(invoice.notes || '')
+      setVariableSymbol(invoice.variable_symbol || generateVariableSymbol(invoice.invoice_number || ''))
       if (invoice.items && invoice.items.length > 0) {
         setItems(invoice.items.map((item) => ({
           item_id: item.item_id || '',
@@ -197,6 +210,36 @@ export function InvoiceEdit() {
       }
     }
   }, [invoice, initialized])
+
+  // Auto-generate variable symbol when invoice number changes
+  useEffect(() => {
+    if (initialized && invoiceNumber) {
+      const newVs = generateVariableSymbol(invoiceNumber)
+      setVariableSymbol((prev) => {
+        if (prev && prev !== newVs) {
+          setVsChangedByInvoiceNumber(true)
+          if (vsTimerRef.current) clearTimeout(vsTimerRef.current)
+          vsTimerRef.current = setTimeout(() => setVsChangedByInvoiceNumber(false), 10000)
+        }
+        return newVs
+      })
+    }
+  }, [invoiceNumber, initialized])
+
+  // When payment method changes to non-bank, clear bank and use global currency
+  useEffect(() => {
+    if (initialized && !requiresBankInfo) {
+      setBankAccountId(null)
+      setCurrency(globalCurrency)
+    }
+  }, [requiresBankInfo]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (vsTimerRef.current) clearTimeout(vsTimerRef.current)
+    }
+  }, [])
 
   const updateMutation = useMutation({
     mutationFn: (data: Parameters<typeof api.updateInvoice>[1]) =>
@@ -424,8 +467,8 @@ export function InvoiceEdit() {
   const total = subtotal + vatAmount
 
   const handleSave = () => {
-    if (!supplierId || !customerId || !bankAccountId) {
-      notifications.show({ title: t('invoice.missing_fields_title'), message: t('invoice.missing_fields_msg'), color: 'orange' })
+    if (!supplierId || !customerId || (requiresBankInfo && !bankAccountId)) {
+      notifications.show({ title: t('invoice.missing_fields_title'), message: requiresBankInfo ? t('invoice.missing_fields_msg') : t('invoice.missing_fields_msg_no_bank'), color: 'orange' })
       return
     }
     if (items.every((i) => !i.description)) {
@@ -435,7 +478,7 @@ export function InvoiceEdit() {
     updateMutation.mutate({
       supplier_id: supplierId,
       customer_id: customerId,
-      bank_account_id: bankAccountId,
+      bank_account_id: requiresBankInfo ? bankAccountId! : undefined,
       invoice_number: invoiceNumber || undefined,
       issue_date: issueDate || undefined,
       taxable_date: taxableDate ?? issueDate ?? undefined,
@@ -443,6 +486,7 @@ export function InvoiceEdit() {
       payment_method: paymentMethod || undefined,
       currency,
       notes,
+      variable_symbol: requiresBankInfo ? variableSymbol : undefined,
       items: items.filter((i) => i.description).map((i) => ({
         item_id: i.item_id || undefined,
         description: i.description,
@@ -536,6 +580,19 @@ export function InvoiceEdit() {
               <Select label={t('invoice.payment_method')} data={paymentTypeSelectData} value={paymentMethod} onChange={handlePaymentTypeSelect} searchable />
               <Select label={t('invoice.currency')} data={currencyData} value={currency} onChange={(v) => handleCurrencySelect(v, 'invoice')} searchable />
               <DateInput label={t('invoice.due_date')} valueFormat="DD.MM.YYYY" value={dueDate} onChange={setDueDate} clearable />
+              {requiresBankInfo && (
+                <div>
+                  <TextInput
+                    label={t('invoice.variable_symbol_label')}
+                    value={variableSymbol}
+                    onChange={(e) => setVariableSymbol(e.currentTarget.value)}
+                    styles={vsChangedByInvoiceNumber ? { input: { borderColor: 'var(--mantine-primary-color-6)', borderWidth: 2 } } : undefined}
+                  />
+                  {vsChangedByInvoiceNumber && (
+                    <Text size="xs" c="var(--mantine-primary-color-7)" mt={4}>{t('invoice.vs_changed_by_invoice_number')}</Text>
+                  )}
+                </div>
+              )}
             </SimpleGrid>
           </Paper>
 
@@ -551,19 +608,23 @@ export function InvoiceEdit() {
                   <Text size="sm" c="dimmed">{selectedSupplier.street}, {selectedSupplier.city}, {selectedSupplier.zip}</Text>
                 </Stack>
               )}
-              {supplierId && bankAccounts && bankAccounts.length > 0 ? (
-                <Select
-                  label={t('invoice.bank_account')}
-                  mt="sm"
-                  data={bankData}
-                  value={bankAccountId}
-                  onChange={handleBankSelect}
-                />
-              ) : supplierId && bankAccounts && bankAccounts.length === 0 ? (
-                <Button variant="light" mt="sm" leftSection={<IconPlus size={14} />} onClick={openBankModal} fullWidth>
-                  {t('invoice.create_first_bank_account')}
-                </Button>
-              ) : null}
+              {requiresBankInfo && (
+                <>
+                  {supplierId && bankAccounts && bankAccounts.length > 0 ? (
+                    <Select
+                      label={t('invoice.bank_account')}
+                      mt="sm"
+                      data={bankData}
+                      value={bankAccountId}
+                      onChange={handleBankSelect}
+                    />
+                  ) : supplierId && bankAccounts && bankAccounts.length === 0 ? (
+                    <Button variant="light" mt="sm" leftSection={<IconPlus size={14} />} onClick={openBankModal} fullWidth>
+                      {t('invoice.create_first_bank_account')}
+                    </Button>
+                  ) : null}
+                </>
+              )}
             </Paper>
 
             <Paper p="md" radius="md" withBorder>

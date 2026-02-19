@@ -542,6 +542,12 @@ var messagesCS = map[string]string{
 	"preview.item2":         "Konzultace a analýza požadavků",
 	"preview.item3":         "Správa serveru (měsíční)",
 
+	// ── Payment / Bank ──────────────────────────────────────────────────
+	"prompt.requires_bank_info": "Vyžaduje bankovní údaje? (A/n)",
+	"prompt.variable_symbol":    "Variabilní symbol",
+	"label.requires_bank_info":  "Vyžaduje bankovní údaje",
+	"label.no_bank_info":        "bez účtu",
+
 	// ── About ───────────────────────────────────────────────────────────
 	"menu.about":          "O aplikaci",
 	"heading.about":       "O TIDYBILL",
