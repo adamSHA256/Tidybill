@@ -541,4 +541,17 @@ var messagesEN = map[string]string{
 	"preview.item1":         "Web application development",
 	"preview.item2":         "Consulting and requirements analysis",
 	"preview.item3":         "Server administration (monthly)",
+
+	// ── About ───────────────────────────────────────────────────────────
+	"menu.about":          "About",
+	"heading.about":       "ABOUT TIDYBILL",
+	"about.version":       "Version: %s",
+	"about.description":   "Simple, private invoicing for freelancers and small businesses.",
+	"about.opensource":    "TidyBill is free and open-source software.",
+	"about.issues_title":  "Found a bug or want a feature?",
+	"about.issues_url":    "Report it at: https://github.com/adamSHA256/tidybill/issues",
+	"about.support_title": "Support the author",
+	"about.support_desc":  "If you find TidyBill useful, you can support its development:",
+	"about.monero":        "Monero (XMR): <YOUR_XMR_ADDRESS>",
+	"about.bitcoin":       "Bitcoin (BTC): <YOUR_BTC_ADDRESS>",
 }

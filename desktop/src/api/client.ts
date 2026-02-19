@@ -62,6 +62,7 @@ export const api = {
   // System
   getFirstRun: () => request<{ first_run: boolean }>('/system/first-run'),
   getLocale: () => request<{ detected_lang: string }>('/system/locale'),
+  getAbout: () => request<AboutInfo>('/system/about'),
 
   // Dashboard
   getDashboardStats: () => request<DashboardStats>('/dashboard/stats'),
@@ -327,6 +328,14 @@ export interface PDFTemplate {
   is_builtin: boolean
   yaml_source: string
   parent_id: string
+}
+
+export interface AboutInfo {
+  version: string
+  description: string
+  github_issues_url: string
+  monero_address: string
+  bitcoin_address: string
 }
 
 export interface DashboardStats {

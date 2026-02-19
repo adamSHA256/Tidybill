@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/adamSHA256/tidybill/internal/config"
 	"github.com/adamSHA256/tidybill/internal/i18n"
 )
 
@@ -32,6 +33,7 @@ func (c *CLI) settingsMenu() {
 		fmt.Printf("  %s\n", i18n.T("action.change_directories"))
 		fmt.Printf("  U) %s\n", i18n.T("settings.manage_units"))
 		fmt.Printf("  P) %s\n", i18n.T("settings.manage_payment_types"))
+		fmt.Printf("  A) %s\n", i18n.T("menu.about"))
 		fmt.Printf("  %s\n", i18n.T("action.back"))
 		fmt.Println()
 
@@ -48,6 +50,8 @@ func (c *CLI) settingsMenu() {
 			c.manageUnits()
 		case "p":
 			c.managePaymentTypes()
+		case "a":
+			c.showAbout()
 		case "0", "q":
 			return
 		}
@@ -608,4 +612,19 @@ func langName(lang i18n.Lang) string {
 	default:
 		return string(lang)
 	}
+}
+
+func (c *CLI) showAbout() {
+	c.clearScreen()
+	fmt.Printf("=== %s ===\n\n", i18n.T("heading.about"))
+	fmt.Printf("  %s\n", i18n.Tf("about.version", config.Version))
+	fmt.Printf("  %s\n\n", i18n.T("about.description"))
+	fmt.Printf("  %s\n\n", i18n.T("about.opensource"))
+	fmt.Printf("  %s\n", i18n.T("about.issues_title"))
+	fmt.Printf("  %s\n\n", i18n.T("about.issues_url"))
+	fmt.Printf("  %s\n", i18n.T("about.support_title"))
+	fmt.Printf("  %s\n", i18n.T("about.support_desc"))
+	fmt.Printf("  %s\n", i18n.T("about.monero"))
+	fmt.Printf("  %s\n", i18n.T("about.bitcoin"))
+	c.waitEnter()
 }

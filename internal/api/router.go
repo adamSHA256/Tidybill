@@ -113,6 +113,7 @@ func (s *Server) Router() http.Handler {
 	// System
 	mux.HandleFunc("GET /api/system/first-run", s.getFirstRun)
 	mux.HandleFunc("GET /api/system/locale", s.getLocale)
+	mux.HandleFunc("GET /api/system/about", s.getAbout)
 
 	// Settings
 	mux.HandleFunc("GET /api/settings", s.getSettings)

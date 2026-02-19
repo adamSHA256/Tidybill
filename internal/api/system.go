@@ -5,6 +5,8 @@ import (
 	"os"
 	"runtime"
 	"strings"
+
+	"github.com/adamSHA256/tidybill/internal/config"
 )
 
 func (s *Server) getFirstRun(w http.ResponseWriter, r *http.Request) {
@@ -72,4 +74,14 @@ func detectOSLang() string {
 	default:
 		return "en"
 	}
+}
+
+func (s *Server) getAbout(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]string{
+		"version":           config.Version,
+		"description":       "Simple, private invoicing for freelancers and small businesses.",
+		"github_issues_url": "https://github.com/adamSHA256/tidybill/issues",
+		"monero_address":    "<YOUR_XMR_ADDRESS>",
+		"bitcoin_address":   "<YOUR_BTC_ADDRESS>",
+	})
 }

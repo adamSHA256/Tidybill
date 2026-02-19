@@ -439,5 +439,15 @@
   "wizard.currency_label": "Výchozí měna",
   "wizard.choose_folder": "Vybrat složku",
   "wizard.settings_hint": "Všechno a ještě více chytrých věcí můžete kdykoliv změnit v Nastavení.",
-  "wizard.happy_invoicing": "Veselé fakturování!"
+  "wizard.happy_invoicing": "Veselé fakturování!",
+
+  "about.title": "O TidyBill",
+  "about.version": "Verze",
+  "about.description": "Jednoduchá a soukromá fakturace pro živnostníky a malé firmy.",
+  "about.opensource": "TidyBill je bezplatný software s otevřeným zdrojovým kódem.",
+  "about.issues_title": "Našli jste chybu nebo chcete novou funkci?",
+  "about.issues_link": "Nahlaste to na GitHubu",
+  "about.support_title": "Podpořte autora",
+  "about.support_desc": "Pokud vám TidyBill pomáhá, můžete podpořit jeho vývoj:",
+  "about.copied": "Adresa zkopírována!"
 }

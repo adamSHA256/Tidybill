@@ -439,5 +439,15 @@
   "wizard.currency_label": "Default currency",
   "wizard.choose_folder": "Choose folder",
   "wizard.settings_hint": "Everything and even more smart things you can change anytime in Settings.",
-  "wizard.happy_invoicing": "Happy invoicing!"
+  "wizard.happy_invoicing": "Happy invoicing!",
+
+  "about.title": "About TidyBill",
+  "about.version": "Version",
+  "about.description": "Simple, private invoicing for freelancers and small businesses.",
+  "about.opensource": "TidyBill is free and open-source software.",
+  "about.issues_title": "Found a bug or want a feature?",
+  "about.issues_link": "Report it on GitHub",
+  "about.support_title": "Support the author",
+  "about.support_desc": "If you find TidyBill useful, you can support its development:",
+  "about.copied": "Address copied!"
 }

@@ -154,7 +154,7 @@ func (c *CLI) printHeader() {
 	}
 
 	fmt.Println("╔════════════════════════════════════════════════════════════╗")
-	fmt.Println("║                      TIDYBILL v0.1                         ║")
+	fmt.Printf("║                      TIDYBILL v%-28s ║\n", config.Version)
 	fmt.Printf("║  %s %-50s ║\n", i18n.T("header.company"), name)
 	fmt.Println("╠════════════════════════════════════════════════════════════╣")
 	fmt.Println("║                                                            ║")

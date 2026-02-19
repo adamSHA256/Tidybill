@@ -541,4 +541,17 @@ var messagesCS = map[string]string{
 	"preview.item1":         "Vývoj webové aplikace",
 	"preview.item2":         "Konzultace a analýza požadavků",
 	"preview.item3":         "Správa serveru (měsíční)",
+
+	// ── About ───────────────────────────────────────────────────────────
+	"menu.about":          "O aplikaci",
+	"heading.about":       "O TIDYBILL",
+	"about.version":       "Verze: %s",
+	"about.description":   "Jednoduchá a soukromá fakturace pro živnostníky a malé firmy.",
+	"about.opensource":    "TidyBill je bezplatný software s otevřeným zdrojovým kódem.",
+	"about.issues_title":  "Našli jste chybu nebo chcete novou funkci?",
+	"about.issues_url":    "Nahlaste to na: https://github.com/adamSHA256/tidybill/issues",
+	"about.support_title": "Podpořte autora",
+	"about.support_desc":  "Pokud vám TidyBill pomáhá, můžete podpořit jeho vývoj:",
+	"about.monero":        "Monero (XMR): <YOUR_XMR_ADDRESS>",
+	"about.bitcoin":       "Bitcoin (BTC): <YOUR_BTC_ADDRESS>",
 }

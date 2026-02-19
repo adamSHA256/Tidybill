@@ -13,12 +13,18 @@ import {
   Button,
   Pill,
   SegmentedControl,
+  Anchor,
+  ActionIcon,
+  Code,
+  CopyButton,
+  Tooltip,
 } from '@mantine/core'
+import { IconCopy, IconCheck } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, type Unit, type PDFTemplate, type VATRate, type CurrencyItem, type PaymentType } from '../api/client'
+import { api, openInBrowser, type Unit, type PDFTemplate, type VATRate, type CurrencyItem, type PaymentType } from '../api/client'
 import { applyZoom } from '../utils/zoom'
 import { useT } from '../i18n'
 
@@ -71,6 +77,11 @@ export function Settings() {
   const { data: templates } = useQuery({
     queryKey: ['templates'],
     queryFn: api.getTemplates,
+  })
+
+  const { data: aboutInfo } = useQuery({
+    queryKey: ['about'],
+    queryFn: api.getAbout,
   })
 
   const [dirLogos, setDirLogos] = useState('')
@@ -648,6 +659,58 @@ export function Settings() {
           </Button>
         </Stack>
       </Paper>
+
+      {aboutInfo && (
+        <Paper p="md" radius="md" withBorder>
+          <Group mb="md" gap="sm">
+            <Title order={3}>TidyBill</Title>
+            <Badge variant="light" color="blue" size="lg">v{aboutInfo.version}</Badge>
+          </Group>
+          <Text size="sm" mb="xs">{t('about.description')}</Text>
+          <Text size="sm" c="dimmed" mb="lg">{t('about.opensource')}</Text>
+
+          <Text fw={500} size="sm" mb={4}>{t('about.issues_title')}</Text>
+          <Anchor
+            size="sm"
+            mb="lg"
+            onClick={(e) => { e.preventDefault(); openInBrowser(aboutInfo.github_issues_url) }}
+            style={{ cursor: 'pointer' }}
+          >
+            {t('about.issues_link')}
+          </Anchor>
+
+          <Text fw={500} size="sm" mt="md" mb={4}>{t('about.support_title')}</Text>
+          <Text size="sm" c="dimmed" mb="sm">{t('about.support_desc')}</Text>
+          <Stack gap="xs">
+            <Group gap="xs">
+              <Text size="sm" fw={500} w={100}>Monero (XMR)</Text>
+              <Code>{aboutInfo.monero_address}</Code>
+              <CopyButton value={aboutInfo.monero_address}>
+                {({ copied, copy }) => (
+                  <Tooltip label={copied ? t('about.copied') : t('common.copy')}>
+                    <ActionIcon variant="subtle" color={copied ? 'teal' : 'gray'} onClick={copy}>
+                      {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+                    </ActionIcon>
+                  </Tooltip>
+                )}
+              </CopyButton>
+            </Group>
+            <Group gap="xs">
+              <Text size="sm" fw={500} w={100}>Bitcoin (BTC)</Text>
+              <Code>{aboutInfo.bitcoin_address}</Code>
+              <CopyButton value={aboutInfo.bitcoin_address}>
+                {({ copied, copy }) => (
+                  <Tooltip label={copied ? t('about.copied') : t('common.copy')}>
+                    <ActionIcon variant="subtle" color={copied ? 'teal' : 'gray'} onClick={copy}>
+                      {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+                    </ActionIcon>
+                  </Tooltip>
+                )}
+              </CopyButton>
+            </Group>
+          </Stack>
+        </Paper>
+      )}
 
     </Stack>
   )

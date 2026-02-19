@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+const Version = "0.1"
+
 type Config struct {
 	DataDir    string
 	DBPath     string
