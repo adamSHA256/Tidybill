@@ -544,7 +544,7 @@ var messagesEN = map[string]string{
 
 	// ── Payment / Bank ──────────────────────────────────────────────────
 	"prompt.requires_bank_info": "Requires bank info? (Y/n)",
-	"prompt.variable_symbol":    "Variable symbol",
+	"prompt.variable_symbol":    "Reference number",
 	"label.requires_bank_info":  "Requires bank info",
 	"label.no_bank_info":        "no bank",
 
