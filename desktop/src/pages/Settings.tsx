@@ -6,6 +6,7 @@ import {
   Select,
   Switch,
   Group,
+  SimpleGrid,
   Badge,
   Loader,
   Center,
@@ -227,50 +228,132 @@ export function Settings() {
         <Text c="dimmed" size="sm">{t('settings.subtitle')}</Text>
       </div>
 
-      <Paper p="md" radius="md" withBorder>
-        <Text fw={500} mb="md">{t('settings.general')}</Text>
-        <Stack gap="md">
-          <Select
-            label={t('settings.language')}
-            data={langOptions}
-            value={settings?.language || 'cs'}
-            onChange={(v) => { if (v) setLang(v as 'cs' | 'sk' | 'en') }}
-            w={300}
-          />
-          <div>
-            <Text size="sm" fw={500} mb={4}>{t('settings.ui_scale')}</Text>
-            <Text size="xs" c="dimmed" mb="xs">{t('settings.ui_scale_desc')}</Text>
-            <SegmentedControl
-              value={String(Math.round((parseFloat(settings?.ui_scale || '1') || 1) * 100))}
-              onChange={(val) => {
-                const factor = Number(val) / 100
-                applyZoom(factor)
-                api.updateSettings({ ui_scale: String(factor) }).then(() => {
-                  queryClient.invalidateQueries({ queryKey: ['settings'] })
-                })
-              }}
-              data={[
-                { value: '100', label: '100%' },
-                { value: '125', label: '125%' },
-                { value: '150', label: '150%' },
-                { value: '175', label: '175%' },
-                { value: '200', label: '200%' },
-              ]}
-            />
-          </div>
-          <Group gap="xs">
+      {/* Row 1: General + Directories */}
+      <SimpleGrid cols={{ base: 1, md: 2 }}>
+        <Paper p="md" radius="md" withBorder>
+          <Text fw={500} mb="md">{t('settings.general')}</Text>
+          <Stack gap="md">
             <Select
-              label={t('settings.date_format')}
-              data={['DD.MM.YYYY', 'YYYY-MM-DD', 'MM/DD/YYYY']}
-              defaultValue="DD.MM.YYYY"
+              label={t('settings.language')}
+              data={langOptions}
+              value={settings?.language || 'cs'}
+              onChange={(v) => { if (v) setLang(v as 'cs' | 'sk' | 'en') }}
               w={300}
-              disabled
             />
-            {comingSoonBadge}
-          </Group>
-        </Stack>
+            <div>
+              <Text size="sm" fw={500} mb={4}>{t('settings.ui_scale')}</Text>
+              <Text size="xs" c="dimmed" mb="xs">{t('settings.ui_scale_desc')}</Text>
+              <SegmentedControl
+                value={String(Math.round((parseFloat(settings?.ui_scale || '1') || 1) * 100))}
+                onChange={(val) => {
+                  const factor = Number(val) / 100
+                  applyZoom(factor)
+                  api.updateSettings({ ui_scale: String(factor) }).then(() => {
+                    queryClient.invalidateQueries({ queryKey: ['settings'] })
+                  })
+                }}
+                data={[
+                  { value: '100', label: '100%' },
+                  { value: '125', label: '125%' },
+                  { value: '150', label: '150%' },
+                  { value: '175', label: '175%' },
+                  { value: '200', label: '200%' },
+                ]}
+              />
+            </div>
+            <Group gap="xs">
+              <Select
+                label={t('settings.date_format')}
+                data={['DD.MM.YYYY', 'YYYY-MM-DD', 'MM/DD/YYYY']}
+                defaultValue="DD.MM.YYYY"
+                w={300}
+                disabled
+              />
+              {comingSoonBadge}
+            </Group>
+          </Stack>
+        </Paper>
+
+        <Paper p="md" radius="md" withBorder>
+          <Text fw={500} mb="md">{t('settings.directories')}</Text>
+          <Stack gap="md">
+            <TextInput
+              label={t('settings.dir_logos')}
+              placeholder={t('settings.dir_placeholder')}
+              value={dirLogos}
+              onChange={(e) => setDirLogos(e.currentTarget.value)}
+            />
+            <TextInput
+              label={t('settings.dir_pdfs')}
+              placeholder={t('settings.dir_placeholder')}
+              value={dirPdfs}
+              onChange={(e) => setDirPdfs(e.currentTarget.value)}
+            />
+            <TextInput
+              label={t('settings.dir_previews')}
+              placeholder={t('settings.dir_placeholder')}
+              value={dirPreviews}
+              onChange={(e) => setDirPreviews(e.currentTarget.value)}
+            />
+            <Button
+              w={200}
+              onClick={() => updateMutation.mutate({
+                dir_logos: dirLogos,
+                dir_pdfs: dirPdfs,
+                dir_previews: dirPreviews,
+              })}
+              loading={updateMutation.isPending}
+            >
+              {t('settings.save_directories')}
+            </Button>
+          </Stack>
+        </Paper>
+      </SimpleGrid>
+
+      {/* Row 2: Dashboard — switches in 2-column grid */}
+      <Paper p="md" radius="md" withBorder>
+        <Text fw={500} mb="md">{t('settings.dashboard')}</Text>
+        <Text c="dimmed" size="sm" mb="md">{t('settings.dashboard_desc')}</Text>
+        <SimpleGrid cols={{ base: 1, xs: 2 }} spacing="sm">
+          <Switch
+            label={t('dashboard.total_revenue')}
+            checked={dashWidgets.revenue}
+            onChange={(e) => handleWidgetToggle('revenue', e.currentTarget.checked)}
+          />
+          <Switch
+            label={t('dashboard.unpaid_invoices')}
+            checked={dashWidgets.unpaid}
+            onChange={(e) => handleWidgetToggle('unpaid', e.currentTarget.checked)}
+          />
+          <Switch
+            label={t('dashboard.active_customers')}
+            checked={dashWidgets.customers}
+            onChange={(e) => handleWidgetToggle('customers', e.currentTarget.checked)}
+          />
+          <Switch
+            label={t('dashboard.invoices_month')}
+            checked={dashWidgets.invoices_month}
+            onChange={(e) => handleWidgetToggle('invoices_month', e.currentTarget.checked)}
+          />
+          <Switch
+            label={t('dashboard.overdue_title')}
+            checked={dashWidgets.overdue}
+            onChange={(e) => handleWidgetToggle('overdue', e.currentTarget.checked)}
+          />
+          <Switch
+            label={t('dashboard.recent_invoices')}
+            checked={dashWidgets.recent}
+            onChange={(e) => handleWidgetToggle('recent', e.currentTarget.checked)}
+          />
+          <Switch
+            label={t('dashboard.quick_actions')}
+            checked={dashWidgets.quick_actions}
+            onChange={(e) => handleWidgetToggle('quick_actions', e.currentTarget.checked)}
+          />
+        </SimpleGrid>
       </Paper>
 
+      {/* Row 3: Invoices — full width */}
       <Paper p="md" radius="md" withBorder>
         <Text fw={500} mb="md">{t('settings.invoices')}</Text>
         <Stack gap="md">
@@ -311,406 +394,335 @@ export function Settings() {
         </Stack>
       </Paper>
 
-      <Paper p="md" radius="md" withBorder>
-        <Text fw={500} mb="md">{t('settings.directories')}</Text>
-        <Stack gap="md">
-          <TextInput
-            label={t('settings.dir_logos')}
-            placeholder={t('settings.dir_placeholder')}
-            value={dirLogos}
-            onChange={(e) => setDirLogos(e.currentTarget.value)}
-            w={500}
-          />
-          <TextInput
-            label={t('settings.dir_pdfs')}
-            placeholder={t('settings.dir_placeholder')}
-            value={dirPdfs}
-            onChange={(e) => setDirPdfs(e.currentTarget.value)}
-            w={500}
-          />
-          <TextInput
-            label={t('settings.dir_previews')}
-            placeholder={t('settings.dir_placeholder')}
-            value={dirPreviews}
-            onChange={(e) => setDirPreviews(e.currentTarget.value)}
-            w={500}
-          />
-          <Button
-            w={200}
-            onClick={() => updateMutation.mutate({
-              dir_logos: dirLogos,
-              dir_pdfs: dirPdfs,
-              dir_previews: dirPreviews,
-            })}
-            loading={updateMutation.isPending}
-          >
-            {t('settings.save_directories')}
-          </Button>
-        </Stack>
-      </Paper>
-
-      <Paper p="md" radius="md" withBorder>
-        <Text fw={500} mb="xs">{t('settings.units')}</Text>
-        <Text c="dimmed" size="sm" mb="md">{t('settings.units_desc')}</Text>
-        <Stack gap="md">
-          <Group gap="xs" wrap="wrap">
-            {localUnits.map((u, i) => (
-              <Pill
-                key={u.name}
-                size="lg"
-                withRemoveButton={localUnits.length > 1}
-                onRemove={() => {
-                  const next = localUnits.filter((_, idx) => idx !== i)
-                  if (u.is_default && next.length > 0) next[0].is_default = true
-                  setLocalUnits(next)
+      {/* Row 4: Units + Currencies */}
+      <SimpleGrid cols={{ base: 1, md: 2 }}>
+        <Paper p="md" radius="md" withBorder>
+          <Text fw={500} mb="xs">{t('settings.units')}</Text>
+          <Text c="dimmed" size="sm" mb="md">{t('settings.units_desc')}</Text>
+          <Stack gap="md">
+            <Group gap="xs" wrap="wrap">
+              {localUnits.map((u, i) => (
+                <Pill
+                  key={u.name}
+                  size="lg"
+                  withRemoveButton={localUnits.length > 1}
+                  onRemove={() => {
+                    const next = localUnits.filter((_, idx) => idx !== i)
+                    if (u.is_default && next.length > 0) next[0].is_default = true
+                    setLocalUnits(next)
+                  }}
+                  styles={{ root: { cursor: 'pointer', border: u.is_default ? '2px solid var(--mantine-color-blue-5)' : undefined } }}
+                  onClick={() => {
+                    setLocalUnits(localUnits.map((unit, idx) => ({ ...unit, is_default: idx === i })))
+                  }}
+                >
+                  {u.name}
+                  {u.is_default && (
+                    <Badge size="xs" variant="light" color="blue" ml={4}>{t('settings.default_unit_label')}</Badge>
+                  )}
+                </Pill>
+              ))}
+            </Group>
+            <Group>
+              <TextInput
+                placeholder={t('settings.unit_placeholder')}
+                value={newUnitName}
+                onChange={(e) => setNewUnitName(e.currentTarget.value)}
+                w={250}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newUnitName.trim()) {
+                    setLocalUnits([...localUnits, { name: newUnitName.trim() }])
+                    setNewUnitName('')
+                  }
                 }}
-                styles={{ root: { cursor: 'pointer', border: u.is_default ? '2px solid var(--mantine-color-blue-5)' : undefined } }}
+              />
+              <Button
+                variant="light"
+                size="sm"
+                disabled={!newUnitName.trim()}
                 onClick={() => {
-                  setLocalUnits(localUnits.map((unit, idx) => ({ ...unit, is_default: idx === i })))
-                }}
-              >
-                {u.name}
-                {u.is_default && (
-                  <Badge size="xs" variant="light" color="blue" ml={4}>{t('settings.default_unit_label')}</Badge>
-                )}
-              </Pill>
-            ))}
-          </Group>
-          <Group>
-            <TextInput
-              placeholder={t('settings.unit_placeholder')}
-              value={newUnitName}
-              onChange={(e) => setNewUnitName(e.currentTarget.value)}
-              w={250}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && newUnitName.trim()) {
                   setLocalUnits([...localUnits, { name: newUnitName.trim() }])
                   setNewUnitName('')
-                }
-              }}
-            />
-            <Button
-              variant="light"
-              size="sm"
-              disabled={!newUnitName.trim()}
-              onClick={() => {
-                setLocalUnits([...localUnits, { name: newUnitName.trim() }])
-                setNewUnitName('')
-              }}
-            >
-              {t('settings.add_unit')}
-            </Button>
-          </Group>
-          <Button
-            w={200}
-            onClick={() => unitsMutation.mutate(localUnits)}
-            loading={unitsMutation.isPending}
-          >
-            {t('settings.save_units')}
-          </Button>
-        </Stack>
-      </Paper>
-
-      <Paper p="md" radius="md" withBorder>
-        <Text fw={500} mb="xs">{t('settings.currencies')}</Text>
-        <Text c="dimmed" size="sm" mb="md">{t('settings.currencies_desc')}</Text>
-        <Stack gap="md">
-          <Group gap="xs" wrap="wrap">
-            {localCurrencies.map((c, i) => (
-              <Pill
-                key={c.code}
-                size="lg"
-                withRemoveButton={localCurrencies.length > 1}
-                onRemove={() => {
-                  setLocalCurrencies(localCurrencies.filter((_, idx) => idx !== i))
                 }}
               >
-                {c.code}
-              </Pill>
-            ))}
-          </Group>
-          <Group>
-            <TextInput
-              placeholder={t('settings.currency_placeholder')}
-              value={newCurrencyCode}
-              onChange={(e) => setNewCurrencyCode(e.currentTarget.value.toUpperCase())}
-              w={250}
-              maxLength={10}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && newCurrencyCode.trim()) {
+                {t('settings.add_unit')}
+              </Button>
+            </Group>
+            <Button
+              w={200}
+              onClick={() => unitsMutation.mutate(localUnits)}
+              loading={unitsMutation.isPending}
+            >
+              {t('settings.save_units')}
+            </Button>
+          </Stack>
+        </Paper>
+
+        <Paper p="md" radius="md" withBorder>
+          <Text fw={500} mb="xs">{t('settings.currencies')}</Text>
+          <Text c="dimmed" size="sm" mb="md">{t('settings.currencies_desc')}</Text>
+          <Stack gap="md">
+            <Group gap="xs" wrap="wrap">
+              {localCurrencies.map((c, i) => (
+                <Pill
+                  key={c.code}
+                  size="lg"
+                  withRemoveButton={localCurrencies.length > 1}
+                  onRemove={() => {
+                    setLocalCurrencies(localCurrencies.filter((_, idx) => idx !== i))
+                  }}
+                >
+                  {c.code}
+                </Pill>
+              ))}
+            </Group>
+            <Group>
+              <TextInput
+                placeholder={t('settings.currency_placeholder')}
+                value={newCurrencyCode}
+                onChange={(e) => setNewCurrencyCode(e.currentTarget.value.toUpperCase())}
+                w={250}
+                maxLength={10}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newCurrencyCode.trim()) {
+                    const code = newCurrencyCode.trim().toUpperCase()
+                    if (!localCurrencies.some((c) => c.code === code)) {
+                      setLocalCurrencies([...localCurrencies, { code }])
+                      setNewCurrencyCode('')
+                    }
+                  }
+                }}
+              />
+              <Button
+                variant="light"
+                size="sm"
+                disabled={!newCurrencyCode.trim()}
+                onClick={() => {
                   const code = newCurrencyCode.trim().toUpperCase()
-                  if (!localCurrencies.some((c) => c.code === code)) {
+                  if (code && !localCurrencies.some((c) => c.code === code)) {
                     setLocalCurrencies([...localCurrencies, { code }])
                     setNewCurrencyCode('')
                   }
-                }
-              }}
-            />
-            <Button
-              variant="light"
-              size="sm"
-              disabled={!newCurrencyCode.trim()}
-              onClick={() => {
-                const code = newCurrencyCode.trim().toUpperCase()
-                if (code && !localCurrencies.some((c) => c.code === code)) {
-                  setLocalCurrencies([...localCurrencies, { code }])
-                  setNewCurrencyCode('')
-                }
-              }}
-            >
-              {t('settings.add_currency')}
-            </Button>
-          </Group>
-          <Button
-            w={200}
-            onClick={() => currenciesMutation.mutate(localCurrencies)}
-            loading={currenciesMutation.isPending}
-          >
-            {t('settings.save_currencies')}
-          </Button>
-        </Stack>
-      </Paper>
-
-      <Paper p="md" radius="md" withBorder>
-        <Text fw={500} mb="xs">{t('settings.vat_rates')}</Text>
-        <Text c="dimmed" size="sm" mb="md">{t('settings.vat_rates_desc')}</Text>
-        <Stack gap="md">
-          <Group gap="xs" wrap="wrap">
-            {localVATRates.map((r, i) => (
-              <Pill
-                key={`${r.rate}-${i}`}
-                size="lg"
-                withRemoveButton={localVATRates.length > 1}
-                onRemove={() => {
-                  setLocalVATRates(localVATRates.filter((_, idx) => idx !== i))
                 }}
               >
-                {r.rate}%{r.name ? ` (${r.name})` : ''}
-              </Pill>
-            ))}
-          </Group>
-          <Group>
-            <TextInput
-              placeholder={t('settings.vat_rate_placeholder')}
-              value={newVATRate}
-              onChange={(e) => setNewVATRate(e.currentTarget.value)}
-              w={250}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && newVATRate.trim()) {
+                {t('settings.add_currency')}
+              </Button>
+            </Group>
+            <Button
+              w={200}
+              onClick={() => currenciesMutation.mutate(localCurrencies)}
+              loading={currenciesMutation.isPending}
+            >
+              {t('settings.save_currencies')}
+            </Button>
+          </Stack>
+        </Paper>
+      </SimpleGrid>
+
+      {/* Row 5: VAT Rates + Payment Types */}
+      <SimpleGrid cols={{ base: 1, md: 2 }}>
+        <Paper p="md" radius="md" withBorder>
+          <Text fw={500} mb="xs">{t('settings.vat_rates')}</Text>
+          <Text c="dimmed" size="sm" mb="md">{t('settings.vat_rates_desc')}</Text>
+          <Stack gap="md">
+            <Group gap="xs" wrap="wrap">
+              {localVATRates.map((r, i) => (
+                <Pill
+                  key={`${r.rate}-${i}`}
+                  size="lg"
+                  withRemoveButton={localVATRates.length > 1}
+                  onRemove={() => {
+                    setLocalVATRates(localVATRates.filter((_, idx) => idx !== i))
+                  }}
+                >
+                  {r.rate}%{r.name ? ` (${r.name})` : ''}
+                </Pill>
+              ))}
+            </Group>
+            <Group>
+              <TextInput
+                placeholder={t('settings.vat_rate_placeholder')}
+                value={newVATRate}
+                onChange={(e) => setNewVATRate(e.currentTarget.value)}
+                w={250}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newVATRate.trim()) {
+                    const rate = parseFloat(newVATRate.trim())
+                    if (!isNaN(rate) && rate >= 0 && !localVATRates.some((r) => r.rate === rate)) {
+                      setLocalVATRates([...localVATRates, { rate }])
+                      setNewVATRate('')
+                    }
+                  }
+                }}
+              />
+              <Button
+                variant="light"
+                size="sm"
+                disabled={!newVATRate.trim()}
+                onClick={() => {
                   const rate = parseFloat(newVATRate.trim())
                   if (!isNaN(rate) && rate >= 0 && !localVATRates.some((r) => r.rate === rate)) {
                     setLocalVATRates([...localVATRates, { rate }])
                     setNewVATRate('')
                   }
-                }
-              }}
-            />
-            <Button
-              variant="light"
-              size="sm"
-              disabled={!newVATRate.trim()}
-              onClick={() => {
-                const rate = parseFloat(newVATRate.trim())
-                if (!isNaN(rate) && rate >= 0 && !localVATRates.some((r) => r.rate === rate)) {
-                  setLocalVATRates([...localVATRates, { rate }])
-                  setNewVATRate('')
-                }
-              }}
-            >
-              {t('settings.add_vat_rate')}
-            </Button>
-          </Group>
-          <Button
-            w={200}
-            onClick={() => vatRatesMutation.mutate(localVATRates)}
-            loading={vatRatesMutation.isPending}
-          >
-            {t('settings.save_vat_rates')}
-          </Button>
-        </Stack>
-      </Paper>
-
-      <Paper p="md" radius="md" withBorder>
-        <Text fw={500} mb="xs">{t('settings.payment_types')}</Text>
-        <Text c="dimmed" size="sm" mb="md">{t('settings.payment_types_desc')}</Text>
-        <Stack gap="md">
-          <Group gap="xs" wrap="wrap">
-            {localPaymentTypes.map((pt, i) => (
-              <Pill
-                key={pt.name}
-                size="lg"
-                withRemoveButton={!pt.code && localPaymentTypes.length > 1}
-                onRemove={() => {
-                  const next = localPaymentTypes.filter((_, idx) => idx !== i)
-                  if (pt.is_default && next.length > 0) next[0].is_default = true
-                  setLocalPaymentTypes(next)
-                }}
-                styles={{ root: { cursor: 'pointer', border: pt.is_default ? '2px solid var(--mantine-color-blue-5)' : undefined } }}
-                onClick={() => {
-                  setLocalPaymentTypes(localPaymentTypes.map((p, idx) => ({ ...p, is_default: idx === i })))
                 }}
               >
-                {pt.name}
-                {pt.is_default && (
-                  <Badge size="xs" variant="light" color="blue" ml={4}>{t('settings.default_unit_label')}</Badge>
-                )}
-              </Pill>
-            ))}
-          </Group>
-          <Group>
-            <TextInput
-              placeholder={t('settings.payment_type_placeholder')}
-              value={newPaymentTypeName}
-              onChange={(e) => setNewPaymentTypeName(e.currentTarget.value)}
-              w={250}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && newPaymentTypeName.trim()) {
+                {t('settings.add_vat_rate')}
+              </Button>
+            </Group>
+            <Button
+              w={200}
+              onClick={() => vatRatesMutation.mutate(localVATRates)}
+              loading={vatRatesMutation.isPending}
+            >
+              {t('settings.save_vat_rates')}
+            </Button>
+          </Stack>
+        </Paper>
+
+        <Paper p="md" radius="md" withBorder>
+          <Text fw={500} mb="xs">{t('settings.payment_types')}</Text>
+          <Text c="dimmed" size="sm" mb="md">{t('settings.payment_types_desc')}</Text>
+          <Stack gap="md">
+            <Group gap="xs" wrap="wrap">
+              {localPaymentTypes.map((pt, i) => (
+                <Pill
+                  key={pt.name}
+                  size="lg"
+                  withRemoveButton={!pt.code && localPaymentTypes.length > 1}
+                  onRemove={() => {
+                    const next = localPaymentTypes.filter((_, idx) => idx !== i)
+                    if (pt.is_default && next.length > 0) next[0].is_default = true
+                    setLocalPaymentTypes(next)
+                  }}
+                  styles={{ root: { cursor: 'pointer', border: pt.is_default ? '2px solid var(--mantine-color-blue-5)' : undefined } }}
+                  onClick={() => {
+                    setLocalPaymentTypes(localPaymentTypes.map((p, idx) => ({ ...p, is_default: idx === i })))
+                  }}
+                >
+                  {pt.name}
+                  {pt.is_default && (
+                    <Badge size="xs" variant="light" color="blue" ml={4}>{t('settings.default_unit_label')}</Badge>
+                  )}
+                </Pill>
+              ))}
+            </Group>
+            <Group>
+              <TextInput
+                placeholder={t('settings.payment_type_placeholder')}
+                value={newPaymentTypeName}
+                onChange={(e) => setNewPaymentTypeName(e.currentTarget.value)}
+                w={250}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newPaymentTypeName.trim()) {
+                    const name = newPaymentTypeName.trim()
+                    if (!localPaymentTypes.some((pt) => pt.name === name)) {
+                      setLocalPaymentTypes([...localPaymentTypes, { name }])
+                      setNewPaymentTypeName('')
+                    }
+                  }
+                }}
+              />
+              <Button
+                variant="light"
+                size="sm"
+                disabled={!newPaymentTypeName.trim()}
+                onClick={() => {
                   const name = newPaymentTypeName.trim()
-                  if (!localPaymentTypes.some((pt) => pt.name === name)) {
+                  if (name && !localPaymentTypes.some((pt) => pt.name === name)) {
                     setLocalPaymentTypes([...localPaymentTypes, { name }])
                     setNewPaymentTypeName('')
                   }
-                }
-              }}
-            />
+                }}
+              >
+                {t('settings.add_unit')}
+              </Button>
+            </Group>
             <Button
-              variant="light"
-              size="sm"
-              disabled={!newPaymentTypeName.trim()}
-              onClick={() => {
-                const name = newPaymentTypeName.trim()
-                if (name && !localPaymentTypes.some((pt) => pt.name === name)) {
-                  setLocalPaymentTypes([...localPaymentTypes, { name }])
-                  setNewPaymentTypeName('')
-                }
-              }}
+              w={200}
+              onClick={() => paymentTypesMutation.mutate(localPaymentTypes)}
+              loading={paymentTypesMutation.isPending}
             >
-              {t('settings.add_unit')}
+              {t('settings.save_payment_types')}
             </Button>
-          </Group>
-          <Button
-            w={200}
-            onClick={() => paymentTypesMutation.mutate(localPaymentTypes)}
-            loading={paymentTypesMutation.isPending}
-          >
-            {t('settings.save_payment_types')}
-          </Button>
-        </Stack>
-      </Paper>
-
-      <Paper p="md" radius="md" withBorder>
-        <Text fw={500} mb="md">{t('settings.dashboard')}</Text>
-        <Text c="dimmed" size="sm" mb="md">{t('settings.dashboard_desc')}</Text>
-        <Stack gap="sm">
-          <Switch
-            label={t('dashboard.total_revenue')}
-            checked={dashWidgets.revenue}
-            onChange={(e) => handleWidgetToggle('revenue', e.currentTarget.checked)}
-          />
-          <Switch
-            label={t('dashboard.unpaid_invoices')}
-            checked={dashWidgets.unpaid}
-            onChange={(e) => handleWidgetToggle('unpaid', e.currentTarget.checked)}
-          />
-          <Switch
-            label={t('dashboard.active_customers')}
-            checked={dashWidgets.customers}
-            onChange={(e) => handleWidgetToggle('customers', e.currentTarget.checked)}
-          />
-          <Switch
-            label={t('dashboard.invoices_month')}
-            checked={dashWidgets.invoices_month}
-            onChange={(e) => handleWidgetToggle('invoices_month', e.currentTarget.checked)}
-          />
-          <Switch
-            label={t('dashboard.overdue_title')}
-            checked={dashWidgets.overdue}
-            onChange={(e) => handleWidgetToggle('overdue', e.currentTarget.checked)}
-          />
-          <Switch
-            label={t('dashboard.recent_invoices')}
-            checked={dashWidgets.recent}
-            onChange={(e) => handleWidgetToggle('recent', e.currentTarget.checked)}
-          />
-          <Switch
-            label={t('dashboard.quick_actions')}
-            checked={dashWidgets.quick_actions}
-            onChange={(e) => handleWidgetToggle('quick_actions', e.currentTarget.checked)}
-          />
-        </Stack>
-      </Paper>
-
-      <Paper p="md" radius="md" withBorder>
-        <Text fw={500} mb="md">{t('settings.pdf_output')}</Text>
-        <Stack gap="md">
-          <Group gap="md">
-            <Text size="sm">{t('settings.default_template')}:</Text>
-            <Badge variant="light" color="blue" size="lg">
-              {defaultTemplate?.name || '—'}
-            </Badge>
-          </Group>
-          <Text c="dimmed" size="sm">{t('settings.pdf_output_hint')}</Text>
-          <Button
-            w={250}
-            variant="light"
-            onClick={() => navigate('/templates')}
-          >
-            {t('settings.go_to_templates')}
-          </Button>
-        </Stack>
-      </Paper>
-
-      {aboutInfo && (
-        <Paper p="md" radius="md" withBorder>
-          <Group mb="md" gap="sm">
-            <Title order={3}>TidyBill</Title>
-            <Badge variant="light" color="blue" size="lg">v{aboutInfo.version}</Badge>
-          </Group>
-          <Text size="sm" mb="xs">{t('about.description')}</Text>
-          <Text size="sm" c="dimmed" mb="lg">{t('about.opensource')}</Text>
-
-          <Text fw={500} size="sm" mb={4}>{t('about.issues_title')}</Text>
-          <Anchor
-            size="sm"
-            mb="lg"
-            onClick={(e) => { e.preventDefault(); openInBrowser(aboutInfo.github_issues_url) }}
-            style={{ cursor: 'pointer' }}
-          >
-            {t('about.issues_link')}
-          </Anchor>
-
-          <Text fw={500} size="sm" mt="md" mb={4}>{t('about.support_title')}</Text>
-          <Text size="sm" c="dimmed" mb="sm">{t('about.support_desc')}</Text>
-          <Stack gap="xs">
-            <Group gap="xs">
-              <Text size="sm" fw={500} w={100}>Monero (XMR)</Text>
-              <Code>{aboutInfo.monero_address}</Code>
-              <CopyButton value={aboutInfo.monero_address}>
-                {({ copied, copy }) => (
-                  <Tooltip label={copied ? t('about.copied') : t('common.copy')}>
-                    <ActionIcon variant="subtle" color={copied ? 'teal' : 'gray'} onClick={copy}>
-                      {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
-                    </ActionIcon>
-                  </Tooltip>
-                )}
-              </CopyButton>
-            </Group>
-            <Group gap="xs">
-              <Text size="sm" fw={500} w={100}>Bitcoin (BTC)</Text>
-              <Code>{aboutInfo.bitcoin_address}</Code>
-              <CopyButton value={aboutInfo.bitcoin_address}>
-                {({ copied, copy }) => (
-                  <Tooltip label={copied ? t('about.copied') : t('common.copy')}>
-                    <ActionIcon variant="subtle" color={copied ? 'teal' : 'gray'} onClick={copy}>
-                      {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
-                    </ActionIcon>
-                  </Tooltip>
-                )}
-              </CopyButton>
-            </Group>
           </Stack>
         </Paper>
-      )}
+      </SimpleGrid>
+
+      {/* Row 6: PDF Output + About */}
+      <SimpleGrid cols={{ base: 1, md: 2 }}>
+        <Paper p="md" radius="md" withBorder>
+          <Text fw={500} mb="md">{t('settings.pdf_output')}</Text>
+          <Stack gap="md">
+            <Group gap="md">
+              <Text size="sm">{t('settings.default_template')}:</Text>
+              <Badge variant="light" color="blue" size="lg">
+                {defaultTemplate?.name || '—'}
+              </Badge>
+            </Group>
+            <Text c="dimmed" size="sm">{t('settings.pdf_output_hint')}</Text>
+            <Button
+              w={250}
+              variant="light"
+              onClick={() => navigate('/templates')}
+            >
+              {t('settings.go_to_templates')}
+            </Button>
+          </Stack>
+        </Paper>
+
+        {aboutInfo && (
+          <Paper p="md" radius="md" withBorder>
+            <Group mb="md" gap="sm">
+              <Title order={3}>TidyBill</Title>
+              <Badge variant="light" color="blue" size="lg">v{aboutInfo.version}</Badge>
+            </Group>
+            <Text size="sm" mb="xs">{t('about.description')}</Text>
+            <Text size="sm" c="dimmed" mb="lg">{t('about.opensource')}</Text>
+
+            <Text fw={500} size="sm" mb={4}>{t('about.issues_title')}</Text>
+            <Anchor
+              size="sm"
+              mb="lg"
+              onClick={(e) => { e.preventDefault(); openInBrowser(aboutInfo.github_issues_url) }}
+              style={{ cursor: 'pointer' }}
+            >
+              {t('about.issues_link')}
+            </Anchor>
+
+            <Text fw={500} size="sm" mt="md" mb={4}>{t('about.support_title')}</Text>
+            <Text size="sm" c="dimmed" mb="sm">{t('about.support_desc')}</Text>
+            <Stack gap="xs">
+              <Group gap="xs">
+                <Text size="sm" fw={500} w={100}>Monero (XMR)</Text>
+                <Code>{aboutInfo.monero_address}</Code>
+                <CopyButton value={aboutInfo.monero_address}>
+                  {({ copied, copy }) => (
+                    <Tooltip label={copied ? t('about.copied') : t('common.copy')}>
+                      <ActionIcon variant="subtle" color={copied ? 'teal' : 'gray'} onClick={copy}>
+                        {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+                      </ActionIcon>
+                    </Tooltip>
+                  )}
+                </CopyButton>
+              </Group>
+              <Group gap="xs">
+                <Text size="sm" fw={500} w={100}>Bitcoin (BTC)</Text>
+                <Code>{aboutInfo.bitcoin_address}</Code>
+                <CopyButton value={aboutInfo.bitcoin_address}>
+                  {({ copied, copy }) => (
+                    <Tooltip label={copied ? t('about.copied') : t('common.copy')}>
+                      <ActionIcon variant="subtle" color={copied ? 'teal' : 'gray'} onClick={copy}>
+                        {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+                      </ActionIcon>
+                    </Tooltip>
+                  )}
+                </CopyButton>
+              </Group>
+            </Stack>
+          </Paper>
+        )}
+      </SimpleGrid>
 
     </Stack>
   )
