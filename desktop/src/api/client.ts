@@ -208,6 +208,11 @@ export const api = {
   getCurrencies: () => request<CurrencyItem[]>('/currencies'),
   updateCurrencies: (currencies: CurrencyItem[]) =>
     request<CurrencyItem[]>('/currencies', { method: 'PUT', body: JSON.stringify(currencies) }),
+
+  // Due Days Options
+  getDueDaysOptions: () => request<DueDaysOption[]>('/due-days'),
+  updateDueDaysOptions: (options: DueDaysOption[]) =>
+    request<DueDaysOption[]>('/due-days', { method: 'PUT', body: JSON.stringify(options) }),
 }
 
 // Types matching Go models exactly
@@ -405,6 +410,12 @@ export interface PaymentType {
 export interface VATRate {
   rate: number
   name?: string
+  is_default?: boolean
+}
+
+export interface DueDaysOption {
+  days: number
+  is_default?: boolean
 }
 
 export interface CurrencyItem {

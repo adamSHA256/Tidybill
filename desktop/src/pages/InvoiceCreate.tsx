@@ -58,7 +58,11 @@ export function InvoiceCreate() {
     queryFn: api.getSettings,
   })
 
-  const globalDueDays = parseInt(settings?.default_due_days || '14', 10) || 14
+  const { data: dueDaysOptions } = useQuery({
+    queryKey: ['due-days'],
+    queryFn: api.getDueDaysOptions,
+  })
+  const globalDueDays = (dueDaysOptions || []).find((d) => d.is_default)?.days || dueDaysOptions?.[0]?.days || 14
   const globalCurrency = settings?.default_currency || 'CZK'
 
   const { data: paymentTypes } = useQuery({
@@ -83,7 +87,7 @@ export function InvoiceCreate() {
   const [invoiceNumber, setInvoiceNumber] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null)
   const [notes, setNotes] = useState('')
-  const [items, setItems] = useState<ItemForm[]>([{ ...emptyItem, unit: 'hod' }])
+  const [items, setItems] = useState<ItemForm[]>([{ ...emptyItem }])
 
   // Modal states
   const [supplierModalOpen, setSupplierModalOpen] = useState(false)
@@ -151,13 +155,14 @@ export function InvoiceCreate() {
     queryFn: api.getUnits,
   })
   const unitOptions = (units || []).map((u) => u.name)
+  const defaultUnit = (units || []).find((u) => u.is_default)?.name || unitOptions[0] || 'ks'
 
   const { data: vatRates } = useQuery({
     queryKey: ['vat-rates'],
     queryFn: api.getVATRates,
   })
   const vatRateOptions = (vatRates || []).map((r) => String(r.rate))
-  const defaultVatRate = parseFloat(settings?.default_vat_rate || '21') || 21
+  const defaultVatRate = (vatRates || []).find((r) => r.is_default)?.rate ?? 21
 
   // Auto-select default supplier
   const defaultSupplier = suppliers?.find((s: Supplier) => s.is_default)
@@ -183,13 +188,19 @@ export function InvoiceCreate() {
     }
   }, [nextNumberData])
 
-  // Initialize default VAT rate from settings for the initial empty item
+  // Initialize default VAT rate from VAT rates array for the initial empty item
   useEffect(() => {
-    if (settings?.default_vat_rate && items.length === 1 && !items[0].description) {
-      const rate = parseFloat(settings.default_vat_rate) || 21
-      setItems([{ ...items[0], vat_rate: rate }])
+    if (vatRates && vatRates.length > 0) {
+      setItems((prev) => prev.length === 1 && !prev[0].description ? [{ ...prev[0], vat_rate: defaultVatRate }] : prev)
     }
-  }, [settings?.default_vat_rate]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [vatRates]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Initialize default unit from settings for the initial empty item
+  useEffect(() => {
+    if (units && units.length > 0) {
+      setItems((prev) => prev.length === 1 && !prev[0].description ? [{ ...prev[0], unit: defaultUnit }] : prev)
+    }
+  }, [units]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Initialize currency from settings (will be overridden by bank account below)
   useEffect(() => {
@@ -199,14 +210,14 @@ export function InvoiceCreate() {
     }
   }, [settings, currencyInitialized, globalCurrency])
 
-  // Initialize due date from settings (or customer default)
+  // Initialize due date from due days options (or customer default)
   useEffect(() => {
-    if (!dueDateInitialized && settings) {
+    if (!dueDateInitialized && dueDaysOptions) {
       const days = globalDueDays
       setDueDate(new Date(Date.now() + days * 86400000).toISOString().slice(0, 10))
       setDueDateInitialized(true)
     }
-  }, [settings, dueDateInitialized, globalDueDays])
+  }, [dueDaysOptions, dueDateInitialized, globalDueDays])
 
   // Initialize payment method from default payment type
   useEffect(() => {
@@ -467,7 +478,7 @@ export function InvoiceCreate() {
     })
   }
 
-  const addItem = () => setItems([...items, { ...emptyItem, vat_rate: defaultVatRate }])
+  const addItem = () => setItems([...items, { ...emptyItem, unit: defaultUnit, vat_rate: defaultVatRate }])
   const removeItem = (index: number) => {
     if (items.length > 1) setItems(items.filter((_, i) => i !== index))
   }
@@ -484,7 +495,7 @@ export function InvoiceCreate() {
       item_id: catalogItem.id,
       description: catalogItem.description,
       quantity: qty || 1,
-      unit: catalogItem.default_unit || 'ks',
+      unit: catalogItem.default_unit || defaultUnit,
       unit_price: price,
       vat_rate: catalogItem.default_vat_rate,
     }

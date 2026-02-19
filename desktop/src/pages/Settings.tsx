@@ -25,7 +25,7 @@ import { notifications } from '@mantine/notifications'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, openInBrowser, type Unit, type PDFTemplate, type VATRate, type CurrencyItem, type PaymentType } from '../api/client'
+import { api, openInBrowser, type Unit, type PDFTemplate, type VATRate, type CurrencyItem, type PaymentType, type DueDaysOption } from '../api/client'
 import { applyZoom } from '../utils/zoom'
 import { useT } from '../i18n'
 
@@ -119,6 +119,13 @@ export function Settings() {
   const [localPaymentTypes, setLocalPaymentTypes] = useState<PaymentType[]>([])
   const [newPaymentTypeName, setNewPaymentTypeName] = useState('')
 
+  const { data: dueDaysOptions } = useQuery({
+    queryKey: ['due-days'],
+    queryFn: api.getDueDaysOptions,
+  })
+  const [localDueDays, setLocalDueDays] = useState<DueDaysOption[]>([])
+  const [newDueDaysValue, setNewDueDaysValue] = useState('')
+
   useEffect(() => {
     if (settings) {
       setDirLogos(settings.dir_logos || '')
@@ -151,6 +158,12 @@ export function Settings() {
       setLocalPaymentTypes(paymentTypes)
     }
   }, [paymentTypes])
+
+  useEffect(() => {
+    if (dueDaysOptions) {
+      setLocalDueDays(dueDaysOptions)
+    }
+  }, [dueDaysOptions])
 
   const unitsMutation = useMutation({
     mutationFn: api.updateUnits,
@@ -190,6 +203,17 @@ export function Settings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payment-types'] })
       notifications.show({ title: t('notify.payment_types_saved'), message: t('notify.payment_types_saved_msg'), color: 'green' })
+    },
+    onError: (err: Error) => {
+      notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
+    },
+  })
+
+  const dueDaysMutation = useMutation({
+    mutationFn: api.updateDueDaysOptions,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['due-days'] })
+      notifications.show({ title: t('notify.due_days_saved'), message: t('notify.due_days_saved_msg'), color: 'green' })
     },
     onError: (err: Error) => {
       notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
@@ -353,108 +377,30 @@ export function Settings() {
         </SimpleGrid>
       </Paper>
 
-      {/* Row 3: Invoices — full width */}
-      <Paper p="md" radius="md" withBorder>
-        <Text fw={500} mb="md">{t('settings.invoices')}</Text>
-        <Stack gap="md">
-          <Select
-            label={t('settings.default_vat')}
-            data={(localVATRates.length > 0 ? localVATRates : [{ rate: 0 }, { rate: 12 }, { rate: 21 }])
-              .map((r) => ({ value: String(r.rate), label: `${r.rate}%` }))}
-            value={settings?.default_vat_rate || '21'}
-            onChange={(v) => { if (v) updateMutation.mutate({ default_vat_rate: v }) }}
-            w={300}
-          />
-          <Select
-            label={t('settings.default_due')}
-            data={['7', '14', '30', '60']}
-            value={settings?.default_due_days || '14'}
-            onChange={(v) => { if (v) updateMutation.mutate({ default_due_days: v }) }}
-            w={300}
-          />
-          {/* TODO: also expose this setting in CLI settings menu */}
-          <Select
-            label={t('settings.invoice_default_sort')}
-            description={t('settings.invoice_default_sort_desc')}
-            data={[
-              { value: 'created_at', label: t('invoice.created_at') },
-              { value: 'issue_date', label: t('invoice.issue_date') },
-              { value: 'due_date', label: t('invoice.due_date') },
-              { value: 'invoice_number', label: t('invoice.number') },
-              { value: 'total', label: t('invoice.amount') },
-            ]}
-            value={settings?.invoice_default_sort || 'created_at'}
-            onChange={(v) => { if (v) updateMutation.mutate({ invoice_default_sort: v }) }}
-            w={300}
-          />
-          <Group>
-            <Switch label={t('settings.auto_number')} defaultChecked disabled />
-            {comingSoonBadge}
-          </Group>
-        </Stack>
-      </Paper>
-
-      {/* Row 4: Units + Currencies */}
+      {/* Row 3: Invoices + Currencies */}
       <SimpleGrid cols={{ base: 1, md: 2 }}>
         <Paper p="md" radius="md" withBorder>
-          <Text fw={500} mb="xs">{t('settings.units')}</Text>
-          <Text c="dimmed" size="sm" mb="md">{t('settings.units_desc')}</Text>
+          <Text fw={500} mb="md">{t('settings.invoices')}</Text>
           <Stack gap="md">
-            <Group gap="xs" wrap="wrap">
-              {localUnits.map((u, i) => (
-                <Pill
-                  key={u.name}
-                  size="lg"
-                  withRemoveButton={localUnits.length > 1}
-                  onRemove={() => {
-                    const next = localUnits.filter((_, idx) => idx !== i)
-                    if (u.is_default && next.length > 0) next[0].is_default = true
-                    setLocalUnits(next)
-                  }}
-                  styles={{ root: { cursor: 'pointer', border: u.is_default ? '2px solid var(--mantine-color-blue-5)' : undefined } }}
-                  onClick={() => {
-                    setLocalUnits(localUnits.map((unit, idx) => ({ ...unit, is_default: idx === i })))
-                  }}
-                >
-                  {u.name}
-                  {u.is_default && (
-                    <Badge size="xs" variant="light" color="blue" ml={4}>{t('settings.default_unit_label')}</Badge>
-                  )}
-                </Pill>
-              ))}
-            </Group>
+            {/* TODO: also expose this setting in CLI settings menu */}
+            <Select
+              label={t('settings.invoice_default_sort')}
+              description={t('settings.invoice_default_sort_desc')}
+              data={[
+                { value: 'created_at', label: t('invoice.created_at') },
+                { value: 'issue_date', label: t('invoice.issue_date') },
+                { value: 'due_date', label: t('invoice.due_date') },
+                { value: 'invoice_number', label: t('invoice.number') },
+                { value: 'total', label: t('invoice.amount') },
+              ]}
+              value={settings?.invoice_default_sort || 'created_at'}
+              onChange={(v) => { if (v) updateMutation.mutate({ invoice_default_sort: v }) }}
+              w={300}
+            />
             <Group>
-              <TextInput
-                placeholder={t('settings.unit_placeholder')}
-                value={newUnitName}
-                onChange={(e) => setNewUnitName(e.currentTarget.value)}
-                w={250}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && newUnitName.trim()) {
-                    setLocalUnits([...localUnits, { name: newUnitName.trim() }])
-                    setNewUnitName('')
-                  }
-                }}
-              />
-              <Button
-                variant="light"
-                size="sm"
-                disabled={!newUnitName.trim()}
-                onClick={() => {
-                  setLocalUnits([...localUnits, { name: newUnitName.trim() }])
-                  setNewUnitName('')
-                }}
-              >
-                {t('settings.add_unit')}
-              </Button>
+              <Switch label={t('settings.auto_number')} defaultChecked disabled />
+              {comingSoonBadge}
             </Group>
-            <Button
-              w={200}
-              onClick={() => unitsMutation.mutate(localUnits)}
-              loading={unitsMutation.isPending}
-            >
-              {t('settings.save_units')}
-            </Button>
           </Stack>
         </Paper>
 
@@ -519,6 +465,142 @@ export function Settings() {
         </Paper>
       </SimpleGrid>
 
+      <Text c="dimmed" size="sm" fs="italic">{t('settings.defaults_hint')}</Text>
+
+      {/* Row 4: Units + Due Days */}
+      <SimpleGrid cols={{ base: 1, md: 2 }}>
+        <Paper p="md" radius="md" withBorder>
+          <Text fw={500} mb="xs">{t('settings.units')}</Text>
+          <Text c="dimmed" size="sm" mb="md">{t('settings.units_desc')}</Text>
+          <Stack gap="md">
+            <Group gap="xs" wrap="wrap">
+              {localUnits.map((u, i) => (
+                <Pill
+                  key={u.name}
+                  size="lg"
+                  withRemoveButton={localUnits.length > 1}
+                  onRemove={() => {
+                    const next = localUnits.filter((_, idx) => idx !== i)
+                    if (u.is_default && next.length > 0) next[0].is_default = true
+                    setLocalUnits(next)
+                  }}
+                  styles={{ root: { cursor: 'pointer', border: u.is_default ? '2px solid var(--mantine-color-blue-5)' : undefined } }}
+                  onClick={() => {
+                    setLocalUnits(localUnits.map((unit, idx) => ({ ...unit, is_default: idx === i })))
+                  }}
+                >
+                  {u.name}
+                  {u.is_default && (
+                    <Badge size="xs" variant="light" color="blue" ml={4}>{t('settings.default_unit_label')}</Badge>
+                  )}
+                </Pill>
+              ))}
+            </Group>
+            <Group>
+              <TextInput
+                placeholder={t('settings.unit_placeholder')}
+                value={newUnitName}
+                onChange={(e) => setNewUnitName(e.currentTarget.value)}
+                w={250}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newUnitName.trim()) {
+                    setLocalUnits([...localUnits, { name: newUnitName.trim() }])
+                    setNewUnitName('')
+                  }
+                }}
+              />
+              <Button
+                variant="light"
+                size="sm"
+                disabled={!newUnitName.trim()}
+                onClick={() => {
+                  setLocalUnits([...localUnits, { name: newUnitName.trim() }])
+                  setNewUnitName('')
+                }}
+              >
+                {t('settings.add_unit')}
+              </Button>
+            </Group>
+            <Button
+              w={200}
+              onClick={() => unitsMutation.mutate(localUnits)}
+              loading={unitsMutation.isPending}
+            >
+              {t('settings.save_units')}
+            </Button>
+          </Stack>
+        </Paper>
+
+        <Paper p="md" radius="md" withBorder>
+          <Text fw={500} mb="xs">{t('settings.due_days')}</Text>
+          <Text c="dimmed" size="sm" mb="md">{t('settings.due_days_desc')}</Text>
+          <Stack gap="md">
+            <Group gap="xs" wrap="wrap">
+              {localDueDays.map((d, i) => (
+                <Pill
+                  key={d.days}
+                  size="lg"
+                  withRemoveButton={localDueDays.length > 1}
+                  onRemove={() => {
+                    const next = localDueDays.filter((_, idx) => idx !== i)
+                    if (d.is_default && next.length > 0) next[0].is_default = true
+                    setLocalDueDays(next)
+                  }}
+                  styles={{ root: { cursor: 'pointer', border: d.is_default ? '2px solid var(--mantine-color-blue-5)' : undefined } }}
+                  onClick={() => {
+                    setLocalDueDays(localDueDays.map((opt, idx) => ({ ...opt, is_default: idx === i })))
+                  }}
+                >
+                  {d.days}
+                  {d.is_default && (
+                    <Badge size="xs" variant="light" color="blue" ml={4}>{t('settings.default_unit_label')}</Badge>
+                  )}
+                </Pill>
+              ))}
+            </Group>
+            <Text c="dimmed" size="xs" fs="italic">{t('settings.due_days_customer_hint')}</Text>
+            <Group>
+              <TextInput
+                placeholder={t('settings.due_days_placeholder')}
+                value={newDueDaysValue}
+                onChange={(e) => setNewDueDaysValue(e.currentTarget.value)}
+                w={250}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newDueDaysValue.trim()) {
+                    const days = parseInt(newDueDaysValue.trim(), 10)
+                    if (!isNaN(days) && days > 0 && !localDueDays.some((d) => d.days === days)) {
+                      setLocalDueDays([...localDueDays, { days }])
+                      setNewDueDaysValue('')
+                    }
+                  }
+                }}
+              />
+              <Button
+                variant="light"
+                size="sm"
+                disabled={!newDueDaysValue.trim()}
+                onClick={() => {
+                  const days = parseInt(newDueDaysValue.trim(), 10)
+                  if (!isNaN(days) && days > 0 && !localDueDays.some((d) => d.days === days)) {
+                    setLocalDueDays([...localDueDays, { days }])
+                    setNewDueDaysValue('')
+                  }
+                }}
+              >
+                {t('settings.add_due_days')}
+              </Button>
+            </Group>
+            <Button
+              w={200}
+              onClick={() => dueDaysMutation.mutate(localDueDays)}
+              loading={dueDaysMutation.isPending}
+            >
+              {t('settings.save_due_days')}
+            </Button>
+          </Stack>
+        </Paper>
+      </SimpleGrid>
+
       {/* Row 5: VAT Rates + Payment Types */}
       <SimpleGrid cols={{ base: 1, md: 2 }}>
         <Paper p="md" radius="md" withBorder>
@@ -532,10 +614,19 @@ export function Settings() {
                   size="lg"
                   withRemoveButton={localVATRates.length > 1}
                   onRemove={() => {
-                    setLocalVATRates(localVATRates.filter((_, idx) => idx !== i))
+                    const next = localVATRates.filter((_, idx) => idx !== i)
+                    if (r.is_default && next.length > 0) next[0].is_default = true
+                    setLocalVATRates(next)
+                  }}
+                  styles={{ root: { cursor: 'pointer', border: r.is_default ? '2px solid var(--mantine-color-blue-5)' : undefined } }}
+                  onClick={() => {
+                    setLocalVATRates(localVATRates.map((rate, idx) => ({ ...rate, is_default: idx === i })))
                   }}
                 >
                   {r.rate}%{r.name ? ` (${r.name})` : ''}
+                  {r.is_default && (
+                    <Badge size="xs" variant="light" color="blue" ml={4}>{t('settings.default_unit_label')}</Badge>
+                  )}
                 </Pill>
               ))}
             </Group>

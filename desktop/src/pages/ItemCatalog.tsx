@@ -66,11 +66,6 @@ export function ItemCatalog() {
   })
   const vatRateOptions = (vatRates || []).map((r) => String(r.rate))
 
-  const { data: settings } = useQuery({
-    queryKey: ['settings'],
-    queryFn: api.getSettings,
-  })
-
   const createMutation = useMutation({
     mutationFn: (data: Partial<Item>) =>
       editingItem ? api.updateItem(editingItem.id, data) : api.createItem(data),
@@ -104,8 +99,8 @@ export function ItemCatalog() {
     setEditingItem(null)
     setDescription('')
     setDefaultPrice(0)
-    setDefaultUnit('ks')
-    setDefaultVATRate(parseFloat(settings?.default_vat_rate || '21') || 21)
+    setDefaultUnit((units || []).find((u) => u.is_default)?.name || unitOptions[0] || 'ks')
+    setDefaultVATRate((vatRates || []).find((r) => r.is_default)?.rate ?? 21)
     setCategory('')
     setModalOpen(true)
   }

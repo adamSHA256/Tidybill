@@ -440,7 +440,8 @@ func (c *CLI) addInvoiceItemWithBack(invoiceID string, position int, catalogItem
 	item.Unit = c.selectUnit(defaultUnit)
 	item.UnitPrice = c.promptFloat(i18n.T("prompt.unit_price"), defaultPrice)
 	// TODO: Dynamic VAT rates from settings (GET /api/vat-rates) are not implemented in CLI.
-	// The GUI version uses configurable VAT rate options and a default rate from settings.
+	// The GUI version uses configurable VAT rate options with is_default selection (pill editor).
+	// Implement manageVATRates() in CLI similar to manageUnits/managePaymentTypes.
 	item.VATRate = c.promptFloat(i18n.T("prompt.vat_rate"), defaultVAT)
 
 	item.Calculate()

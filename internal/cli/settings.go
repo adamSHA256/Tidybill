@@ -380,6 +380,9 @@ func (c *CLI) changeDefaultCurrency() {
 	c.waitEnter()
 }
 
+// TODO: Migrate to due_days_options JSON array (GET/PUT /api/due-days) with is_default support,
+// matching the pill-editor pattern used by manageUnits/managePaymentTypes in the GUI.
+// Currently uses hardcoded options and stores selection in "default.due_days" setting.
 func (c *CLI) changeDefaultDueDays() {
 	c.clearScreen()
 	fmt.Printf("=== %s ===\n\n", i18n.T("settings.change_due_days"))
