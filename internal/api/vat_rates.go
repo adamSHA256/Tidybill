@@ -12,9 +12,9 @@ type VATRate struct {
 }
 
 var defaultVATRates = []VATRate{
-	{Rate: 0, Name: "Bez DPH"},
-	{Rate: 12, Name: "Snížená 12%"},
-	{Rate: 21, Name: "Základní 21%", IsDefault: true},
+	{Rate: 0, Name: "0%"},
+	{Rate: 12, Name: "12%"},
+	{Rate: 21, Name: "21%"},
 }
 
 func (s *Server) getVATRates(w http.ResponseWriter, r *http.Request) {
