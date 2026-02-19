@@ -105,6 +105,8 @@
   "invoice.open_pdf": "Otvoriť PDF",
   "invoice.open_folder": "Otvoriť priečinok",
   "invoice.edit": "Upraviť faktúru",
+  "invoice.duplicate": "Nová z tejto",
+  "invoice.duplicate_subtitle": "Predvyplnené z faktúry {number}. Dátumy boli nastavené na aktuálne.",
   "invoice.edit_title": "Upraviť faktúru",
   "invoice.edit_subtitle": "Upravte údaje faktúry",
   "invoice.edit_status_warning": "Naozaj chcete upraviť faktúru so stavom <strong>{status}</strong>?",

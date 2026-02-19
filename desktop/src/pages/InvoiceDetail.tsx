@@ -24,6 +24,7 @@ import {
   IconChevronDown,
   IconNotes,
   IconEdit,
+  IconCopy,
 } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -152,6 +153,30 @@ export function InvoiceDetail() {
           <Button variant="light" leftSection={<IconEdit size={16} />}
             onClick={() => navigate(`/invoices/${id}/edit`)}>
             {t('invoice.edit')}
+          </Button>
+          <Button variant="light" leftSection={<IconCopy size={16} />}
+            onClick={() => navigate('/invoices/new', {
+              state: {
+                duplicateFrom: {
+                  invoice_number: invoice.invoice_number,
+                  supplier_id: invoice.supplier_id,
+                  customer_id: invoice.customer_id,
+                  bank_account_id: invoice.bank_account_id,
+                  currency: invoice.currency,
+                  payment_method: invoice.payment_method,
+                  notes: invoice.notes,
+                  items: (invoice.items || []).map((item) => ({
+                    item_id: item.item_id,
+                    description: item.description,
+                    quantity: item.quantity,
+                    unit: item.unit,
+                    unit_price: item.unit_price,
+                    vat_rate: item.vat_rate,
+                  })),
+                },
+              },
+            })}>
+            {t('invoice.duplicate')}
           </Button>
           <Button variant="light" leftSection={<IconFileTypePdf size={16} />}
             onClick={() => pdfMutation.mutate()} loading={pdfMutation.isPending}>

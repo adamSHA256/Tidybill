@@ -25,7 +25,7 @@ import { notifications } from '@mantine/notifications'
 import { DateInput } from '@mantine/dates'
 import { IconTrash, IconPlus, IconPackage, IconAlertTriangle } from '@tabler/icons-react'
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, formatMoney, type Supplier, type BankAccount, type Item, type CustomerItem } from '../api/client'
 import { CountrySelect } from '../components/CountrySelect'
@@ -52,10 +52,24 @@ function generateVariableSymbol(invoiceNumber: string): string {
   return invoiceNumber.replace(/-/g, '').replace(/^[A-Z]+/, '')
 }
 
+interface DuplicateFromState {
+  invoice_number: string
+  supplier_id: string
+  customer_id: string
+  bank_account_id: string
+  currency: string
+  payment_method: string
+  notes: string
+  items: ItemForm[]
+}
+
 export function InvoiceCreate() {
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
   const { t } = useT()
+
+  const duplicateFrom = (location.state as { duplicateFrom?: DuplicateFromState } | null)?.duplicateFrom || null
 
   const { data: settings } = useQuery({
     queryKey: ['settings'],
@@ -79,19 +93,21 @@ export function InvoiceCreate() {
     queryFn: api.getCurrencies,
   })
 
-  const [supplierId, setSupplierId] = useState<string | null>(null)
-  const [customerId, setCustomerId] = useState<string | null>(null)
-  const [bankAccountId, setBankAccountId] = useState<string | null>(null)
+  const [supplierId, setSupplierId] = useState<string | null>(duplicateFrom?.supplier_id || null)
+  const [customerId, setCustomerId] = useState<string | null>(duplicateFrom?.customer_id || null)
+  const [bankAccountId, setBankAccountId] = useState<string | null>(duplicateFrom?.bank_account_id || null)
   const [issueDate, setIssueDate] = useState<string | null>(new Date().toISOString().slice(0, 10))
   const [taxableDate, setTaxableDate] = useState<string | null>(null)
   const [dueDate, setDueDate] = useState<string | null>(null)
   const [dueDateInitialized, setDueDateInitialized] = useState(false)
-  const [currency, setCurrency] = useState('')
-  const [currencyInitialized, setCurrencyInitialized] = useState(false)
+  const [currency, setCurrency] = useState(duplicateFrom?.currency || '')
+  const [currencyInitialized, setCurrencyInitialized] = useState(!!duplicateFrom)
   const [invoiceNumber, setInvoiceNumber] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState<string | null>(null)
-  const [notes, setNotes] = useState('')
-  const [items, setItems] = useState<ItemForm[]>([{ ...emptyItem }])
+  const [paymentMethod, setPaymentMethod] = useState<string | null>(duplicateFrom?.payment_method || null)
+  const [notes, setNotes] = useState(duplicateFrom?.notes || '')
+  const [items, setItems] = useState<ItemForm[]>(
+    duplicateFrom?.items?.length ? duplicateFrom.items : [{ ...emptyItem }]
+  )
   const [dueDateChangedByCustomer, setDueDateChangedByCustomer] = useState(false)
   const dueDateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [variableSymbol, setVariableSymbol] = useState('')
@@ -237,11 +253,14 @@ export function InvoiceCreate() {
   // Initialize due date from due days options (or customer default)
   useEffect(() => {
     if (!dueDateInitialized && dueDaysOptions) {
-      const days = globalDueDays
+      // When duplicating, wait for customers to load so we can use customer's due days
+      if (duplicateFrom?.customer_id && !customers) return
+      const cust = duplicateFrom?.customer_id ? customers?.find((c) => c.id === duplicateFrom.customer_id) : null
+      const days = (cust && cust.default_due_days > 0) ? cust.default_due_days : globalDueDays
       setDueDate(new Date(Date.now() + days * 86400000).toISOString().slice(0, 10))
       setDueDateInitialized(true)
     }
-  }, [dueDaysOptions, dueDateInitialized, globalDueDays])
+  }, [dueDaysOptions, dueDateInitialized, globalDueDays, customers]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Initialize payment method from default payment type
   useEffect(() => {
@@ -668,7 +687,11 @@ export function InvoiceCreate() {
       <Group justify="space-between">
         <div>
           <Title order={2}>{t('invoice.create_title')}</Title>
-          <Text c="dimmed" size="sm">{t('invoice.create_subtitle')}</Text>
+          <Text c="dimmed" size="sm">
+            {duplicateFrom
+              ? t('invoice.duplicate_subtitle').replace('{number}', duplicateFrom.invoice_number)
+              : t('invoice.create_subtitle')}
+          </Text>
         </div>
         <Group>
           <Button variant="default" onClick={() => navigate('/invoices')}>{t('common.cancel')}</Button>

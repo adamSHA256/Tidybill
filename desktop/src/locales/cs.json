@@ -109,6 +109,8 @@
   "invoice.open_pdf": "Otevřít PDF",
   "invoice.open_folder": "Otevřít složku",
   "invoice.edit": "Upravit fakturu",
+  "invoice.duplicate": "Nová z této",
+  "invoice.duplicate_subtitle": "Předvyplněno z faktury {number}. Data byla nastavena na aktuální.",
   "invoice.edit_title": "Upravit fakturu",
   "invoice.edit_subtitle": "Upravte údaje faktury",
   "invoice.edit_status_warning": "Opravdu chcete upravit fakturu se stavem <strong>{status}</strong>?",

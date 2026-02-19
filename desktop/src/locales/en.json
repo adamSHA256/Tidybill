@@ -105,6 +105,8 @@
   "invoice.open_pdf": "Open PDF",
   "invoice.open_folder": "Open folder",
   "invoice.edit": "Edit Invoice",
+  "invoice.duplicate": "New from This",
+  "invoice.duplicate_subtitle": "Pre-filled from invoice {number}. Dates have been reset.",
   "invoice.edit_title": "Edit Invoice",
   "invoice.edit_subtitle": "Modify invoice details",
   "invoice.edit_status_warning": "Are you sure you want to edit the invoice which has status <strong>{status}</strong>?",
