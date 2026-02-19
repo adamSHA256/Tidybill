@@ -529,14 +529,13 @@ export function InvoiceEdit() {
           </Group>
 
           <Paper p="md" radius="md" withBorder>
-            <Text fw={500} mb="md">{t('invoice.details')}</Text>
             <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
               <TextInput label={t('invoice.invoice_number')} value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.currentTarget.value)} />
               <DateInput label={t('invoice.issue_date')} valueFormat="DD.MM.YYYY" value={issueDate} onChange={setIssueDate} clearable />
               <DateInput label={t('invoice.taxable_date')} valueFormat="DD.MM.YYYY" value={taxableDate ?? issueDate} onChange={setTaxableDate} clearable />
-              <DateInput label={t('invoice.due_date')} valueFormat="DD.MM.YYYY" value={dueDate} onChange={setDueDate} clearable />
-              <Select label={t('invoice.currency')} data={currencyData} value={currency} onChange={(v) => handleCurrencySelect(v, 'invoice')} searchable />
               <Select label={t('invoice.payment_method')} data={paymentTypeSelectData} value={paymentMethod} onChange={handlePaymentTypeSelect} searchable />
+              <Select label={t('invoice.currency')} data={currencyData} value={currency} onChange={(v) => handleCurrencySelect(v, 'invoice')} searchable />
+              <DateInput label={t('invoice.due_date')} valueFormat="DD.MM.YYYY" value={dueDate} onChange={setDueDate} clearable />
             </SimpleGrid>
           </Paper>
 
@@ -686,7 +685,7 @@ export function InvoiceEdit() {
                         onChange={(val) => handleVatRateSelect(val, i)} />
                     </Table.Td>
                     <Table.Td>
-                      <Text size="sm" fw={600}>{formatMoney(item.quantity * item.unit_price)}</Text>
+                      <Text size="sm" fw={600}>{formatMoney(item.quantity * item.unit_price, currency)}</Text>
                     </Table.Td>
                     <Table.Td>
                       <ActionIcon color="red" variant="light" size="sm" onClick={() => removeItem(i)}
@@ -704,16 +703,16 @@ export function InvoiceEdit() {
             <Stack gap={4} align="end" pr="xl">
               <Group>
                 <Text size="sm" c="dimmed" w={180} ta="right">{t('invoice.subtotal')}</Text>
-                <Text size="sm" fw={600} w={120} ta="right">{formatMoney(subtotal)}</Text>
+                <Text size="sm" fw={600} w={120} ta="right">{formatMoney(subtotal, currency)}</Text>
               </Group>
               <Group>
                 <Text size="sm" c="dimmed" w={180} ta="right">{t('invoice.vat')}</Text>
-                <Text size="sm" fw={600} w={120} ta="right">{formatMoney(vatAmount)}</Text>
+                <Text size="sm" fw={600} w={120} ta="right">{formatMoney(vatAmount, currency)}</Text>
               </Group>
               <Divider w={300} />
               <Group>
                 <Text size="lg" fw={700} w={180} ta="right">{t('invoice.total')}</Text>
-                <Text size="lg" fw={700} w={120} ta="right">{formatMoney(total)}</Text>
+                <Text size="lg" fw={700} w={120} ta="right">{formatMoney(total, currency)}</Text>
               </Group>
             </Stack>
           </Paper>

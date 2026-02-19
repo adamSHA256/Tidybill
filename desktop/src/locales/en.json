@@ -49,7 +49,6 @@
 
   "invoice.create_title": "Create Invoice",
   "invoice.create_subtitle": "Fill in the details below",
-  "invoice.details": "Invoice Details",
   "invoice.invoice_number": "Invoice Number",
   "invoice.invoice_number_placeholder": "Leave empty for auto",
   "invoice.invoice_number_desc": "Optional — auto-generated if empty",
@@ -418,6 +417,7 @@
   "settings.save_payment_types": "Save payment types",
   "notify.payment_types_saved": "Payment types saved",
   "notify.payment_types_saved_msg": "Payment types have been updated",
+  "invoice.due_date_changed_by_customer": "Due date changed based on customer settings",
   "invoice.taxable_date": "Taxable supply date",
   "invoice.payment_method": "Payment method",
 

@@ -49,7 +49,6 @@
 
   "invoice.create_title": "Vytvořit fakturu",
   "invoice.create_subtitle": "Vyplňte údaje níže",
-  "invoice.details": "Údaje faktury",
   "invoice.invoice_number": "Číslo faktury",
   "invoice.invoice_number_placeholder": "Nechte prázdné pro automatické",
   "invoice.invoice_number_desc": "Volitelné — automaticky generováno",
@@ -418,6 +417,7 @@
   "settings.save_payment_types": "Uložit typy plateb",
   "notify.payment_types_saved": "Typy plateb uloženy",
   "notify.payment_types_saved_msg": "Typy plateb byly aktualizovány",
+  "invoice.due_date_changed_by_customer": "Splatnost změněna dle nastavení odběratele",
   "invoice.taxable_date": "DÚZP",
   "invoice.payment_method": "Forma úhrady",
 

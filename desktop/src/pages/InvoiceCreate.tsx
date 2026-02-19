@@ -24,7 +24,7 @@ import {
 import { notifications } from '@mantine/notifications'
 import { DateInput } from '@mantine/dates'
 import { IconTrash, IconPlus, IconPackage, IconAlertTriangle } from '@tabler/icons-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, formatMoney, type Supplier, type BankAccount, type Item, type CustomerItem } from '../api/client'
@@ -88,6 +88,8 @@ export function InvoiceCreate() {
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null)
   const [notes, setNotes] = useState('')
   const [items, setItems] = useState<ItemForm[]>([{ ...emptyItem }])
+  const [dueDateChangedByCustomer, setDueDateChangedByCustomer] = useState(false)
+  const dueDateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Modal states
   const [supplierModalOpen, setSupplierModalOpen] = useState(false)
@@ -227,6 +229,13 @@ export function InvoiceCreate() {
       else if (paymentTypes.length > 0) setPaymentMethod(paymentTypes[0].name)
     }
   }, [paymentTypes]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Cleanup due date change timer on unmount
+  useEffect(() => {
+    return () => {
+      if (dueDateTimerRef.current) clearTimeout(dueDateTimerRef.current)
+    }
+  }, [])
 
   // Catalog queries
   const { data: customerItems } = useQuery({
@@ -587,6 +596,15 @@ export function InvoiceCreate() {
     const cust = customers?.find((c) => c.id === v)
     const days = (cust && cust.default_due_days > 0) ? cust.default_due_days : globalDueDays
     setDueDate(new Date(Date.now() + days * 86400000).toISOString().slice(0, 10))
+
+    // Show indicator if customer has custom due days different from global
+    if (cust && cust.default_due_days > 0 && cust.default_due_days !== globalDueDays) {
+      setDueDateChangedByCustomer(true)
+      if (dueDateTimerRef.current) clearTimeout(dueDateTimerRef.current)
+      dueDateTimerRef.current = setTimeout(() => setDueDateChangedByCustomer(false), 10000)
+    } else {
+      setDueDateChangedByCustomer(false)
+    }
   }
 
   const handleBankSelect = (v: string | null) => {
@@ -620,14 +638,25 @@ export function InvoiceCreate() {
       </Group>
 
       <Paper p="md" radius="md" withBorder>
-        <Text fw={500} mb="md">{t('invoice.details')}</Text>
         <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
-          <TextInput label={t('invoice.invoice_number')} placeholder={t('invoice.invoice_number_placeholder')} value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.currentTarget.value)} description={invoiceNumber ? t('invoice.invoice_number_auto_desc') : t('invoice.invoice_number_desc')} />
+          <TextInput label={t('invoice.invoice_number')} placeholder={t('invoice.invoice_number_placeholder')} value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.currentTarget.value)} />
           <DateInput label={t('invoice.issue_date')} valueFormat="DD.MM.YYYY" value={issueDate} onChange={setIssueDate} clearable />
           <DateInput label={t('invoice.taxable_date')} valueFormat="DD.MM.YYYY" value={taxableDate ?? issueDate} onChange={setTaxableDate} clearable />
-          <DateInput label={t('invoice.due_date')} valueFormat="DD.MM.YYYY" value={dueDate} onChange={setDueDate} clearable />
-          <Select label={t('invoice.currency')} data={currencyData} value={currency} onChange={(v) => handleCurrencySelect(v, 'invoice')} searchable />
           <Select label={t('invoice.payment_method')} data={paymentTypeSelectData} value={paymentMethod} onChange={handlePaymentTypeSelect} searchable />
+          <Select label={t('invoice.currency')} data={currencyData} value={currency} onChange={(v) => handleCurrencySelect(v, 'invoice')} searchable />
+          <div>
+            <DateInput
+              label={t('invoice.due_date')}
+              valueFormat="DD.MM.YYYY"
+              value={dueDate}
+              onChange={setDueDate}
+              clearable
+              styles={dueDateChangedByCustomer ? { input: { borderColor: 'var(--mantine-primary-color-6)', borderWidth: 2 } } : undefined}
+            />
+            {dueDateChangedByCustomer && (
+              <Text size="xs" c="var(--mantine-primary-color-7)" mt={4}>{t('invoice.due_date_changed_by_customer')}</Text>
+            )}
+          </div>
         </SimpleGrid>
         {currencyMismatch && (
           <Alert variant="light" color="orange" mt="sm" icon={<IconAlertTriangle size={16} />}>
@@ -803,7 +832,7 @@ export function InvoiceCreate() {
                     onChange={(val) => handleVatRateSelect(val, i)} />
                 </Table.Td>
                 <Table.Td>
-                  <Text size="sm" fw={600}>{formatMoney(item.quantity * item.unit_price)}</Text>
+                  <Text size="sm" fw={600}>{formatMoney(item.quantity * item.unit_price, currency)}</Text>
                 </Table.Td>
                 <Table.Td>
                   <ActionIcon color="red" variant="light" size="sm" onClick={() => removeItem(i)}
@@ -821,16 +850,16 @@ export function InvoiceCreate() {
         <Stack gap={4} align="end" pr="xl">
           <Group>
             <Text size="sm" c="dimmed" w={180} ta="right">{t('invoice.subtotal')}</Text>
-            <Text size="sm" fw={600} w={120} ta="right">{formatMoney(subtotal)}</Text>
+            <Text size="sm" fw={600} w={120} ta="right">{formatMoney(subtotal, currency)}</Text>
           </Group>
           <Group>
             <Text size="sm" c="dimmed" w={180} ta="right">{t('invoice.vat')}</Text>
-            <Text size="sm" fw={600} w={120} ta="right">{formatMoney(vatAmount)}</Text>
+            <Text size="sm" fw={600} w={120} ta="right">{formatMoney(vatAmount, currency)}</Text>
           </Group>
           <Divider w={300} />
           <Group>
             <Text size="lg" fw={700} w={180} ta="right">{t('invoice.total')}</Text>
-            <Text size="lg" fw={700} w={120} ta="right">{formatMoney(total)}</Text>
+            <Text size="lg" fw={700} w={120} ta="right">{formatMoney(total, currency)}</Text>
           </Group>
         </Stack>
       </Paper>
