@@ -1,6 +1,10 @@
 package model
 
-import "time"
+import (
+	"time"
+
+	"github.com/adamSHA256/tidybill/internal/i18n"
+)
 
 type InvoiceStatus string
 
@@ -59,7 +63,7 @@ func NewInvoice(supplierID, customerID, bankAccountID string) *Invoice {
 		PaymentMethod: "bank_transfer",
 		Currency:      "CZK",
 		ExchangeRate:  1.0,
-		Language:      "cs",
+		Language:      string(i18n.GetLang()),
 	}
 }
 

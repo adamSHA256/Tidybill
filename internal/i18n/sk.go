@@ -291,7 +291,9 @@ var messagesSK = map[string]string{
 	"pdf.qr_payment":       "QR kód pre platbu",
 	"pdf.vat_payer":        "Platca DPH",
 	"pdf.not_vat_payer":    "Nie som platca DPH",
-	"pdf.invoice_msg":      "Faktúra %s",
+	"pdf.invoice_msg":              "Faktúra %s",
+	"pdf.taxable_date":             "DÚZP",
+	"pdf.variable_symbol_short":    "VS",
 
 	// ── Items Catalog ───────────────────────────────────────────────────
 	"heading.new_item":            "NOVÁ POLOŽKA KATALÓGU",
@@ -520,4 +522,22 @@ var messagesSK = map[string]string{
 	// ── Errors (new) ────────────────────────────────────────────────────
 	"error.invalid_option":  "Neplatná voľba",
 	"error.no_bank_accounts": "Žiadne bankové účty",
+
+	// ── PDF Template Names ──────────────────────────────────────────────
+	"template.name.default": "Tabuľková",
+	"template.name.classic": "Klasická",
+	"template.name.modern":  "Moderná",
+	"template.name.minimal": "Minimálna",
+	"template.desc.default": "Šablóna so sivým záhlavím a plnými okrajmi tabuľky",
+	"template.desc.classic": "Tradičná čiernobiela faktúra s číslami stránok a formálnym rozložením",
+	"template.desc.modern":  "Súčasný dizajn s oceľovo modrým akcentom a farebnou hierarchiou",
+	"template.desc.minimal": "Minimalistický štýl s maximom bieleho priestoru a bez dekorácií",
+
+	// ── Preview ─────────────────────────────────────────────────────────
+	"preview.notes":         "Toto je ukážkový dokument. Ďakujeme za Vašu dôveru a tešíme sa na ďalšiu spoluprácu.",
+	"preview.supplier_name": "Ukážková Firma s.r.o.",
+	"preview.customer_name": "Testovací Zákazník a.s.",
+	"preview.item1":         "Vývoj webovej aplikácie",
+	"preview.item2":         "Konzultácie a analýza požiadaviek",
+	"preview.item3":         "Správa servera (mesačná)",
 }

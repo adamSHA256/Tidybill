@@ -231,6 +231,10 @@ function TemplateCard({
                 autoFocus
                 styles={{ input: { fontWeight: 600 } }}
               />
+            ) : tmpl.is_builtin ? (
+              <Text fw={600} size="lg">
+                {tmpl.name}
+              </Text>
             ) : (
               <Text fw={600} size="lg" onClick={() => setEditing(true)} style={{ cursor: 'pointer' }}>
                 {tmpl.name}

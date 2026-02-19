@@ -1,6 +1,10 @@
 package model
 
-import "time"
+import (
+	"time"
+
+	"github.com/adamSHA256/tidybill/internal/i18n"
+)
 
 type Supplier struct {
 	ID            string    `json:"id"`
@@ -28,7 +32,7 @@ func NewSupplier() *Supplier {
 	return &Supplier{
 		Country:       "CZ",
 		InvoicePrefix: "VF",
-		Language:      "cs",
+		Language:      string(i18n.GetLang()),
 		IsVATPayer:    false,
 		IsDefault:     true,
 		Website:       "printmoney.usd",

@@ -42,6 +42,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     setLangState(newLang)
     api.updateSettings({ language: newLang }).then(() => {
       queryClient.invalidateQueries({ queryKey: ['settings'] })
+      queryClient.invalidateQueries({ queryKey: ['templates'] })
     })
   }
 

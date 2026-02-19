@@ -107,6 +107,7 @@ type CreateInvoiceRequest struct {
 	TaxableDate   string               `json:"taxable_date"`
 	PaymentMethod string               `json:"payment_method"`
 	Currency      string               `json:"currency"`
+	Language      string               `json:"language"`
 	Notes         string               `json:"notes"`
 	InternalNotes string               `json:"internal_notes"`
 	Items         []CreateItemRequest   `json:"items"`
@@ -176,6 +177,11 @@ func (s *Server) createInvoice(w http.ResponseWriter, r *http.Request) {
 	// Override with explicit request values
 	if req.Currency != "" {
 		inv.Currency = req.Currency
+	}
+
+	// Set language: explicit request overrides app default (from NewInvoice)
+	if req.Language != "" {
+		inv.Language = req.Language
 	}
 
 	// Parse dates if provided

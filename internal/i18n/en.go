@@ -291,7 +291,9 @@ var messagesEN = map[string]string{
 	"pdf.qr_payment":       "QR code for payment",
 	"pdf.vat_payer":        "VAT payer",
 	"pdf.not_vat_payer":    "Not a VAT payer",
-	"pdf.invoice_msg":      "Invoice %s",
+	"pdf.invoice_msg":              "Invoice %s",
+	"pdf.taxable_date":             "Tax date",
+	"pdf.variable_symbol_short":    "Ref",
 
 	// ── Items Catalog ───────────────────────────────────────────────────
 	"heading.new_item":            "NEW CATALOG ITEM",
@@ -520,4 +522,22 @@ var messagesEN = map[string]string{
 	// ── Errors (new) ────────────────────────────────────────────────────
 	"error.invalid_option":  "Invalid option",
 	"error.no_bank_accounts": "No bank accounts",
+
+	// ── PDF Template Names ──────────────────────────────────────────────
+	"template.name.default": "Tables",
+	"template.name.classic": "Classic",
+	"template.name.modern":  "Modern",
+	"template.name.minimal": "Minimal",
+	"template.desc.default": "Template with gray header and full table borders",
+	"template.desc.classic": "Traditional black and white invoice with page numbers and formal layout",
+	"template.desc.modern":  "Contemporary design with steel blue accent and color hierarchy",
+	"template.desc.minimal": "Minimalist style with maximum white space and no decorations",
+
+	// ── Preview ─────────────────────────────────────────────────────────
+	"preview.notes":         "This is a sample document. Thank you for your trust and we look forward to further cooperation.",
+	"preview.supplier_name": "Sample Company Ltd.",
+	"preview.customer_name": "Test Customer Inc.",
+	"preview.item1":         "Web application development",
+	"preview.item2":         "Consulting and requirements analysis",
+	"preview.item3":         "Server administration (monthly)",
 }

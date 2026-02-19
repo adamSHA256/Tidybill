@@ -3,6 +3,8 @@ package api
 import (
 	"net/http"
 	"os"
+
+	"github.com/adamSHA256/tidybill/internal/i18n"
 )
 
 func (s *Server) getSettings(w http.ResponseWriter, r *http.Request) {
@@ -81,6 +83,7 @@ func (s *Server) updateSettings(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
+		i18n.SetLang(i18n.Lang(req.Language))
 	}
 
 	// Simple key-value settings

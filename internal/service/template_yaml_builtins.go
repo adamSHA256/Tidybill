@@ -17,7 +17,7 @@ func GetBuiltinYAML(code string) string {
 	return ""
 }
 
-var yamlDefault = `name: "Výchozí"
+var yamlDefault = `name: "Tabulková"
 margins: { left: 10, top: 10, right: 10 }
 
 colors:
@@ -264,7 +264,7 @@ layout:
       - width: 3
         logo: true
       - width: 9
-        text: "FAKTURA  č. {{ .Invoice.InvoiceNumber }}"
+        text: "{{ labelf \"pdf.invoice_title\" .Invoice.InvoiceNumber }}"
         style: { size: 20, bold: true, align: center, top: 5 }
 
   # ── Header without logo ──
@@ -272,7 +272,7 @@ layout:
     row: 15
     cols:
       - width: 12
-        text: "FAKTURA  č. {{ .Invoice.InvoiceNumber }}"
+        text: "{{ labelf \"pdf.invoice_title\" .Invoice.InvoiceNumber }}"
         style: { size: 20, bold: true, align: center, left: 2, right: 2 }
 
   - spacer: 5
@@ -382,7 +382,7 @@ layout:
         style: { size: 9, bold: true, left: 2 }
       - width: 4
       - width: 4
-        text: "DUZP: {{ .Invoice.TaxableDate | date }}"
+        text: "{{ label \"pdf.taxable_date\" }}: {{ .Invoice.TaxableDate | date }}"
         style: { size: 9, right: 2 }
 
   - row: 5
@@ -508,7 +508,7 @@ layout:
         logo: true
       - width: 4
       - width: 4
-        text: "FAKTURA"
+        text: "{{ labelf \"pdf.invoice_title\" .Invoice.InvoiceNumber }}"
         style: { size: 28, bold: true, align: right, color: dark_gray }
 
   - if: "and .Options.ShowLogo .Supplier.LogoPath"
@@ -524,7 +524,7 @@ layout:
     row: 20
     cols:
       - width: 6
-        text: "FAKTURA"
+        text: "{{ labelf \"pdf.invoice_title\" .Invoice.InvoiceNumber }}"
         style: { size: 28, bold: true, color: dark_gray }
       - width: 6
         text: "{{ .Invoice.InvoiceNumber }}"
@@ -757,7 +757,7 @@ layout:
   - row: 12
     cols:
       - width: 6
-        text: "Faktura {{ .Invoice.InvoiceNumber }}"
+        text: "{{ labelf \"pdf.invoice_title\" .Invoice.InvoiceNumber }}"
         style: { size: 18, bold: true }
       - width: 6
         text: "{{ .Invoice.IssueDate | date }}"
@@ -809,7 +809,7 @@ layout:
         text: "{{ label \"pdf.due_date\" }} {{ .Invoice.DueDate | date }}"
         style: { size: 9, bold: true, top: 2 }
       - width: 3
-        text: "VS: {{ .Invoice.VariableSymbol }}"
+        text: "{{ label \"pdf.variable_symbol_short\" }}: {{ .Invoice.VariableSymbol }}"
         style: { size: 9, top: 2 }
       - width: 6
         text: "{{ label \"pdf.bank_account\" }} {{ .BankAccount.AccountNumber }}"

@@ -30,26 +30,27 @@ func (t *ClassicTemplate) Margins() TemplateMargins {
 }
 
 func (t *ClassicTemplate) Render(m core.Maroto, data *InvoiceData, opts *TemplateOptions) {
-	m.AddRows(t.header(data, opts)...)
+	lang := invoiceLang(data)
+	m.AddRows(t.header(data, opts, lang)...)
 	m.AddRow(5)
 	m.AddRow(1, line.NewCol(12))
 	m.AddRow(5)
-	m.AddRows(t.parties(data)...)
+	m.AddRows(t.parties(data, lang)...)
 	m.AddRow(8)
 	m.AddRow(1, line.NewCol(12))
 	m.AddRow(5)
-	m.AddRows(t.details(data)...)
+	m.AddRows(t.details(data, lang)...)
 	m.AddRow(8)
-	m.AddRows(t.items(data)...)
+	m.AddRows(t.items(data, lang)...)
 	m.AddRow(5)
-	m.AddRows(t.totals(data)...)
+	m.AddRows(t.totals(data, lang)...)
 	m.AddRow(10)
 	m.AddRows(t.footer(data, opts)...)
 }
 
-func (t *ClassicTemplate) header(data *InvoiceData, opts *TemplateOptions) []core.Row {
+func (t *ClassicTemplate) header(data *InvoiceData, opts *TemplateOptions, lang i18n.Lang) []core.Row {
 	var rows []core.Row
-	title := fmt.Sprintf("FAKTURA  č. %s", data.Invoice.InvoiceNumber)
+	title := i18n.TfForLang(lang, "pdf.invoice_title", data.Invoice.InvoiceNumber)
 
 	if opts.ShowLogo && data.Supplier.LogoPath != "" {
 		if _, err := os.Stat(data.Supplier.LogoPath); err == nil {
@@ -77,13 +78,13 @@ func (t *ClassicTemplate) header(data *InvoiceData, opts *TemplateOptions) []cor
 	return rows
 }
 
-func (t *ClassicTemplate) parties(data *InvoiceData) []core.Row {
+func (t *ClassicTemplate) parties(data *InvoiceData, lang i18n.Lang) []core.Row {
 	var rows []core.Row
 
 	rows = append(rows, row.New(7).Add(
-		text.NewCol(4, i18n.T("pdf.supplier")+":", props.Text{Size: 11, Style: fontstyle.Bold, Left: classicPadLeft}),
+		text.NewCol(4, i18n.TForLang(lang, "pdf.supplier")+":", props.Text{Size: 11, Style: fontstyle.Bold, Left: classicPadLeft}),
 		col.New(4),
-		text.NewCol(4, i18n.T("pdf.customer")+":", props.Text{Size: 11, Style: fontstyle.Bold, Right: classicPadRight}),
+		text.NewCol(4, i18n.TForLang(lang, "pdf.customer")+":", props.Text{Size: 11, Style: fontstyle.Bold, Right: classicPadRight}),
 	))
 
 	rows = append(rows, row.New(6).Add(
@@ -105,18 +106,18 @@ func (t *ClassicTemplate) parties(data *InvoiceData) []core.Row {
 	))
 
 	rows = append(rows, row.New(5).Add(
-		text.NewCol(4, fmt.Sprintf("IČO: %s", data.Supplier.ICO), props.Text{Size: 9, Left: classicPadLeft}),
+		text.NewCol(4, i18n.TfForLang(lang, "pdf.ico", data.Supplier.ICO), props.Text{Size: 9, Left: classicPadLeft}),
 		col.New(4),
-		text.NewCol(4, fmt.Sprintf("IČO: %s", data.Customer.ICO), props.Text{Size: 9, Right: classicPadRight}),
+		text.NewCol(4, i18n.TfForLang(lang, "pdf.ico", data.Customer.ICO), props.Text{Size: 9, Right: classicPadRight}),
 	))
 
-	supplierDIC := i18n.T("pdf.not_vat_payer")
+	supplierDIC := i18n.TForLang(lang, "pdf.not_vat_payer")
 	if data.Supplier.DIC != "" {
-		supplierDIC = fmt.Sprintf("DIČ: %s", data.Supplier.DIC)
+		supplierDIC = i18n.TfForLang(lang, "pdf.dic", data.Supplier.DIC)
 	}
 	customerDIC := ""
 	if data.Customer.DIC != "" {
-		customerDIC = fmt.Sprintf("DIČ: %s", data.Customer.DIC)
+		customerDIC = i18n.TfForLang(lang, "pdf.dic", data.Customer.DIC)
 	}
 	rows = append(rows, row.New(5).Add(
 		text.NewCol(4, supplierDIC, props.Text{Size: 9, Left: classicPadLeft}),
@@ -127,55 +128,55 @@ func (t *ClassicTemplate) parties(data *InvoiceData) []core.Row {
 	return rows
 }
 
-func (t *ClassicTemplate) details(data *InvoiceData) []core.Row {
+func (t *ClassicTemplate) details(data *InvoiceData, lang i18n.Lang) []core.Row {
 	var rows []core.Row
 	issueDate := data.Invoice.IssueDate.Format("02.01.2006")
 	dueDate := data.Invoice.DueDate.Format("02.01.2006")
 	taxDate := data.Invoice.TaxableDate.Format("02.01.2006")
 
 	rows = append(rows, row.New(7).Add(
-		text.NewCol(4, i18n.T("pdf.payment_info")+":", props.Text{Size: 11, Style: fontstyle.Bold, Left: classicPadLeft}),
+		text.NewCol(4, i18n.TForLang(lang, "pdf.payment_info")+":", props.Text{Size: 11, Style: fontstyle.Bold, Left: classicPadLeft}),
 		col.New(4),
-		text.NewCol(4, i18n.T("pdf.dates")+":", props.Text{Size: 11, Style: fontstyle.Bold, Right: classicPadRight}),
+		text.NewCol(4, i18n.TForLang(lang, "pdf.dates")+":", props.Text{Size: 11, Style: fontstyle.Bold, Right: classicPadRight}),
 	))
 
 	rows = append(rows, row.New(5).Add(
-		text.NewCol(4, fmt.Sprintf("%s: %s", i18n.T("pdf.bank_account"), data.BankAccount.AccountNumber), props.Text{Size: 9, Left: classicPadLeft}),
+		text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.bank_account"), data.BankAccount.AccountNumber), props.Text{Size: 9, Left: classicPadLeft}),
 		col.New(4),
-		text.NewCol(4, fmt.Sprintf("%s: %s", i18n.T("pdf.issue_date"), issueDate), props.Text{Size: 9, Right: classicPadRight}),
+		text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.issue_date"), issueDate), props.Text{Size: 9, Right: classicPadRight}),
 	))
 
 	rows = append(rows, row.New(5).Add(
 		text.NewCol(4, fmt.Sprintf("IBAN: %s", data.BankAccount.IBAN), props.Text{Size: 9, Left: classicPadLeft}),
 		col.New(4),
-		text.NewCol(4, fmt.Sprintf("%s: %s", i18n.T("pdf.due_date"), dueDate), props.Text{Size: 9, Style: fontstyle.Bold, Right: classicPadRight}),
+		text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.due_date"), dueDate), props.Text{Size: 9, Style: fontstyle.Bold, Right: classicPadRight}),
 	))
 
 	rows = append(rows, row.New(5).Add(
-		text.NewCol(4, fmt.Sprintf("%s: %s", i18n.T("pdf.variable_symbol"), data.Invoice.VariableSymbol), props.Text{Size: 9, Style: fontstyle.Bold, Left: classicPadLeft}),
+		text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.variable_symbol"), data.Invoice.VariableSymbol), props.Text{Size: 9, Style: fontstyle.Bold, Left: classicPadLeft}),
 		col.New(4),
-		text.NewCol(4, fmt.Sprintf("DUZP: %s", taxDate), props.Text{Size: 9, Right: classicPadRight}),
+		text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.taxable_date"), taxDate), props.Text{Size: 9, Right: classicPadRight}),
 	))
 
 	rows = append(rows, row.New(5).Add(
-		text.NewCol(4, fmt.Sprintf("%s: %s", i18n.T("pdf.payment_method"), data.Invoice.PaymentMethod), props.Text{Size: 9, Left: classicPadLeft}),
+		text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.payment_method"), data.Invoice.PaymentMethod), props.Text{Size: 9, Left: classicPadLeft}),
 		col.New(8),
 	))
 
 	return rows
 }
 
-func (t *ClassicTemplate) items(data *InvoiceData) []core.Row {
+func (t *ClassicTemplate) items(data *InvoiceData, lang i18n.Lang) []core.Row {
 	var rows []core.Row
 	currency := data.Invoice.Currency
 
 	rows = append(rows, row.New(8).Add(
-		text.NewCol(5, i18n.T("pdf.col_description"), props.Text{Size: 9, Style: fontstyle.Bold, Left: classicPadLeft}),
-		text.NewCol(1, i18n.T("pdf.col_quantity"), props.Text{Size: 9, Style: fontstyle.Bold, Align: align.Right}),
-		text.NewCol(1, i18n.T("pdf.col_unit"), props.Text{Size: 9, Style: fontstyle.Bold, Align: align.Center}),
-		text.NewCol(2, i18n.T("pdf.col_unit_price"), props.Text{Size: 9, Style: fontstyle.Bold, Align: align.Right}),
-		text.NewCol(1, i18n.T("pdf.col_vat_rate"), props.Text{Size: 9, Style: fontstyle.Bold, Align: align.Right}),
-		text.NewCol(2, i18n.T("pdf.col_total"), props.Text{Size: 9, Style: fontstyle.Bold, Align: align.Right, Right: classicPadRight}),
+		text.NewCol(5, i18n.TForLang(lang, "pdf.col_description"), props.Text{Size: 9, Style: fontstyle.Bold, Left: classicPadLeft}),
+		text.NewCol(1, i18n.TForLang(lang, "pdf.col_quantity"), props.Text{Size: 9, Style: fontstyle.Bold, Align: align.Right}),
+		text.NewCol(1, i18n.TForLang(lang, "pdf.col_unit"), props.Text{Size: 9, Style: fontstyle.Bold, Align: align.Center}),
+		text.NewCol(2, i18n.TForLang(lang, "pdf.col_unit_price"), props.Text{Size: 9, Style: fontstyle.Bold, Align: align.Right}),
+		text.NewCol(1, i18n.TForLang(lang, "pdf.col_vat_rate"), props.Text{Size: 9, Style: fontstyle.Bold, Align: align.Right}),
+		text.NewCol(2, i18n.TForLang(lang, "pdf.col_total"), props.Text{Size: 9, Style: fontstyle.Bold, Align: align.Right, Right: classicPadRight}),
 	))
 
 	rows = append(rows, row.New(1).Add(line.NewCol(12)))
@@ -195,27 +196,27 @@ func (t *ClassicTemplate) items(data *InvoiceData) []core.Row {
 	return rows
 }
 
-func (t *ClassicTemplate) totals(data *InvoiceData) []core.Row {
+func (t *ClassicTemplate) totals(data *InvoiceData, lang i18n.Lang) []core.Row {
 	var rows []core.Row
 	currency := data.Invoice.Currency
 
 	rows = append(rows, row.New(6).Add(
 		col.New(8),
-		text.NewCol(2, i18n.T("pdf.subtotal")+":", props.Text{Size: 10, Align: align.Right}),
+		text.NewCol(2, i18n.TForLang(lang, "pdf.subtotal")+":", props.Text{Size: 10, Align: align.Right}),
 		text.NewCol(2, formatSimple(data.Invoice.Subtotal, currency), props.Text{Size: 10, Align: align.Right, Right: classicPadRight}),
 	))
 
 	if data.Invoice.VATTotal > 0 {
 		rows = append(rows, row.New(6).Add(
 			col.New(8),
-			text.NewCol(2, i18n.T("pdf.vat_total")+":", props.Text{Size: 10, Align: align.Right}),
+			text.NewCol(2, i18n.TForLang(lang, "pdf.vat_total")+":", props.Text{Size: 10, Align: align.Right}),
 			text.NewCol(2, formatSimple(data.Invoice.VATTotal, currency), props.Text{Size: 10, Align: align.Right, Right: classicPadRight}),
 		))
 	}
 
 	rows = append(rows, row.New(8).Add(
 		col.New(8),
-		text.NewCol(2, i18n.T("pdf.total")+":", props.Text{Size: 12, Style: fontstyle.Bold, Align: align.Right}),
+		text.NewCol(2, i18n.TForLang(lang, "pdf.total")+":", props.Text{Size: 12, Style: fontstyle.Bold, Align: align.Right}),
 		text.NewCol(2, formatSimple(data.Invoice.Total, currency), props.Text{Size: 12, Style: fontstyle.Bold, Align: align.Right, Right: classicPadRight}),
 	))
 

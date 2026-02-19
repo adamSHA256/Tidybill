@@ -45,6 +45,23 @@ func Tf(key string, args ...interface{}) string {
 	return fmt.Sprintf(T(key), args...)
 }
 
+// TForLang returns a translated string for the given key using the specified language.
+// This is concurrency-safe as it does not mutate global state.
+func TForLang(lang Lang, key string) string {
+	if msg, ok := messages[lang][key]; ok {
+		return msg
+	}
+	if msg, ok := messages[CS][key]; ok {
+		return msg
+	}
+	return key
+}
+
+// TfForLang returns a formatted translated string using the specified language.
+func TfForLang(lang Lang, key string, args ...interface{}) string {
+	return fmt.Sprintf(TForLang(lang, key), args...)
+}
+
 // AvailableLanguages returns all supported language codes.
 func AvailableLanguages() []Lang {
 	return []Lang{CS, SK, EN}

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/adamSHA256/tidybill/internal/i18n"
 	"github.com/adamSHA256/tidybill/internal/service"
 )
 
@@ -139,6 +140,12 @@ func (s *Server) listTemplates(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	for _, t := range templates {
+		if t.IsBuiltin {
+			t.Name = i18n.T("template.name." + t.TemplateCode)
+			t.Description = i18n.T("template.desc." + t.TemplateCode)
+		}
+	}
 	writeJSON(w, http.StatusOK, templates)
 }
 
@@ -183,6 +190,10 @@ func (s *Server) updateTemplate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.Name != nil {
+		if existing.IsBuiltin {
+			writeError(w, http.StatusForbidden, "cannot rename built-in template")
+			return
+		}
 		existing.Name = *req.Name
 	}
 	if req.ShowLogo != nil {
@@ -248,7 +259,7 @@ func (s *Server) generateTemplatePreview(w http.ResponseWriter, r *http.Request)
 	if t.IsBuiltin {
 		yamlSource = ""
 	}
-	path, err := s.pdf.GeneratePreviewWithYAML(t.TemplateCode, yamlSource, opts)
+	path, err := s.pdf.GeneratePreviewWithYAML(t.TemplateCode, yamlSource, opts, i18n.GetLang())
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "preview generation failed: "+err.Error())
 		return
@@ -267,7 +278,7 @@ func (s *Server) generateAllPreviews(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	results, err := s.pdf.GenerateAllPreviews(templates)
+	results, err := s.pdf.GenerateAllPreviews(templates, i18n.GetLang())
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return

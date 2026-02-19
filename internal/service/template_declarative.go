@@ -114,6 +114,7 @@ type templateData struct {
 	BankAccount interface{}
 	Items       interface{}
 	Options     *TemplateOptions
+	Lang        i18n.Lang
 }
 
 func NewDeclarativeRenderer(yamlSource string) (*DeclarativeTemplate, error) {
@@ -152,6 +153,7 @@ func (d *DeclarativeTemplate) Render(m core.Maroto, data *InvoiceData, opts *Tem
 		BankAccount: data.BankAccount,
 		Items:       data.Items,
 		Options:     opts,
+		Lang:        invoiceLang(data),
 	}
 
 	for _, elem := range d.parsed.Layout {
@@ -460,7 +462,7 @@ func (d *DeclarativeTemplate) evalText(tmplStr string, td *templateData) string 
 	if !strings.Contains(tmplStr, "{{") {
 		return tmplStr
 	}
-	t, err := template.New("").Funcs(templateFuncs()).Parse(tmplStr)
+	t, err := template.New("").Funcs(templateFuncs(td.Lang)).Parse(tmplStr)
 	if err != nil {
 		return tmplStr
 	}
@@ -475,7 +477,7 @@ func (d *DeclarativeTemplate) evalItemText(tmplStr string, item interface{}, td 
 	if !strings.Contains(tmplStr, "{{") {
 		return tmplStr
 	}
-	t, err := template.New("").Funcs(templateFuncs()).Parse(tmplStr)
+	t, err := template.New("").Funcs(templateFuncs(td.Lang)).Parse(tmplStr)
 	if err != nil {
 		return tmplStr
 	}
@@ -488,7 +490,7 @@ func (d *DeclarativeTemplate) evalItemText(tmplStr string, item interface{}, td 
 
 func (d *DeclarativeTemplate) evalCondition(cond string, td *templateData) bool {
 	tmplStr := fmt.Sprintf("{{if %s}}true{{end}}", cond)
-	t, err := template.New("").Funcs(templateFuncs()).Parse(tmplStr)
+	t, err := template.New("").Funcs(templateFuncs(td.Lang)).Parse(tmplStr)
 	if err != nil {
 		return false
 	}
@@ -511,7 +513,7 @@ func (d *DeclarativeTemplate) rowHeight(v interface{}) float64 {
 }
 
 // templateFuncs returns the Go template functions available in YAML templates.
-func templateFuncs() template.FuncMap {
+func templateFuncs(lang i18n.Lang) template.FuncMap {
 	return template.FuncMap{
 		"date": func(t interface{}) string {
 			if tm, ok := t.(interface{ Format(string) string }); ok {
@@ -540,10 +542,10 @@ func templateFuncs() template.FuncMap {
 			return fmt.Sprintf("%v", v)
 		},
 		"label": func(key string) string {
-			return i18n.T(key)
+			return i18n.TForLang(lang, key)
 		},
 		"labelf": func(key string, args ...interface{}) string {
-			return i18n.Tf(key, args...)
+			return i18n.TfForLang(lang, key, args...)
 		},
 	}
 }

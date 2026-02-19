@@ -25,11 +25,17 @@ func (c *CLI) templatesMenu() {
 
 		fmt.Printf("  %s:\n", i18n.T("templates.available"))
 		for i, t := range templates {
+			name := t.Name
+			desc := t.Description
+			if t.IsBuiltin {
+				name = i18n.T("template.name." + t.TemplateCode)
+				desc = i18n.T("template.desc." + t.TemplateCode)
+			}
 			badge := ""
 			if t.IsDefault {
 				badge = fmt.Sprintf(" [%s]", i18n.T("templates.active"))
 			}
-			fmt.Printf("  %d) %-15s%s  - %s\n", i+1, t.Name, badge, t.Description)
+			fmt.Printf("  %d) %-15s%s  - %s\n", i+1, name, badge, desc)
 		}
 		fmt.Println()
 
@@ -95,7 +101,7 @@ func (c *CLI) previewAllTemplates(templates []*model.PDFTemplate) {
 	fmt.Println()
 	fmt.Println(i18n.T("templates.generating_all"))
 
-	results, err := c.pdfService.GenerateAllPreviews(templates)
+	results, err := c.pdfService.GenerateAllPreviews(templates, i18n.GetLang())
 	if err != nil {
 		c.printError(err.Error())
 		c.waitEnter()
@@ -147,7 +153,7 @@ func (c *CLI) previewOneTemplate(templates []*model.PDFTemplate) {
 	if t.IsBuiltin {
 		yamlSource = ""
 	}
-	path, err := c.pdfService.GeneratePreviewWithYAML(t.TemplateCode, yamlSource, opts)
+	path, err := c.pdfService.GeneratePreviewWithYAML(t.TemplateCode, yamlSource, opts, i18n.GetLang())
 	if err != nil {
 		c.printError(err.Error())
 		c.waitEnter()

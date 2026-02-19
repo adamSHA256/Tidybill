@@ -47,6 +47,11 @@ func main() {
 		log.Printf("Warning: failed to apply settings: %v", err)
 	}
 
+	// Load saved language (applies to both GUI and CLI modes)
+	if lang, err := settings.Get("language"); err == nil && lang != "" {
+		i18n.SetLang(i18n.Lang(lang))
+	}
+
 	if *gui {
 		// Web UI mode
 		srv := api.NewServer(db.DB, cfg)

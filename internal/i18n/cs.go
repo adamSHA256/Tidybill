@@ -291,7 +291,9 @@ var messagesCS = map[string]string{
 	"pdf.qr_payment":       "QR kód pro platbu",
 	"pdf.vat_payer":        "Plátce DPH",
 	"pdf.not_vat_payer":    "Nejsem plátce DPH",
-	"pdf.invoice_msg":      "Faktura %s",
+	"pdf.invoice_msg":              "Faktura %s",
+	"pdf.taxable_date":             "DÚZP",
+	"pdf.variable_symbol_short":    "VS",
 
 	// ── Items Catalog ───────────────────────────────────────────────────
 	"heading.new_item":            "NOVÁ POLOŽKA KATALOGU",
@@ -520,4 +522,22 @@ var messagesCS = map[string]string{
 	// ── Errors (new) ────────────────────────────────────────────────────
 	"error.invalid_option":  "Neplatná volba",
 	"error.no_bank_accounts": "Žádné bankovní účty",
+
+	// ── PDF Template Names ──────────────────────────────────────────────
+	"template.name.default": "Tabulková",
+	"template.name.classic": "Klasická",
+	"template.name.modern":  "Moderní",
+	"template.name.minimal": "Minimální",
+	"template.desc.default": "Šablona s šedým záhlavím a plnými okraji tabulky",
+	"template.desc.classic": "Tradiční černobílá faktura s čísly stránek a formálním rozložením",
+	"template.desc.modern":  "Současný design s ocelovým modrým akcentem a barevnou hierarchií",
+	"template.desc.minimal": "Minimalistický styl s maximem bílého prostoru a bez dekorací",
+
+	// ── Preview ─────────────────────────────────────────────────────────
+	"preview.notes":         "Toto je ukázkový dokument. Děkujeme za Vaši důvěru a těšíme se na další spolupráci.",
+	"preview.supplier_name": "Ukázková Firma s.r.o.",
+	"preview.customer_name": "Testovací Zákazník a.s.",
+	"preview.item1":         "Vývoj webové aplikace",
+	"preview.item2":         "Konzultace a analýza požadavků",
+	"preview.item3":         "Správa serveru (měsíční)",
 }
