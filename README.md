@@ -8,27 +8,32 @@
 
 ## Desktop App
 
-<img src="docs/screenshots/dashboard-gui.png" alt="Dashboard" width="700" />
-
 <table>
 <tr>
+<td><img src="docs/screenshots/dashboard-gui.png" alt="Dashboard" width="400" /></td>
 <td><img src="docs/screenshots/create-gui.png" alt="Create Invoice" width="400" /></td>
-<td><img src="docs/screenshots/detail-gui.png" alt="Invoice Detail" width="400" /></td>
 </tr>
 <tr>
+<td align="center"><em>Dashboard</em></td>
 <td align="center"><em>Create Invoice</em></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/detail-gui.png" alt="Invoice Detail" width="400" /></td>
+<td><img src="docs/screenshots/customers-gui.png" alt="Customers" width="400" /></td>
+</tr>
+<tr>
 <td align="center"><em>Invoice Detail</em></td>
+<td align="center"><em>Customers</em></td>
 </tr>
 </table>
 
 <details>
-<summary>More screenshots (PDF output, customers, suppliers)</summary>
+<summary>More screenshots (PDF output, suppliers)</summary>
 
 <img src="docs/screenshots/invoice-pdf.png" alt="Generated PDF" width="500" />
 
 *Generated PDF with QR payment code*
 
-<img src="docs/screenshots/customers-gui.png" alt="Customers" width="700" />
 <img src="docs/screenshots/suppliers.png" alt="Suppliers" width="700" />
 
 </details>
@@ -122,7 +127,7 @@
 - **Multiple PDF templates** — classic, modern, minimal with live preview
 - **Duplicate invoice** — quick-copy or edit-before-save
 - **SQLite database** — single-file storage, fast and portable
-- **Cross-platform** — Linux and Windows
+- **Cross-platform** — Linux, Windows, and macOS (CLI tested, desktop untested)
 
 ## Tech Stack
 
