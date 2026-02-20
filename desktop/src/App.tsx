@@ -21,16 +21,18 @@ import { api } from './api/client'
 export default function App() {
   const [wizardDone, setWizardDone] = useState(false)
 
-  const { data: firstRunData, isLoading } = useQuery({
+  const { data: firstRunData, isLoading, isError } = useQuery({
     queryKey: ['first-run'],
     queryFn: api.getFirstRun,
+    retry: 3,
+    retryDelay: 1000,
   })
 
   const showWizard = !wizardDone && firstRunData?.first_run === true
 
   return (
     <ApiHealthGuard>
-      {isLoading ? (
+      {(isLoading || (isError && !firstRunData)) ? (
         <Center h="100vh">
           <Loader />
         </Center>
