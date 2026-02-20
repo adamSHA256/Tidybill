@@ -1,29 +1,130 @@
-<img src="desktop/src/assets/tidybill_logo.png" alt="TidyBill" width="280" />
-
-**Clean invoices, zero clutter.** A local-first invoice manager for freelancers supports 3 languages.
+<div align="center">
+  <img src="desktop/src/assets/tidybill_logo.png" alt="TidyBill" width="280" />
+  <p><strong>Clean invoices, zero clutter.</strong></p>
+  <p>Local-first invoice manager for freelancers — CLI + Desktop GUI, 3 languages.</p>
+</div>
 
 ---
 
-## ✨ Features
+## Desktop App
 
-- **Full CLI interface** — create invoices, manage customers & suppliers from terminal
+<img src="docs/screenshots/dashboard-gui.png" alt="Dashboard" width="700" />
+
+<table>
+<tr>
+<td><img src="docs/screenshots/create-gui.png" alt="Create Invoice" width="400" /></td>
+<td><img src="docs/screenshots/detail-gui.png" alt="Invoice Detail" width="400" /></td>
+</tr>
+<tr>
+<td align="center"><em>Create Invoice</em></td>
+<td align="center"><em>Invoice Detail</em></td>
+</tr>
+</table>
+
+<details>
+<summary>More screenshots (PDF output, customers, suppliers)</summary>
+
+<img src="docs/screenshots/invoice-pdf.png" alt="Generated PDF" width="500" />
+
+*Generated PDF with QR payment code*
+
+<img src="docs/screenshots/customers-gui.png" alt="Customers" width="700" />
+<img src="docs/screenshots/suppliers.png" alt="Suppliers" width="700" />
+
+</details>
+
+## CLI
+
+```
+╔═════════════════════════════════════════════════════════════╗
+║                       TIDYBILL v0.1                         ║
+║  Company: Smith & Co. Digital                               ║
+╠═════════════════════════════════════════════════════════════╣
+║                                                             ║
+  1) Create new invoice
+  2) Create invoice from existing
+  3) Invoice list
+  4) Unpaid invoices                     [4 unpaid, 1 overdue]
+  5) Customers
+  6) Item catalog
+  7) Suppliers (your companies)
+  8) Sync / Import / Export
+  9) PDF templates
+  S) Settings
+  W) Overview
+  0) Quit
+```
+
+<details>
+<summary>Invoice list</summary>
+
+```
+=== INVOICE LIST ===
+
+  1) 📝 INV26-00005 | 18.02.2026 | EuroTrade GmbH        |   8 640.00 EUR
+  2) 📄 JD26-00001  | 08.02.2026 | City Council of Bath  |   1 925.00 GBP
+  3) 📄 INV26-00003 | 01.02.2026 | Northern Brewery Co.  |     528.00 GBP
+  4) ✅ INV26-00002 | 18.01.2026 | Green Garden Services |   3 800.00 GBP
+  5) ⚠️ INV26-00004  | 08.01.2026 | Sarah Williams        |   1 380.00 GBP
+  6) ✅ INV26-00001 | 03.01.2026 | TechVentures Ltd      |  11 280.00 GBP
+
+  F) Filter
+  0) Back
+```
+
+</details>
+
+<details>
+<summary>Creating an invoice</summary>
+
+```
+══════════════════════════════════════════════════════════════
+                      INVOICE SUMMARY
+══════════════════════════════════════════════════════════════
+  Invoice number:  INV26-00006
+  Customer:        EuroTrade GmbH
+  Date:            20.02.2026
+  Due date:        22.03.2026
+
+  Items:
+    1x  Algo                         100.00 EUR  →  110.00 EUR
+    1x  Leaflet printing A5 (100pcs)  35.00 EUR  →   42.00 EUR
+
+                                Subtotal:   135.00 EUR
+                                VAT:         17.00 EUR
+                                ─────────────────────
+                                TOTAL:      152.00 EUR
+══════════════════════════════════════════════════════════════
+
+  U) Save invoice
+  Z) Cancel
+
+  Choice [u]: u
+
+  ✓ Invoice INV26-00006 created!
+  Generate PDF? [Y/n]: y
+  ✓ PDF created: ~/PATH/COMPANY/2026/INV26-00006.pdf
+  Open PDF? [Y/n]: y
+```
+
+</details>
+
+## Features
+
+- **Full CLI + Desktop GUI** — terminal for power users, Tauri-based desktop app for everyone else
 - **PDF generation** — professional invoices with QR payment codes (SPAYD format)
-- **Items catalog** — reusable items with smart suggestions, customer price history, recent items
-- **Duplicate invoice** — quick-copy or edit-before-save with e1/x1 item shortcuts
-- **Edit draft invoices** — change customer, dates, notes, items before sending
-- **Invoice filters** — filter by status, customer, or date range
-- **Multi-language** — Czech, Slovak, and English (CLI + PDF output)
-- **SQLite database** — single-file storage, fast and portable
+- **Multi-language** — Czech, Slovak, and English (UI + PDF output)
+- **Items catalog** — reusable items with smart suggestions and customer price history
 - **Multi-supplier** — manage multiple companies from one installation
-- **Multi-currency** — CZK, EUR, and others with per-supplier bank accounts
-- **Bank account management** — add, edit, delete accounts with safety guards
-- **Smart numbering** — automatic invoice numbers (VF26-00001 format)
+- **Multi-currency** — CZK, EUR, GBP and others with per-supplier bank accounts
 - **Status tracking** — draft, sent, paid, overdue, cancelled with unpaid overview
-- **Desktop app** — Tauri-based GUI with dashboard, template management, and health monitoring
+- **Smart numbering** — automatic invoice numbers with configurable prefix
 - **Multiple PDF templates** — classic, modern, minimal with live preview
-- **Cross-platform** — runs on Linux and Windows
+- **Duplicate invoice** — quick-copy or edit-before-save
+- **SQLite database** — single-file storage, fast and portable
+- **Cross-platform** — Linux and Windows
 
-## 🛠 Tech Stack
+## Tech Stack
 
 | Component | Technology |
 |-----------|-----------|
@@ -34,7 +135,7 @@
 | Frontend | React 19, TypeScript, Mantine 8 |
 | Distribution | CLI: single binary / Desktop: AppImage, deb, rpm |
 
-## 🚀 Quick Start
+## Quick Start
 
 ### CLI
 
@@ -45,50 +146,13 @@ make build
 
 On first run, TidyBill walks you through setting up your company profile and bank account.
 
-### Desktop app
+### Desktop App
 
 ```bash
 make desktop         # Build AppImage, deb, rpm
-make desktop-dev     # Run in dev mode (hot-reload)
 ```
 
 Requires: Go, Node.js, pnpm, Rust toolchain, Tauri 2 CLI.
-
-### Cross-compile CLI
-
-```bash
-make build-linux     # Linux amd64
-make build-windows   # Windows amd64
-make build-all       # Both
-```
-
-## 📋 Usage
-
-TidyBill uses an interactive terminal menu:
-
-```
-╔════════════════════════════════════════════════════════════╗
-║                      TIDYBILL v0.1                         ║
-║  Firma: Your Company s.r.o.                                ║
-╠════════════════════════════════════════════════════════════╣
-║                                                            ║
-  1) Create new invoice
-  2) Create invoice from existing
-  3) List invoices
-  4) Unpaid invoices                     [3 unpaid, 1 overdue]
-  5) Customers
-  6) Items catalog
-  7) Suppliers (your companies)
-  ...
-```
-
-### Invoice workflow
-
-1. Select customer (or create new)
-2. Add line items with quantity, price, VAT
-3. Review summary
-4. Save and generate PDF
-5. PDF includes QR code for bank payment
 
 ### Data location
 
@@ -98,16 +162,16 @@ TidyBill uses an interactive terminal menu:
 | Windows | `%APPDATA%\TidyBill\` |
 | macOS | `~/Library/Application Support/TidyBill/` |
 
-## 🗺 Roadmap
+## Roadmap
 
-- [x] **Phase 1** — CLI core (suppliers, customers, invoices, database)
-- [x] **Phase 2** — PDF generation with Maroto + QR codes
-- [x] **Phase 3** — Full CLI features (items catalog, duplicate, edit draft, filters, bank account mgmt)
-- [x] **Phase 4** — Internationalization (CS/SK/EN) — locale-specific formatting still WIP
-- [ ] **Phase 5** — Encrypted export/import for device sync
-- [x] **Phase 6** — Desktop app (Tauri 2 + React GUI with Go sidecar)
-- [x] **Phase 7** — PDF templates (classic, modern, minimal, default) & Linux packages (AppImage, deb, rpm)
+- [x] CLI core (suppliers, customers, invoices, database)
+- [x] PDF generation with Maroto + QR codes
+- [x] Full CLI features (items catalog, duplicate, edit draft, filters, bank accounts)
+- [x] Internationalization (CS/SK/EN)
+- [x] Desktop app (Tauri 2 + React GUI with Go sidecar)
+- [x] PDF templates (classic, modern, minimal) + Linux packages
+- [ ] Encrypted export/import for device sync
 
-## 📄 License
+## License
 
-MIT
+[MIT](LICENSE)
