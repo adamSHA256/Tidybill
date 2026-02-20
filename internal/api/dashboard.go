@@ -66,12 +66,12 @@ func (s *Server) getDashboardStats(w http.ResponseWriter, r *http.Request) {
 
 	for _, inv := range allInvoices {
 		// Revenue this month (paid invoices)
-		if inv.Status == model.StatusPaid && inv.IssueDate.After(monthStart) {
+		if inv.Status == model.StatusPaid && !inv.IssueDate.Before(monthStart) {
 			stats.TotalRevenueMonth += inv.Total
 			revByCur[inv.Currency] += inv.Total
 		}
 		// Invoices this month
-		if inv.IssueDate.After(monthStart) {
+		if !inv.IssueDate.Before(monthStart) {
 			stats.InvoicesThisMonth++
 		}
 		// Unpaid amount
