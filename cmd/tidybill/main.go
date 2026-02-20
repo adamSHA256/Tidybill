@@ -84,7 +84,7 @@ func main() {
 			go func() {
 				for {
 					time.Sleep(2 * time.Second)
-					if err := syscall.Kill(*parentPID, 0); err != nil {
+					if !isProcessAlive(*parentPID) {
 						log.Println("[tidybill] parent process gone, shutting down")
 						httpServer.Shutdown(context.Background())
 						close(shutdown)
@@ -127,3 +127,4 @@ func main() {
 		}
 	}
 }
+

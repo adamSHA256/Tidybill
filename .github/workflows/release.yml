@@ -64,24 +64,28 @@ jobs:
             goos: linux
             goarch: amd64
             tauri-args: ""
+            ext: ""
 
           - os: windows-latest
             rust-target: x86_64-pc-windows-msvc
             goos: windows
             goarch: amd64
             tauri-args: ""
+            ext: ".exe"
 
           - os: macos-latest
             rust-target: aarch64-apple-darwin
             goos: darwin
             goarch: arm64
             tauri-args: "--target aarch64-apple-darwin"
+            ext: ""
 
-          - os: macos-13
+          - os: macos-latest
             rust-target: x86_64-apple-darwin
             goos: darwin
             goarch: amd64
             tauri-args: "--target x86_64-apple-darwin"
+            ext: ""
 
     runs-on: ${{ matrix.os }}
 
@@ -131,12 +135,11 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: "0"
+        shell: bash
         run: |
           mkdir -p desktop/src-tauri/binaries
-          EXT=""
-          if [ "${{ matrix.goos }}" = "windows" ]; then EXT=".exe"; fi
           go build -ldflags="-s -w -X github.com/adamSHA256/tidybill/internal/config.Version=${{ github.ref_name }}" \
-            -o "desktop/src-tauri/binaries/tidybill-${{ matrix.rust-target }}${EXT}" ./cmd/tidybill/
+            -o "desktop/src-tauri/binaries/tidybill-${{ matrix.rust-target }}${{ matrix.ext }}" ./cmd/tidybill/
 
       - name: Install frontend dependencies
         working-directory: desktop
