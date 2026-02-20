@@ -56,7 +56,7 @@ func main() {
 		// Web UI mode
 		srv := api.NewServer(db.DB, cfg)
 
-		listener, err := net.Listen("tcp", ":"+*port)
+		listener, err := net.Listen("tcp", "127.0.0.1:"+*port)
 		if err != nil {
 			log.Fatalf("Failed to listen: %v", err)
 		}
