@@ -618,7 +618,7 @@ export function Settings() {
                     setLocalVATRates(localVATRates.map((rate, idx) => ({ ...rate, is_default: idx === i })))
                   }}
                 >
-                  {r.rate}%{r.name ? ` (${r.name})` : ''}
+                  {r.rate}%
                 </Pill>
               ))}
             </Group>
