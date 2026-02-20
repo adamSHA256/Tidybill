@@ -20,7 +20,7 @@ else
   TRIPLE := x86_64-pc-windows-msvc
 endif
 
-.PHONY: build run clean build-linux build-windows build-all desktop desktop-sidecar desktop-dev seed
+.PHONY: build run clean build-linux build-windows build-all desktop desktop-sidecar desktop-dev seed check
 
 # === CLI targets (unchanged) ===
 build:
@@ -53,6 +53,13 @@ desktop-sidecar:
 
 desktop-dev: desktop-sidecar
 	cd desktop && pnpm tauri dev
+
+# === Check (same as CI) ===
+check:
+	go build ./...
+	go vet ./...
+	go test ./...
+	cd desktop && pnpm tsc -b && pnpm lint
 
 # === Seed test data ===
 # Usage: make seed L=cs  (or sk, en)
