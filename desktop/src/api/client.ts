@@ -343,10 +343,17 @@ export interface AboutInfo {
   bitcoin_address: string
 }
 
+export interface CurrencyAmount {
+  currency: string
+  amount: number
+}
+
 export interface DashboardStats {
   total_revenue_month: number
+  revenue_by_currency: CurrencyAmount[]
   unpaid_count: number
   unpaid_amount: number
+  unpaid_by_currency: CurrencyAmount[]
   overdue_count: number
   active_customers: number
   invoices_this_month: number
@@ -472,9 +479,9 @@ export async function openFolder(filePath: string): Promise<void> {
   }
 }
 
-// Helper to format Czech money
-export function formatMoney(amount: number, currency = 'Kc'): string {
-  return amount.toLocaleString('cs-CZ', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' ' + currency
+export function formatMoney(amount: number, currency = ''): string {
+  const formatted = amount.toLocaleString('cs-CZ', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+  return currency ? formatted + ' ' + currency : formatted
 }
 
 // Helper to format date from ISO to Czech format

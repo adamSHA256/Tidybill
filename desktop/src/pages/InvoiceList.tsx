@@ -193,7 +193,7 @@ export function InvoiceList() {
                     <Table.Td fz="sm">{inv.customer?.name || '—'}</Table.Td>
                     <Table.Td fz="sm">{formatDate(inv.issue_date)}</Table.Td>
                     <Table.Td fz="sm">{formatDate(inv.due_date)}</Table.Td>
-                    <Table.Td fz="sm" fw={600}>{formatMoney(inv.total)}</Table.Td>
+                    <Table.Td fz="sm" fw={600}>{formatMoney(inv.total, inv.currency)}</Table.Td>
                     <Table.Td>
                       <Badge color={statusColors[inv.status]} size="sm" variant="light">
                         {t(`status.${inv.status}`)}

@@ -103,7 +103,13 @@ export function Dashboard() {
         {widgets.revenue && (
           <Paper p="md" radius="md" withBorder>
             <Text size="xs" c="dimmed">{t('dashboard.total_revenue')}</Text>
-            <Title order={2} mt={4}>{formatMoney(stats?.total_revenue_month || 0)}</Title>
+            {(stats?.revenue_by_currency || []).length > 0 ? (
+              (stats!.revenue_by_currency).map((rc: { currency: string; amount: number }) => (
+                <Title order={2} mt={4} key={rc.currency}>{formatMoney(rc.amount, rc.currency)}</Title>
+              ))
+            ) : (
+              <Title order={2} mt={4}>0</Title>
+            )}
           </Paper>
         )}
 
@@ -113,8 +119,12 @@ export function Dashboard() {
             <Title order={2} mt={4} c={stats?.unpaid_count ? 'red' : undefined}>
               {stats?.unpaid_count || 0}
             </Title>
-            {(stats?.unpaid_amount || 0) > 0 && (
-              <Text size="xs" c="red" mt={4}>{t('dashboard.outstanding').replace('{amount}', formatMoney(stats!.unpaid_amount))}</Text>
+            {(stats?.unpaid_by_currency || []).length > 0 && (
+              <Stack gap={0} mt={4}>
+                {(stats!.unpaid_by_currency).map((uc: { currency: string; amount: number }) => (
+                  <Text size="xs" c="red" key={uc.currency}>{t('dashboard.outstanding').replace('{amount}', formatMoney(uc.amount, uc.currency))}</Text>
+                ))}
+              </Stack>
             )}
           </Paper>
         )}
@@ -161,7 +171,7 @@ export function Dashboard() {
                     <Table.Tr key={inv.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/invoices/${inv.id}`)}>
                       <Table.Td fw={600} ff="monospace" fz="sm">{inv.invoice_number}</Table.Td>
                       <Table.Td fz="sm">{inv.customer?.name || '—'}</Table.Td>
-                      <Table.Td fz="sm">{formatMoney(inv.total)}</Table.Td>
+                      <Table.Td fz="sm">{formatMoney(inv.total, inv.currency)}</Table.Td>
                       <Table.Td>
                         <Badge color={statusColors[inv.status]} size="sm" variant="light">
                           {t(`status.${inv.status}`)}
@@ -205,7 +215,7 @@ export function Dashboard() {
                   return (
                     <div key={inv.id}>
                       <Text size="sm" fw={500}>{inv.invoice_number} — {inv.customer?.name || '—'}</Text>
-                      <Text size="xs" c="red">{formatMoney(inv.total)} — {t('dashboard.days_overdue').replace('{days}', String(daysOverdue))}</Text>
+                      <Text size="xs" c="red">{formatMoney(inv.total, inv.currency)} — {t('dashboard.days_overdue').replace('{days}', String(daysOverdue))}</Text>
                     </div>
                   )
                 })}

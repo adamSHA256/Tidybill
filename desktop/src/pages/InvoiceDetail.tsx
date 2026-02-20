@@ -304,9 +304,9 @@ export function InvoiceDetail() {
                 </Table.Td>
                 <Table.Td fz="sm">{item.quantity}</Table.Td>
                 <Table.Td fz="sm">{item.unit}</Table.Td>
-                <Table.Td fz="sm">{formatMoney(item.unit_price)}</Table.Td>
+                <Table.Td fz="sm">{formatMoney(item.unit_price, invoice.currency)}</Table.Td>
                 <Table.Td fz="sm">{item.vat_rate}%</Table.Td>
-                <Table.Td fz="sm" fw={600} ta="right">{formatMoney(item.subtotal)}</Table.Td>
+                <Table.Td fz="sm" fw={600} ta="right">{formatMoney(item.subtotal, invoice.currency)}</Table.Td>
               </Table.Tr>
             ))}
           </Table.Tbody>
@@ -317,11 +317,11 @@ export function InvoiceDetail() {
         <Stack gap={4} align="end" pr="xl">
           <Group>
             <Text size="sm" c="dimmed" w={180} ta="right">{t('invoice.subtotal')}</Text>
-            <Text size="sm" fw={600} w={120} ta="right">{formatMoney(invoice.subtotal)}</Text>
+            <Text size="sm" fw={600} w={120} ta="right">{formatMoney(invoice.subtotal, invoice.currency)}</Text>
           </Group>
           <Group>
             <Text size="sm" c="dimmed" w={180} ta="right">{t('invoice.vat')}</Text>
-            <Text size="sm" fw={600} w={120} ta="right">{formatMoney(invoice.vat_total)}</Text>
+            <Text size="sm" fw={600} w={120} ta="right">{formatMoney(invoice.vat_total, invoice.currency)}</Text>
           </Group>
           <Divider w={300} />
           <Group>
