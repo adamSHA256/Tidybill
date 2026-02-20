@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/adamSHA256/tidybill/internal/i18n"
@@ -51,7 +52,7 @@ func (c *CLI) firstRunWizard() error {
 
 	supplier.Name = c.prompt(i18n.T("prompt.company_name"))
 	if supplier.Name == "" {
-		return fmt.Errorf(i18n.T("error.name_required_lower"))
+		return errors.New(i18n.T("error.name_required_lower"))
 	}
 
 	supplier.Street = c.prompt(i18n.T("prompt.street"))
@@ -98,7 +99,7 @@ func (c *CLI) firstRunWizard() error {
 	fmt.Println()
 
 	if !c.confirm(i18n.T("confirm.save_data")) {
-		return fmt.Errorf(i18n.T("error.cancelled_by_user"))
+		return errors.New(i18n.T("error.cancelled_by_user"))
 	}
 
 	// Save supplier

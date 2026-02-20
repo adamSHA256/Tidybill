@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', 'src-tauri']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -18,6 +18,18 @@ export default defineConfig([
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
+    },
+    rules: {
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/static-components': 'off',
+      'react-hooks/purity': 'off',
+      'react-refresh/only-export-components': ['error', { allowConstantExport: true }],
+    },
+  },
+  {
+    files: ['src/main.tsx', 'src/i18n.tsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
     },
   },
 ])

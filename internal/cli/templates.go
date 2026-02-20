@@ -459,7 +459,7 @@ func (c *CLI) deleteCustomTemplate(templates []*model.PDFTemplate) {
 
 func (c *CLI) showAIPrompt() {
 	fmt.Println()
-	fmt.Println(service.TemplateEditingAIPrompt)
+	fmt.Printf("%s", service.TemplateEditingAIPrompt)
 	c.waitEnter()
 }
 
