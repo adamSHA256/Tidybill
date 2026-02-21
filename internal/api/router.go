@@ -143,9 +143,10 @@ func (s *Server) Router() http.Handler {
 }
 
 var allowedOrigins = map[string]bool{
-	"http://localhost:5173": true,
-	"tauri://localhost":     true,
+	"http://localhost:5173":   true,
+	"tauri://localhost":       true,
 	"https://tauri.localhost": true,
+	"http://tauri.localhost":  true,
 }
 
 func corsMiddleware(next http.Handler) http.Handler {

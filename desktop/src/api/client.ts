@@ -15,7 +15,7 @@ export async function initApiBase(): Promise<void> {
   for (let i = 0; i < maxAttempts; i++) {
     const port = await invoke<number>('get_api_port')
     if (port > 0) {
-      resolvedApiBase = `http://localhost:${port}/api`
+      resolvedApiBase = `http://127.0.0.1:${port}/api`
       return
     }
     await new Promise((r) => setTimeout(r, 200))
