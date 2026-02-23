@@ -139,5 +139,8 @@ func (s *Server) updateSettings(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Sync PDFService directories with updated config
+	s.pdf.UpdateDirs(s.cfg.PDFDir, s.cfg.PreviewDir)
+
 	s.getSettings(w, r)
 }

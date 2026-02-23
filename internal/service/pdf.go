@@ -28,6 +28,16 @@ func NewPDFService(pdfDir, previewDir string) *PDFService {
 	}
 }
 
+// UpdateDirs updates the output directories after a settings change.
+func (s *PDFService) UpdateDirs(pdfDir, previewDir string) {
+	if pdfDir != "" {
+		s.pdfDir = pdfDir
+	}
+	if previewDir != "" {
+		s.previewDir = previewDir
+	}
+}
+
 type InvoiceData struct {
 	Invoice     *model.Invoice
 	Supplier    *model.Supplier

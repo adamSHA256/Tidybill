@@ -472,7 +472,8 @@ export async function openFolder(filePath: string): Promise<void> {
   try {
     if (isTauri()) {
       const { open } = await import('@tauri-apps/plugin-shell')
-      const dir = filePath.substring(0, filePath.lastIndexOf('/'))
+      const lastSep = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'))
+      const dir = filePath.substring(0, lastSep)
       await open(dir)
     }
   } catch (err) {
