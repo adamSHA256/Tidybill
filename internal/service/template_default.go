@@ -113,9 +113,10 @@ func (t *DefaultTemplate) addParties(m core.Maroto, data *InvoiceData, opts *Tem
 			text.New(fmt.Sprintf("%s %s", data.Supplier.ZIP, data.Supplier.City), props.Text{Size: 9, Top: 14}),
 			text.New(i18n.TfForLang(lang, "pdf.ico", data.Supplier.ICO), props.Text{Size: 9, Top: 22}),
 			text.New(i18n.TfForLang(lang, "pdf.dic", data.Supplier.DIC), props.Text{Size: 9, Top: 26}),
-			text.New(i18n.TfForLang(lang, "pdf.phone", data.Supplier.Phone), props.Text{Size: 9, Top: 34}),
-			text.New(i18n.TfForLang(lang, "pdf.email", data.Supplier.Email), props.Text{Size: 9, Top: 38}),
-			text.New(t.vatPayerText(data.Supplier.IsVATPayer, lang), props.Text{Size: 8, Style: fontstyle.Italic, Top: 48}),
+			text.New(func() string { if data.Supplier.ICDPH != "" { return i18n.TfForLang(lang, "pdf.ic_dph", data.Supplier.ICDPH) }; return "" }(), props.Text{Size: 9, Top: 30}),
+			text.New(i18n.TfForLang(lang, "pdf.phone", data.Supplier.Phone), props.Text{Size: 9, Top: 38}),
+			text.New(i18n.TfForLang(lang, "pdf.email", data.Supplier.Email), props.Text{Size: 9, Top: 42}),
+			text.New(t.vatPayerText(data.Supplier.IsVATPayer, lang), props.Text{Size: 8, Style: fontstyle.Italic, Top: 52}),
 		),
 		col.New(4).Add(
 			text.New(i18n.TForLang(lang, "pdf.customer"), props.Text{Size: 10, Style: fontstyle.Bold}),
@@ -125,6 +126,7 @@ func (t *DefaultTemplate) addParties(m core.Maroto, data *InvoiceData, opts *Tem
 			text.New(i18n.TfForLang(lang, "pdf.country", data.Customer.Country), props.Text{Size: 9, Top: 18}),
 			text.New(i18n.TfForLang(lang, "pdf.ico", data.Customer.ICO), props.Text{Size: 9, Top: 26}),
 			text.New(i18n.TfForLang(lang, "pdf.dic", data.Customer.DIC), props.Text{Size: 9, Top: 30}),
+			text.New(func() string { if data.Customer.ICDPH != "" { return i18n.TfForLang(lang, "pdf.ic_dph", data.Customer.ICDPH) }; return "" }(), props.Text{Size: 9, Top: 34}),
 		),
 		col.New(4).Add(rightTexts...),
 	)

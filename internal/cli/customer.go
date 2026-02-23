@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/adamSHA256/tidybill/internal/i18n"
 	"github.com/adamSHA256/tidybill/internal/model"
@@ -83,6 +84,9 @@ func (c *CLI) createCustomer() *model.Customer {
 	cust.Country = c.promptDefault(i18n.T("prompt.country"), "CZ")
 	cust.ICO = c.prompt(i18n.T("prompt.ico"))
 	cust.DIC = c.prompt(i18n.T("prompt.dic"))
+	if strings.ToUpper(cust.Country) == "SK" {
+		cust.ICDPH = c.prompt(i18n.T("prompt.ic_dph"))
+	}
 	cust.Email = c.prompt(i18n.T("prompt.email"))
 	cust.Phone = c.prompt(i18n.T("prompt.phone"))
 	cust.DefaultDueDays = c.promptInt(i18n.T("prompt.default_due_days"), c.getDefaultDueDaysInt())
@@ -110,6 +114,9 @@ func (c *CLI) editCustomer(cust *model.Customer) {
 		}
 		fmt.Printf("  "+i18n.T("label.ico")+"\n", cust.ICO)
 		fmt.Printf("  "+i18n.T("label.dic")+"\n", cust.DIC)
+		if cust.ICDPH != "" {
+			fmt.Printf("  "+i18n.T("label.ic_dph")+"\n", cust.ICDPH)
+		}
 		fmt.Printf("  "+i18n.T("label.email_full")+"\n", cust.Email)
 		fmt.Printf("  "+i18n.T("label.phone_full")+"\n", cust.Phone)
 		fmt.Printf("  "+i18n.T("label.due_days")+"\n", cust.DefaultDueDays)
@@ -165,6 +172,9 @@ func (c *CLI) editCustomerDetails(cust *model.Customer) {
 	cust.Country = c.promptDefault(i18n.T("prompt.country"), cust.Country)
 	cust.ICO = c.promptDefault(i18n.T("prompt.ico"), cust.ICO)
 	cust.DIC = c.promptDefault(i18n.T("prompt.dic"), cust.DIC)
+	if strings.ToUpper(cust.Country) == "SK" {
+		cust.ICDPH = c.promptDefault(i18n.T("prompt.ic_dph"), cust.ICDPH)
+	}
 	cust.Email = c.promptDefault(i18n.T("prompt.email"), cust.Email)
 	cust.Phone = c.promptDefault(i18n.T("prompt.phone"), cust.Phone)
 	cust.DefaultDueDays = c.promptInt(i18n.T("prompt.due_days"), cust.DefaultDueDays)

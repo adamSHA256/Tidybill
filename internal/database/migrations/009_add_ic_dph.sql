@@ -1,0 +1,2 @@
+ALTER TABLE suppliers ADD COLUMN ic_dph TEXT DEFAULT '';
+ALTER TABLE customers ADD COLUMN ic_dph TEXT DEFAULT '';

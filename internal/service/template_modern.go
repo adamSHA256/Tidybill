@@ -125,6 +125,21 @@ func (t *ModernTemplate) parties(data *InvoiceData, lang i18n.Lang) []core.Row {
 		))
 	}
 
+	if data.Supplier.ICDPH != "" || data.Customer.ICDPH != "" {
+		sICDPH, cICDPH := "", ""
+		if data.Supplier.ICDPH != "" {
+			sICDPH = i18n.TfForLang(lang, "pdf.ic_dph", data.Supplier.ICDPH)
+		}
+		if data.Customer.ICDPH != "" {
+			cICDPH = i18n.TfForLang(lang, "pdf.ic_dph", data.Customer.ICDPH)
+		}
+		rows = append(rows, row.New(5).Add(
+			text.NewCol(5, sICDPH, props.Text{Size: 9}),
+			col.New(2),
+			text.NewCol(5, cICDPH, props.Text{Size: 9}),
+		))
+	}
+
 	return rows
 }
 

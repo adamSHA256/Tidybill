@@ -94,6 +94,7 @@ export function InvoiceEdit() {
   const [cName, setCName] = useState('')
   const [cIco, setCIco] = useState('')
   const [cDic, setCDic] = useState('')
+  const [cIcDph, setCIcDph] = useState('')
   const [cStreet, setCStreet] = useState('')
   const [cCity, setCCity] = useState('')
   const [cZip, setCZip] = useState('')
@@ -284,7 +285,7 @@ export function InvoiceEdit() {
   })
 
   const openCustomerModal = () => {
-    setCName(''); setCIco(''); setCDic(''); setCStreet(''); setCCity(''); setCZip('')
+    setCName(''); setCIco(''); setCDic(''); setCIcDph(''); setCStreet(''); setCCity(''); setCZip('')
     setCCountry('CZ'); setCEmail(''); setCPhone(''); setCDueDays(0); setCNotes('')
     setCustomerModalOpen(true)
   }
@@ -300,7 +301,7 @@ export function InvoiceEdit() {
       return
     }
     createCustomerMutation.mutate({
-      name: cName, ico: cIco, dic: cDic, street: cStreet, city: cCity, zip: cZip,
+      name: cName, ico: cIco, dic: cDic, ic_dph: cIcDph, street: cStreet, city: cCity, zip: cZip,
       country: cCountry, email: cEmail, phone: cPhone, default_due_days: cDueDays, notes: cNotes,
     })
   }
@@ -603,7 +604,7 @@ export function InvoiceEdit() {
                 <Stack gap={4}>
                   <Text size="sm" fw={600}>{selectedSupplier.name}</Text>
                   <Text size="sm" c="dimmed">
-                    ICO: {selectedSupplier.ico}{selectedSupplier.dic && ` | DIC: ${selectedSupplier.dic}`}
+                    ICO: {selectedSupplier.ico}{selectedSupplier.dic && ` | DIC: ${selectedSupplier.dic}`}{selectedSupplier.ic_dph && ` | I\u010C DPH: ${selectedSupplier.ic_dph}`}
                   </Text>
                   <Text size="sm" c="dimmed">{selectedSupplier.street}, {selectedSupplier.city}, {selectedSupplier.zip}</Text>
                 </Stack>
@@ -640,7 +641,7 @@ export function InvoiceEdit() {
               {selectedCustomer && (
                 <Stack gap={4} mt="sm">
                   <Text size="sm" c="dimmed">
-                    ICO: {selectedCustomer.ico}{selectedCustomer.dic && ` | DIC: ${selectedCustomer.dic}`}
+                    ICO: {selectedCustomer.ico}{selectedCustomer.dic && ` | DIC: ${selectedCustomer.dic}`}{selectedCustomer.ic_dph && ` | I\u010C DPH: ${selectedCustomer.ic_dph}`}
                   </Text>
                   <Text size="sm" c="dimmed">{selectedCustomer.street}, {selectedCustomer.city}, {selectedCustomer.zip}</Text>
                 </Stack>
@@ -798,6 +799,10 @@ export function InvoiceEdit() {
                 <TextInput label={t('customer.dic_label')} value={cDic}
                   onChange={(e) => setCDic(e.currentTarget.value)} />
               </Group>
+              {cCountry.toUpperCase() === 'SK' && (
+                <TextInput label={t('customer.ic_dph_label')} value={cIcDph}
+                  onChange={(e) => setCIcDph(e.currentTarget.value)} />
+              )}
               <TextInput label={t('customer.street_label')} value={cStreet}
                 onChange={(e) => setCStreet(e.currentTarget.value)} />
               <Group grow>

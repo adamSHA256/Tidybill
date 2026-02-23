@@ -72,12 +72,14 @@ layout:
             style: { size: 9, top: 22 }
           - text: "{{ labelf \"pdf.dic\" .Supplier.DIC }}"
             style: { size: 9, top: 26 }
+          - text: "{{ if .Supplier.ICDPH }}{{ labelf \"pdf.ic_dph\" .Supplier.ICDPH }}{{ end }}"
+            style: { size: 9, top: 30 }
           - text: "{{ labelf \"pdf.phone\" .Supplier.Phone }}"
-            style: { size: 9, top: 34 }
-          - text: "{{ labelf \"pdf.email\" .Supplier.Email }}"
             style: { size: 9, top: 38 }
+          - text: "{{ labelf \"pdf.email\" .Supplier.Email }}"
+            style: { size: 9, top: 42 }
           - text: "{{ if .Supplier.IsVATPayer }}{{ label \"pdf.vat_payer\" }}{{ else }}{{ label \"pdf.not_vat_payer\" }}{{ end }}"
-            style: { size: 8, italic: true, top: 48 }
+            style: { size: 8, italic: true, top: 52 }
       - width: 4
         texts:
           - text: "{{ label \"pdf.customer\" }}"
@@ -94,6 +96,8 @@ layout:
             style: { size: 9, top: 26 }
           - text: "{{ labelf \"pdf.dic\" .Customer.DIC }}"
             style: { size: 9, top: 30 }
+          - text: "{{ if .Customer.ICDPH }}{{ labelf \"pdf.ic_dph\" .Customer.ICDPH }}{{ end }}"
+            style: { size: 9, top: 34 }
       - width: 4
         texts:
           - text: "{{ label \"pdf.issue_date\" }}"
@@ -338,6 +342,16 @@ layout:
       - width: 4
       - width: 4
         text: "{{ labelf \"pdf.dic\" .Customer.DIC }}"
+        style: { size: 9, right: 2 }
+
+  - row: 5
+    cols:
+      - width: 4
+        text: "{{ if .Supplier.ICDPH }}{{ labelf \"pdf.ic_dph\" .Supplier.ICDPH }}{{ end }}"
+        style: { size: 9, left: 2 }
+      - width: 4
+      - width: 4
+        text: "{{ if .Customer.ICDPH }}{{ labelf \"pdf.ic_dph\" .Customer.ICDPH }}{{ end }}"
         style: { size: 9, right: 2 }
 
   - spacer: 8
@@ -614,6 +628,16 @@ layout:
       - width: 2
       - width: 5
         text: "{{ labelf \"pdf.dic\" .Customer.DIC }}"
+        style: { size: 9 }
+
+  - row: 5
+    cols:
+      - width: 5
+        text: "{{ if .Supplier.ICDPH }}{{ labelf \"pdf.ic_dph\" .Supplier.ICDPH }}{{ end }}"
+        style: { size: 9 }
+      - width: 2
+      - width: 5
+        text: "{{ if .Customer.ICDPH }}{{ labelf \"pdf.ic_dph\" .Customer.ICDPH }}{{ end }}"
         style: { size: 9 }
 
   - spacer: 15

@@ -102,10 +102,10 @@ func seed(db *sql.DB, data dataset) error {
 		}
 		now := time.Now()
 		if _, err := tx.Exec(`
-			INSERT INTO suppliers (id, name, street, city, zip, country, ico, dic,
+			INSERT INTO suppliers (id, name, street, city, zip, country, ico, dic, ic_dph,
 				phone, email, website, logo_path, is_vat_payer, is_default, invoice_prefix, notes, language, created_at, updated_at)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			s.ID, s.Name, s.Street, s.City, s.ZIP, s.Country, s.ICO, s.DIC,
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			s.ID, s.Name, s.Street, s.City, s.ZIP, s.Country, s.ICO, s.DIC, s.ICDPH,
 			s.Phone, s.Email, s.Website, "", s.IsVATPayer, s.IsDefault, s.InvoicePrefix, s.Notes, s.Language, now, now,
 		); err != nil {
 			return fmt.Errorf("supplier %s: %w", s.Name, err)
@@ -134,10 +134,10 @@ func seed(db *sql.DB, data dataset) error {
 		}
 		now := time.Now()
 		if _, err := tx.Exec(`
-			INSERT INTO customers (id, name, street, city, zip, region, country, ico, dic,
+			INSERT INTO customers (id, name, street, city, zip, region, country, ico, dic, ic_dph,
 				email, phone, default_vat_rate, default_due_days, notes, created_at, updated_at)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-			c.ID, c.Name, c.Street, c.City, c.ZIP, c.Region, c.Country, c.ICO, c.DIC,
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			c.ID, c.Name, c.Street, c.City, c.ZIP, c.Region, c.Country, c.ICO, c.DIC, c.ICDPH,
 			c.Email, c.Phone, c.DefaultVATRate, c.DefaultDueDays, c.Notes, now, now,
 		); err != nil {
 			return fmt.Errorf("customer %s: %w", c.Name, err)
@@ -267,6 +267,7 @@ type seedSupplier struct {
 	Country       string
 	ICO           string
 	DIC           string
+	ICDPH         string
 	Phone         string
 	Email         string
 	Website       string
@@ -299,6 +300,7 @@ type seedCustomer struct {
 	Country        string
 	ICO            string
 	DIC            string
+	ICDPH          string
 	Email          string
 	Phone          string
 	DefaultVATRate float64
@@ -492,7 +494,7 @@ func skDataset() dataset {
 		Suppliers: []seedSupplier{
 			{
 				Name: "Marek Horváth - IT služby", Street: "Hlavná 25", City: "Bratislava", ZIP: "81101",
-				Country: "SK", ICO: "51234567", DIC: "SK2120123456", Phone: "+421 901 123 456",
+				Country: "SK", ICO: "51234567", DIC: "SK2120123456", ICDPH: "SK2120123456", Phone: "+421 901 123 456",
 				Email: "marek@horvath-it.sk", Website: "www.horvath-it.sk", IsVATPayer: true,
 				IsDefault: true, InvoicePrefix: "FA", Language: "sk",
 				BankAccounts: []seedBankAccount{
@@ -510,9 +512,9 @@ func skDataset() dataset {
 			},
 		},
 		Customers: []seedCustomer{
-			{Name: "Digitálne riešenia s.r.o.", Street: "Mlynské nivy 50", City: "Bratislava", ZIP: "82105", Country: "SK", ICO: "36123456", DIC: "SK2020123456", Email: "info@digires.sk", Phone: "+421 2 1234 5678", DefaultVATRate: 20, DefaultDueDays: 14},
+			{Name: "Digitálne riešenia s.r.o.", Street: "Mlynské nivy 50", City: "Bratislava", ZIP: "82105", Country: "SK", ICO: "36123456", DIC: "SK2020123456", ICDPH: "SK2020123456", Email: "info@digires.sk", Phone: "+421 2 1234 5678", DefaultVATRate: 20, DefaultDueDays: 14},
 			{Name: "Peter Baláž - SZČO", Street: "Námestie SNP 12", City: "Banská Bystrica", ZIP: "97401", Country: "SK", ICO: "43215678", Email: "peter.balaz@email.sk", DefaultDueDays: 14},
-			{Name: "AutoServis Nitra s.r.o.", Street: "Cabajská 44", City: "Nitra", ZIP: "94901", Country: "SK", ICO: "36987654", DIC: "SK2020987654", Email: "fakturacia@autoservisnr.sk", DefaultVATRate: 20, DefaultDueDays: 30},
+			{Name: "AutoServis Nitra s.r.o.", Street: "Cabajská 44", City: "Nitra", ZIP: "94901", Country: "SK", ICO: "36987654", DIC: "SK2020987654", ICDPH: "SK2020987654", Email: "fakturacia@autoservisnr.sk", DefaultVATRate: 20, DefaultDueDays: 30},
 			{Name: "Slovenská Knižnica a.s.", Street: "Námestie slobody 1", City: "Martin", ZIP: "03601", Country: "SK", ICO: "00123456", Email: "objednavky@slk.sk", DefaultDueDays: 21},
 			{Name: "Eva Tóthová", Street: "Komenského 8", City: "Prešov", ZIP: "08001", Country: "SK", Email: "eva.tothova@email.sk", Phone: "+421 911 222 333", DefaultDueDays: 14},
 			{Name: "StartUp Hub Žilina z.z.p.o.", Street: "Mariánske námestie 2", City: "Žilina", ZIP: "01001", Country: "SK", ICO: "52345678", Email: "hub@startupza.sk", DefaultDueDays: 14},

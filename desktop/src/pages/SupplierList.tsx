@@ -135,6 +135,7 @@ export function SupplierList() {
   const [name, setName] = useState('')
   const [ico, setIco] = useState('')
   const [dic, setDic] = useState('')
+  const [icDph, setIcDph] = useState('')
   const [street, setStreet] = useState('')
   const [city, setCity] = useState('')
   const [zip, setZip] = useState('')
@@ -246,6 +247,7 @@ export function SupplierList() {
     setName('')
     setIco('')
     setDic('')
+    setIcDph('')
     setStreet('')
     setCity('')
     setZip('')
@@ -264,6 +266,7 @@ export function SupplierList() {
     setName(supplier.name)
     setIco(supplier.ico)
     setDic(supplier.dic)
+    setIcDph(supplier.ic_dph)
     setStreet(supplier.street)
     setCity(supplier.city)
     setZip(supplier.zip)
@@ -322,6 +325,7 @@ export function SupplierList() {
       name: name.trim(),
       ico: ico.trim(),
       dic: dic.trim(),
+      ic_dph: icDph.trim(),
       street: street.trim(),
       city: city.trim(),
       zip: zip.trim(),
@@ -457,7 +461,7 @@ export function SupplierList() {
                     </Group>
                   </Table.Td>
                   <Table.Td fz="sm">{s.ico}</Table.Td>
-                  <Table.Td fz="sm">{s.dic || '\u2014'}</Table.Td>
+                  <Table.Td fz="sm">{s.dic || '\u2014'}{s.ic_dph && ` | IČ DPH: ${s.ic_dph}`}</Table.Td>
                   <Table.Td fz="sm">{[s.street, s.city, s.zip].filter(Boolean).join(', ')}</Table.Td>
                   <Table.Td>
                     <Badge size="xs" color={s.is_vat_payer ? 'green' : 'gray'} variant="light">
@@ -504,6 +508,10 @@ export function SupplierList() {
             <TextInput label={t('supplier.dic_label')} value={dic}
               onChange={(e) => setDic(e.currentTarget.value)} />
           </Group>
+          {country.toUpperCase() === 'SK' && (
+            <TextInput label={t('supplier.ic_dph_label')} value={icDph}
+              onChange={(e) => setIcDph(e.currentTarget.value)} />
+          )}
           <TextInput label={t('supplier.street_label')} value={street}
             onChange={(e) => setStreet(e.currentTarget.value)} />
           <Group grow>

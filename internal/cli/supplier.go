@@ -76,6 +76,9 @@ func (c *CLI) createSupplier() {
 	supplier.Country = c.promptDefault(i18n.T("prompt.country"), "CZ")
 	supplier.ICO = c.prompt(i18n.T("prompt.ico"))
 	supplier.DIC = c.prompt(i18n.T("prompt.dic"))
+	if strings.ToUpper(supplier.Country) == "SK" {
+		supplier.ICDPH = c.prompt(i18n.T("prompt.ic_dph"))
+	}
 	supplier.Phone = c.prompt(i18n.T("prompt.phone"))
 	supplier.Email = c.prompt(i18n.T("prompt.email"))
 	supplier.Website = c.prompt(i18n.T("prompt.website"))
@@ -105,6 +108,9 @@ func (c *CLI) editSupplier(s *model.Supplier) {
 		fmt.Printf("  "+i18n.T("label.address")+"\n", s.Street, s.ZIP, s.City, s.Country)
 		fmt.Printf("  "+i18n.T("label.ico")+"\n", s.ICO)
 		fmt.Printf("  "+i18n.T("label.dic")+"\n", s.DIC)
+		if s.ICDPH != "" {
+			fmt.Printf("  "+i18n.T("label.ic_dph")+"\n", s.ICDPH)
+		}
 		fmt.Printf("  "+i18n.T("label.phone")+"\n", s.Phone)
 		fmt.Printf("  "+i18n.T("label.email")+"\n", s.Email)
 		fmt.Printf("  "+i18n.T("label.website")+"\n", s.Website)
@@ -182,6 +188,9 @@ func (c *CLI) editSupplierDetails(s *model.Supplier) {
 	s.Country = c.promptDefault(i18n.T("prompt.country"), s.Country)
 	s.ICO = c.promptDefault(i18n.T("prompt.ico"), s.ICO)
 	s.DIC = c.promptDefault(i18n.T("prompt.dic"), s.DIC)
+	if strings.ToUpper(s.Country) == "SK" {
+		s.ICDPH = c.promptDefault(i18n.T("prompt.ic_dph"), s.ICDPH)
+	}
 	s.Phone = c.promptDefault(i18n.T("prompt.phone"), s.Phone)
 	s.Email = c.promptDefault(i18n.T("prompt.email"), s.Email)
 	s.Website = c.promptDefault(i18n.T("prompt.website"), s.Website)

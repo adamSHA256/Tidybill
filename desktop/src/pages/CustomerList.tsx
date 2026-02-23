@@ -37,6 +37,7 @@ export function CustomerList() {
   const [name, setName] = useState('')
   const [ico, setIco] = useState('')
   const [dic, setDic] = useState('')
+  const [icDph, setIcDph] = useState('')
   const [street, setStreet] = useState('')
   const [city, setCity] = useState('')
   const [zip, setZip] = useState('')
@@ -89,6 +90,7 @@ export function CustomerList() {
     setName('')
     setIco('')
     setDic('')
+    setIcDph('')
     setStreet('')
     setCity('')
     setZip('')
@@ -105,6 +107,7 @@ export function CustomerList() {
     setName(customer.name)
     setIco(customer.ico)
     setDic(customer.dic)
+    setIcDph(customer.ic_dph)
     setStreet(customer.street)
     setCity(customer.city)
     setZip(customer.zip)
@@ -130,6 +133,7 @@ export function CustomerList() {
       name: name.trim(),
       ico: ico.trim(),
       dic: dic.trim(),
+      ic_dph: icDph.trim(),
       street: street.trim(),
       city: city.trim(),
       zip: zip.trim(),
@@ -197,7 +201,7 @@ export function CustomerList() {
                 <div style={{ flex: 1 }}>
                   <Text fw={500}>{c.name}</Text>
                   <Text size="sm" c="dimmed">
-                    ICO: {c.ico}{c.dic && ` | DIC: ${c.dic}`}
+                    ICO: {c.ico}{c.dic && ` | DIC: ${c.dic}`}{c.ic_dph && ` | IČ DPH: ${c.ic_dph}`}
                   </Text>
                   <Text size="sm" c="dimmed">
                     {[c.street, c.city, c.zip].filter(Boolean).join(', ')}
@@ -253,6 +257,10 @@ export function CustomerList() {
             <TextInput label={t('customer.dic_label')} value={dic}
               onChange={(e) => setDic(e.currentTarget.value)} />
           </Group>
+          {country.toUpperCase() === 'SK' && (
+            <TextInput label={t('customer.ic_dph_label')} value={icDph}
+              onChange={(e) => setIcDph(e.currentTarget.value)} />
+          )}
           <TextInput label={t('customer.street_label')} value={street}
             onChange={(e) => setStreet(e.currentTarget.value)} />
           <Group grow>

@@ -15,6 +15,7 @@ type Supplier struct {
 	Country       string    `json:"country"`
 	ICO           string    `json:"ico"`
 	DIC           string    `json:"dic"`
+	ICDPH         string    `json:"ic_dph"`
 	Phone         string    `json:"phone"`
 	Email         string    `json:"email"`
 	LogoPath      string    `json:"logo_path"`

@@ -269,6 +269,7 @@ export function InvoiceDetail() {
               <Text size="sm" c="dimmed">
                 ICO: {invoice.customer.ico}
                 {invoice.customer.dic && ` | DIC: ${invoice.customer.dic}`}
+                {invoice.customer.ic_dph && ` | IČ DPH: ${invoice.customer.ic_dph}`}
               </Text>
               <Text size="sm" c="dimmed">
                 {[invoice.customer.street, invoice.customer.city, invoice.customer.zip].filter(Boolean).join(', ')}

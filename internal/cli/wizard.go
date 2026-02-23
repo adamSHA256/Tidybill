@@ -3,6 +3,7 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/adamSHA256/tidybill/internal/i18n"
 	"github.com/adamSHA256/tidybill/internal/model"
@@ -61,6 +62,9 @@ func (c *CLI) firstRunWizard() error {
 	supplier.Country = c.promptDefault(i18n.T("prompt.country"), "CZ")
 	supplier.ICO = c.prompt(i18n.T("prompt.ico"))
 	supplier.DIC = c.prompt(i18n.T("prompt.dic_with_hint"))
+	if strings.ToUpper(supplier.Country) == "SK" {
+		supplier.ICDPH = c.prompt(i18n.T("prompt.ic_dph"))
+	}
 	supplier.Phone = c.prompt(i18n.T("prompt.phone"))
 	supplier.Email = c.prompt(i18n.T("prompt.email"))
 	supplier.Website = c.prompt(i18n.T("prompt.website"))

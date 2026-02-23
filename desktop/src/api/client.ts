@@ -273,6 +273,7 @@ export interface Customer {
   country: string
   ico: string
   dic: string
+  ic_dph: string
   email: string
   phone: string
   default_vat_rate: number
@@ -291,6 +292,7 @@ export interface Supplier {
   country: string
   ico: string
   dic: string
+  ic_dph: string
   phone: string
   email: string
   logo_path: string

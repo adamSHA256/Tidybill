@@ -12,6 +12,7 @@ type Customer struct {
 	Country        string    `json:"country"`
 	ICO            string    `json:"ico"`
 	DIC            string    `json:"dic"`
+	ICDPH          string    `json:"ic_dph"`
 	Email          string    `json:"email"`
 	Phone          string    `json:"phone"`
 	DefaultVATRate float64   `json:"default_vat_rate"`

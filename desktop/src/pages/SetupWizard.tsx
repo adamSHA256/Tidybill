@@ -54,6 +54,7 @@ export function SetupWizard({ onComplete }: Props) {
   const [supplierCountry, setSupplierCountry] = useState('CZ')
   const [supplierIco, setSupplierIco] = useState('')
   const [supplierDic, setSupplierDic] = useState('')
+  const [supplierIcDph, setSupplierIcDph] = useState('')
   const [supplierPhone, setSupplierPhone] = useState('')
   const [supplierEmail, setSupplierEmail] = useState('')
   const [supplierWebsite, setSupplierWebsite] = useState('')
@@ -142,6 +143,7 @@ export function SetupWizard({ onComplete }: Props) {
         country: supplierCountry,
         ico: supplierIco,
         dic: supplierDic,
+        ic_dph: supplierIcDph,
         phone: supplierPhone,
         email: supplierEmail,
         website: supplierWebsite,
@@ -327,6 +329,13 @@ export function SetupWizard({ onComplete }: Props) {
                     onChange={(e) => setSupplierDic(e.currentTarget.value)}
                   />
                 </Group>
+                {supplierCountry.toUpperCase() === 'SK' && (
+                  <TextInput
+                    label={t('supplier.ic_dph_label')}
+                    value={supplierIcDph}
+                    onChange={(e) => setSupplierIcDph(e.currentTarget.value)}
+                  />
+                )}
                 {supplierDic && (
                   <Switch
                     label={t('supplier.is_vat_payer_label')}
