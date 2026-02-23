@@ -249,10 +249,11 @@ func (s *Server) generateTemplatePreview(w http.ResponseWriter, r *http.Request)
 	}
 
 	opts := &service.TemplateOptions{
-		ShowLogo:  t.ShowLogo,
-		ShowQR:    t.ShowQR,
-		ShowNotes: t.ShowNotes,
-		QRType:    "spayd",
+		ShowLogo:    t.ShowLogo,
+		ShowQR:      t.ShowQR,
+		ShowNotes:   t.ShowNotes,
+		QRType:      "spayd",
+		HasBankInfo: true,
 	}
 
 	yamlSource := t.YAMLSource

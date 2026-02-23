@@ -143,10 +143,11 @@ func (c *CLI) previewOneTemplate(templates []*model.PDFTemplate) {
 	fmt.Println()
 
 	opts := &service.TemplateOptions{
-		ShowLogo:  t.ShowLogo,
-		ShowQR:    t.ShowQR,
-		ShowNotes: t.ShowNotes,
-		QRType:    "spayd",
+		ShowLogo:    t.ShowLogo,
+		ShowQR:      t.ShowQR,
+		ShowNotes:   t.ShowNotes,
+		QRType:      "spayd",
+		HasBankInfo: true,
 	}
 
 	yamlSource := t.YAMLSource

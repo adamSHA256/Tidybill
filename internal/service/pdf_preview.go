@@ -53,10 +53,11 @@ func (s *PDFService) GenerateAllPreviews(templates []*model.PDFTemplate, lang i1
 	results := make(map[string]string)
 	for _, t := range templates {
 		opts := &TemplateOptions{
-			ShowLogo:  t.ShowLogo,
-			ShowQR:    t.ShowQR,
-			ShowNotes: t.ShowNotes,
-			QRType:    "spayd",
+			ShowLogo:    t.ShowLogo,
+			ShowQR:      t.ShowQR,
+			ShowNotes:   t.ShowNotes,
+			QRType:      "spayd",
+			HasBankInfo: true,
 		}
 		yamlSource := t.YAMLSource
 		if t.IsBuiltin {
