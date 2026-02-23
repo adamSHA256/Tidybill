@@ -11,6 +11,7 @@ import {
   Text,
   Paper,
   Container,
+  ScrollArea,
   SegmentedControl,
   Divider,
   Center,
@@ -57,7 +58,6 @@ export function SetupWizard({ onComplete }: Props) {
   const [supplierIcDph, setSupplierIcDph] = useState('')
   const [supplierPhone, setSupplierPhone] = useState('')
   const [supplierEmail, setSupplierEmail] = useState('')
-  const [supplierWebsite, setSupplierWebsite] = useState('')
   const [supplierVat, setSupplierVat] = useState(false)
   const [supplierPrefix, setSupplierPrefix] = useState('VF')
   const [createdSupplierId, setCreatedSupplierId] = useState<string | null>(null)
@@ -146,7 +146,6 @@ export function SetupWizard({ onComplete }: Props) {
         ic_dph: supplierIcDph,
         phone: supplierPhone,
         email: supplierEmail,
-        website: supplierWebsite,
         is_vat_payer: supplierVat,
         invoice_prefix: supplierPrefix,
       } as Partial<Supplier>)
@@ -241,8 +240,9 @@ export function SetupWizard({ onComplete }: Props) {
   }
 
   return (
-    <Container size="sm" py="xl">
-      <Stack gap="xl">
+    <ScrollArea h="100vh" type="auto">
+      <Container size="sm" py="xl">
+        <Stack gap="xl">
         <div style={{ textAlign: 'center' }}>
           <Title order={1}>{t('wizard.title')}</Title>
           <Text c="dimmed" size="lg" mt="xs">
@@ -261,7 +261,7 @@ export function SetupWizard({ onComplete }: Props) {
             <Paper p="xl" radius="md" withBorder mt="md">
               <Stack gap="lg">
                 <Text fw={500} size="lg">
-                  Choose language / Vyberte jazyk / Vyberte jazyk
+                  Choose language / Vyberte jazyk / Zvoľte jazyk
                 </Text>
                 <SegmentedControl
                   value={selectedLang}
@@ -355,11 +355,6 @@ export function SetupWizard({ onComplete }: Props) {
                     onChange={(e) => setSupplierEmail(e.currentTarget.value)}
                   />
                 </Group>
-                <TextInput
-                  label={t('supplier.website_label')}
-                  value={supplierWebsite}
-                  onChange={(e) => setSupplierWebsite(e.currentTarget.value)}
-                />
                 <TextInput
                   label={t('supplier.invoice_prefix_label')}
                   value={supplierPrefix}
@@ -563,8 +558,9 @@ export function SetupWizard({ onComplete }: Props) {
             </Group>
           </Stepper.Step>
         </Stepper>
-      </Stack>
-    </Container>
+        </Stack>
+      </Container>
+    </ScrollArea>
   )
 }
 

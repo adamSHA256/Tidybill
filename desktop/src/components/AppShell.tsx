@@ -104,7 +104,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Button>
         </MantineAppShell.Section>
 
-        <MantineAppShell.Section grow>
+        <MantineAppShell.Section grow style={{ overflow: 'auto' }}>
           {navKeys.map((item) => (
             <NavLink
               key={item.path}
