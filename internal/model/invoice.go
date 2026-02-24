@@ -56,7 +56,7 @@ func NewInvoice(supplierID, customerID, bankAccountID string) *Invoice {
 		SupplierID:    supplierID,
 		CustomerID:    customerID,
 		BankAccountID: bankAccountID,
-		Status:        StatusDraft,
+		Status:        StatusCreated,
 		IssueDate:     now,
 		DueDate:       now.AddDate(0, 0, 14),
 		TaxableDate:   now,
