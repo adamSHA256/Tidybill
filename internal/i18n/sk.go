@@ -534,11 +534,11 @@ var messagesSK = map[string]string{
 	"error.builtin_cannot_delete": "Vstavaný typ, nie je možné vymazať",
 
 	// ── PDF Template Names ──────────────────────────────────────────────
-	"template.name.default": "Tabuľková",
+	"template.name.table": "Tabuľková",
 	"template.name.classic": "Klasická",
 	"template.name.modern":  "Moderná",
 	"template.name.minimal": "Minimálna",
-	"template.desc.default": "Šablóna so sivým záhlavím a plnými okrajmi tabuľky",
+	"template.desc.table": "Šablóna so sivým záhlavím a plnými okrajmi tabuľky",
 	"template.desc.classic": "Tradičná čiernobiela faktúra s číslami stránok a formálnym rozložením",
 	"template.desc.modern":  "Súčasný dizajn s oceľovo modrým akcentom a farebnou hierarchiou",
 	"template.desc.minimal": "Minimalistický štýl s maximom bieleho priestoru a bez dekorácií",
