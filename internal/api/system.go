@@ -81,7 +81,7 @@ func (s *Server) getAbout(w http.ResponseWriter, r *http.Request) {
 		"version":           config.Version,
 		"description":       "Simple, private invoicing for freelancers and small businesses.",
 		"github_issues_url": "https://github.com/adamSHA256/tidybill/issues",
-		"monero_address":    "<YOUR_XMR_ADDRESS>",
-		"bitcoin_address":   "<YOUR_BTC_ADDRESS>",
+		"monero_address":    "<42GYPXCvn42NbsujN8wRVrQj4xLnWubXm4BJmiyZjkb8PuGCMb75iC96BHkia6LJM57BfVqyGJm2VH3Mr97c269hRxSidqG>",
+		"bitcoin_address":   "<bc1q5dqj6jfpuq47qvmu2w3awt7jz4zlyyfcyreayx>",
 	})
 }

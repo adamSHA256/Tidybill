@@ -567,6 +567,6 @@ var messagesEN = map[string]string{
 	"about.issues_url":    "Report it at: https://github.com/adamSHA256/tidybill/issues",
 	"about.support_title": "Support the author",
 	"about.support_desc":  "If you find TidyBill useful, you can support its development:",
-	"about.monero":        "Monero (XMR): <YOUR_XMR_ADDRESS>",
-	"about.bitcoin":       "Bitcoin (BTC): <YOUR_BTC_ADDRESS>",
+	"about.monero":        "Monero (XMR): <42GYPXCvn42NbsujN8wRVrQj4xLnWubXm4BJmiyZjkb8PuGCMb75iC96BHkia6LJM57BfVqyGJm2VH3Mr97c269hRxSidqG>",
+	"about.bitcoin":       "Bitcoin (BTC): <bc1q5dqj6jfpuq47qvmu2w3awt7jz4zlyyfcyreayx>",
 }
