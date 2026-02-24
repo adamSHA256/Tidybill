@@ -582,10 +582,10 @@ export function SupplierList() {
           </Group>
           <Select label={t('bank_account.qr_type_label')}
             data={[
-              { value: 'spayd', label: 'SPAYD' },
-              { value: 'pay_by_square', label: 'Pay by Square' },
-              { value: 'epc', label: 'EPC' },
-              { value: 'none', label: 'None' },
+              { value: 'spayd', label: t('bank_account.qr_spayd') },
+              { value: 'pay_by_square', label: t('bank_account.qr_pbs') },
+              { value: 'epc', label: t('bank_account.qr_epc') },
+              { value: 'none', label: t('bank_account.qr_none') },
             ]}
             value={baQrType} onChange={(v) => setBaQrType(v || 'spayd')}
             allowDeselect={false} />

@@ -318,6 +318,7 @@ func (c *CLI) addBankAccount(supplierID string) {
 	acc.IBAN = c.prompt(i18n.T("prompt.iban"))
 	acc.SWIFT = c.prompt(i18n.T("prompt.swift"))
 	acc.Currency = c.promptDefault(i18n.T("prompt.currency"), "CZK")
+	acc.QRType = c.promptQRType(acc.QRType)
 
 	// Check if this is the first account for supplier
 	existing, _ := c.bankAccs.GetBySupplier(supplierID)
@@ -389,6 +390,7 @@ func (c *CLI) editBankAccount(acc *model.BankAccount) {
 		fmt.Printf("  IBAN: %s\n", acc.IBAN)
 		fmt.Printf("  SWIFT: %s\n", acc.SWIFT)
 		fmt.Printf("  %s: %s\n", i18n.T("prompt.currency"), acc.Currency)
+		fmt.Printf("  %s: %s\n", i18n.T("prompt.qr_type"), acc.QRType)
 		if acc.IsDefault {
 			fmt.Printf("  %s\n", i18n.T("label.default_upper"))
 		}
@@ -450,6 +452,7 @@ func (c *CLI) editBankAccountDetails(acc *model.BankAccount) {
 	acc.IBAN = c.promptDefault(i18n.T("prompt.iban"), acc.IBAN)
 	acc.SWIFT = c.promptDefault(i18n.T("prompt.swift"), acc.SWIFT)
 	acc.Currency = c.promptDefault(i18n.T("prompt.currency"), acc.Currency)
+	acc.QRType = c.promptQRType(acc.QRType)
 
 	if err := c.bankAccs.Update(acc); err != nil {
 		c.printError(err.Error())
@@ -457,4 +460,37 @@ func (c *CLI) editBankAccountDetails(acc *model.BankAccount) {
 		c.printSuccess(i18n.T("success.account_updated"))
 	}
 	c.waitEnter()
+}
+
+func (c *CLI) promptQRType(current string) string {
+	options := []struct {
+		key   string
+		label string
+	}{
+		{"spayd", i18n.T("prompt.qr_type_spayd")},
+		{"epc", i18n.T("prompt.qr_type_epc")},
+		{"pay_by_square", i18n.T("prompt.qr_type_pbs")},
+		{"none", i18n.T("prompt.qr_type_none")},
+	}
+
+	fmt.Printf("\n  %s:\n", i18n.T("prompt.qr_type"))
+	for i, opt := range options {
+		marker := "  "
+		if opt.key == current {
+			marker = "> "
+		}
+		fmt.Printf("  %s%d) %s\n", marker, i+1, opt.label)
+	}
+	fmt.Println()
+
+	choice := c.promptDefault(i18n.T("prompt.choice"), "")
+	if choice == "" {
+		return current
+	}
+	idx := 0
+	fmt.Sscanf(choice, "%d", &idx)
+	if idx >= 1 && idx <= len(options) {
+		return options[idx-1].key
+	}
+	return current
 }
