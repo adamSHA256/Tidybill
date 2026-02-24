@@ -17,6 +17,12 @@
 <td align="center"><em>Dashboard</em></td>
 <td align="center"><em>Create Invoice</em></td>
 </tr>
+</table>
+
+<details>
+<summary>More screenshots</summary>
+
+<table>
 <tr>
 <td><img src="docs/screenshots/detail-gui.png" alt="Invoice Detail" width="400" /></td>
 <td><img src="docs/screenshots/customers-gui.png" alt="Customers" width="400" /></td>
@@ -27,12 +33,34 @@
 </tr>
 </table>
 
-<details>
-<summary>More screenshots (PDF output, suppliers)</summary>
+### Smart warnings & intuitive environment
 
-<img src="docs/screenshots/invoice-pdf.png" alt="Generated PDF" width="500" />
+<img src="docs/screenshots/increase-productivity.png" alt="Smart warnings" width="700" />
 
-*Generated PDF with QR payment code*
+### Invoice PDF templates
+
+<table>
+<tr>
+<td><img src="docs/screenshots/invoice-classic-pdf.png" alt="Classic PDF" width="260" /></td>
+<td><img src="docs/screenshots/invoice-table-pdf.png" alt="Tables PDF" width="260" /></td>
+<td><img src="docs/screenshots/invoice-modern-pdf.png" alt="Modern PDF" width="260" /></td>
+</tr>
+<tr>
+<td align="center"><em>Classic</em></td>
+<td align="center"><em>Tables</em></td>
+<td align="center"><em>Modern</em></td>
+</tr>
+</table>
+
+### PDF template management
+
+<img src="docs/screenshots/templates-menu.png" alt="Templates menu" width="700" />
+
+### Template editor
+
+<img src="docs/screenshots/edit-template.png" alt="Edit template" width="700" />
+
+### Suppliers & bank accounts
 
 <img src="docs/screenshots/suppliers.png" alt="Suppliers" width="700" />
 
