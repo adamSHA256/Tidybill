@@ -63,7 +63,7 @@ func (r *InvoiceRepository) GetByID(id string) (*model.Invoice, error) {
 		SELECT id, invoice_number, supplier_id, customer_id, bank_account_id, status,
 			issue_date, due_date, paid_date, taxable_date, payment_method, variable_symbol,
 			currency, exchange_rate, subtotal, vat_total, total, notes, internal_notes,
-			language, pdf_path, COALESCE(template_id, 'default'), created_at, updated_at
+			language, pdf_path, COALESCE(template_id, 'table'), created_at, updated_at
 		FROM invoices WHERE id = ?`, id).Scan(
 		&inv.ID, &inv.InvoiceNumber, &inv.SupplierID, &inv.CustomerID, &inv.BankAccountID, &inv.Status,
 		&inv.IssueDate, &inv.DueDate, &paidDate, &inv.TaxableDate, &inv.PaymentMethod, &inv.VariableSymbol,
@@ -82,7 +82,7 @@ func (r *InvoiceRepository) List(status model.InvoiceStatus, customerID string, 
 	query := `SELECT id, invoice_number, supplier_id, customer_id, bank_account_id, status,
 		issue_date, due_date, paid_date, taxable_date, payment_method, variable_symbol,
 		currency, exchange_rate, subtotal, vat_total, total, notes, internal_notes,
-		language, pdf_path, COALESCE(template_id, 'default'), created_at, updated_at FROM invoices WHERE 1=1`
+		language, pdf_path, COALESCE(template_id, 'table'), created_at, updated_at FROM invoices WHERE 1=1`
 	var args []interface{}
 
 	if status != "" {
@@ -127,7 +127,7 @@ func (r *InvoiceRepository) ListFiltered(status model.InvoiceStatus, customerID 
 	query := `SELECT id, invoice_number, supplier_id, customer_id, bank_account_id, status,
 		issue_date, due_date, paid_date, taxable_date, payment_method, variable_symbol,
 		currency, exchange_rate, subtotal, vat_total, total, notes, internal_notes,
-		language, pdf_path, COALESCE(template_id, 'default'), created_at, updated_at FROM invoices WHERE 1=1`
+		language, pdf_path, COALESCE(template_id, 'table'), created_at, updated_at FROM invoices WHERE 1=1`
 	var args []interface{}
 
 	if status != "" {
@@ -177,7 +177,7 @@ func (r *InvoiceRepository) ListUnpaid() ([]*model.Invoice, error) {
 		SELECT id, invoice_number, supplier_id, customer_id, bank_account_id, status,
 			issue_date, due_date, paid_date, taxable_date, payment_method, variable_symbol,
 			currency, exchange_rate, subtotal, vat_total, total, notes, internal_notes,
-			language, pdf_path, COALESCE(template_id, 'default'), created_at, updated_at
+			language, pdf_path, COALESCE(template_id, 'table'), created_at, updated_at
 		FROM invoices WHERE status NOT IN ('paid', 'cancelled')
 		ORDER BY due_date ASC`)
 	if err != nil {

@@ -265,7 +265,8 @@ var messagesEN = map[string]string{
 	"default.unit_pcs":     "pcs",
 
 	// ── PDF ─────────────────────────────────────────────────────────────
-	"pdf.invoice_title":    "Invoice %s",
+	"pdf.invoice_title":        "Invoice - Tax Document %s",
+	"pdf.invoice_title_simple": "Invoice %s",
 	"pdf.supplier":         "SUPPLIER",
 	"pdf.customer":         "CUSTOMER",
 	"pdf.ico":              "Company ID: %s",

@@ -15,16 +15,16 @@ import (
 	"github.com/adamSHA256/tidybill/internal/model"
 )
 
-//go:embed assets/default_logo.png
+//go:embed assets/default_logo.jpg
 var defaultLogoFS embed.FS
 
 // getDefaultLogoPath extracts the embedded logo to a temp file and returns its path.
 func getDefaultLogoPath() string {
-	data, err := defaultLogoFS.ReadFile("assets/default_logo.png")
+	data, err := defaultLogoFS.ReadFile("assets/default_logo.jpg")
 	if err != nil {
 		return ""
 	}
-	tmp := filepath.Join(os.TempDir(), "tidybill_default_logo.png")
+	tmp := filepath.Join(os.TempDir(), "tidybill_default_logo.jpg")
 	if err := os.WriteFile(tmp, data, 0644); err != nil {
 		return ""
 	}
@@ -130,7 +130,7 @@ func buildSampleInvoiceData(lang i18n.Lang) *InvoiceData {
 			Total:          79600.00,
 			Notes:          i18n.TForLang(lang, "preview.notes"),
 			Language:       string(lang),
-			TemplateID:     "default",
+			TemplateID:     "table",
 		},
 		Supplier: &model.Supplier{
 			Name:       i18n.TForLang(lang, "preview.supplier_name"),

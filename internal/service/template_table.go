@@ -18,13 +18,13 @@ import (
 	"github.com/adamSHA256/tidybill/internal/i18n"
 )
 
-type DefaultTemplate struct{}
+type TableTemplate struct{}
 
-func (t *DefaultTemplate) Margins() TemplateMargins {
+func (t *TableTemplate) Margins() TemplateMargins {
 	return TemplateMargins{Left: 15, Top: 15, Right: 15}
 }
 
-func (t *DefaultTemplate) Render(m core.Maroto, data *InvoiceData, opts *TemplateOptions) {
+func (t *TableTemplate) Render(m core.Maroto, data *InvoiceData, opts *TemplateOptions) {
 	lang := invoiceLang(data)
 	t.addHeader(m, data, opts, lang)
 	t.addParties(m, data, opts, lang)
@@ -34,7 +34,7 @@ func (t *DefaultTemplate) Render(m core.Maroto, data *InvoiceData, opts *Templat
 	t.addFooter(m, data, opts, lang)
 }
 
-func (t *DefaultTemplate) addHeader(m core.Maroto, data *InvoiceData, opts *TemplateOptions, lang i18n.Lang) {
+func (t *TableTemplate) addHeader(m core.Maroto, data *InvoiceData, opts *TemplateOptions, lang i18n.Lang) {
 	if opts.ShowLogo && data.Supplier.LogoPath != "" {
 		if _, err := os.Stat(data.Supplier.LogoPath); err == nil {
 			m.AddRow(20,
@@ -44,18 +44,19 @@ func (t *DefaultTemplate) addHeader(m core.Maroto, data *InvoiceData, opts *Temp
 						Center:  true,
 					}),
 				),
-				col.New(9).Add(
-					text.New(i18n.TfForLang(lang, "pdf.invoice_title", data.Invoice.InvoiceNumber),
+				col.New(6).Add(
+					text.New(invoiceTitle(lang, data.Invoice.InvoiceNumber, data.Supplier.IsVATPayer),
 						props.Text{
 							Size:  16,
 							Style: fontstyle.Bold,
 							Align: align.Center,
 						}),
 				),
+				col.New(3),
 			)
 			m.AddRow(5,
 				col.New(12).Add(
-					line.New(props.Line{Color: &props.Color{Red: 0, Green: 0, Blue: 0}}),
+					line.New(props.Line{Color: &props.Color{Red: 0, Green: 0, Blue: 0}, SizePercent: 100}),
 				),
 			)
 			return
@@ -64,7 +65,7 @@ func (t *DefaultTemplate) addHeader(m core.Maroto, data *InvoiceData, opts *Temp
 
 	m.AddRow(15,
 		col.New(12).Add(
-			text.New(i18n.TfForLang(lang, "pdf.invoice_title", data.Invoice.InvoiceNumber),
+			text.New(invoiceTitle(lang, data.Invoice.InvoiceNumber, data.Supplier.IsVATPayer),
 				props.Text{
 					Size:  16,
 					Style: fontstyle.Bold,
@@ -74,12 +75,12 @@ func (t *DefaultTemplate) addHeader(m core.Maroto, data *InvoiceData, opts *Temp
 	)
 	m.AddRow(5,
 		col.New(12).Add(
-			line.New(props.Line{Color: &props.Color{Red: 0, Green: 0, Blue: 0}}),
+			line.New(props.Line{Color: &props.Color{Red: 0, Green: 0, Blue: 0}, SizePercent: 100}),
 		),
 	)
 }
 
-func (t *DefaultTemplate) addParties(m core.Maroto, data *InvoiceData, opts *TemplateOptions, lang i18n.Lang) {
+func (t *TableTemplate) addParties(m core.Maroto, data *InvoiceData, opts *TemplateOptions, lang i18n.Lang) {
 	m.AddRow(3)
 
 	// Build the right column (dates, payment method, optionally bank info)
@@ -94,15 +95,29 @@ func (t *DefaultTemplate) addParties(m core.Maroto, data *InvoiceData, opts *Tem
 
 	rowHeight := 40.0
 	if opts.HasBankInfo {
+		topOffset := 20.0
 		rightTexts = append(rightTexts,
-			text.New(i18n.TForLang(lang, "pdf.bank_account"), props.Text{Size: 9, Top: 20}),
-			text.New(data.BankAccount.AccountNumber, props.Text{Size: 9, Style: fontstyle.Bold, Top: 20, Left: 28}),
-			text.New(i18n.TForLang(lang, "pdf.iban"), props.Text{Size: 9, Top: 26}),
-			text.New(data.BankAccount.IBAN, props.Text{Size: 8, Style: fontstyle.Bold, Top: 26, Left: 28}),
-			text.New(i18n.TForLang(lang, "pdf.variable_symbol"), props.Text{Size: 9, Top: 34}),
-			text.New(data.Invoice.VariableSymbol, props.Text{Size: 9, Style: fontstyle.Bold, Top: 34, Left: 28}),
+			text.New(i18n.TForLang(lang, "pdf.bank_account"), props.Text{Size: 9, Top: topOffset}),
+			text.New(data.BankAccount.AccountNumber, props.Text{Size: 9, Style: fontstyle.Bold, Top: topOffset, Left: 28}),
 		)
-		rowHeight = 58
+		topOffset += 6
+		rightTexts = append(rightTexts,
+			text.New(i18n.TForLang(lang, "pdf.variable_symbol"), props.Text{Size: 9, Top: topOffset}),
+			text.New(data.Invoice.VariableSymbol, props.Text{Size: 9, Style: fontstyle.Bold, Top: topOffset, Left: 28}),
+		)
+		topOffset += 6
+		if data.BankAccount.SWIFT != "" {
+			rightTexts = append(rightTexts,
+				text.New("SWIFT:", props.Text{Size: 9, Top: topOffset}),
+				text.New(data.BankAccount.SWIFT, props.Text{Size: 9, Style: fontstyle.Bold, Top: topOffset, Left: 28}),
+			)
+			topOffset += 6
+		}
+		rightTexts = append(rightTexts,
+			text.New(fmt.Sprintf("IBAN: %s", data.BankAccount.IBAN), props.Text{Size: 9, Top: topOffset}),
+		)
+		topOffset += 6
+		rowHeight = topOffset + 22
 	}
 
 	m.AddRow(rowHeight,
@@ -132,60 +147,63 @@ func (t *DefaultTemplate) addParties(m core.Maroto, data *InvoiceData, opts *Tem
 	)
 }
 
-func (t *DefaultTemplate) addPaymentBar(m core.Maroto, data *InvoiceData, opts *TemplateOptions, lang i18n.Lang) {
+func (t *TableTemplate) addPaymentBar(m core.Maroto, data *InvoiceData, opts *TemplateOptions, lang i18n.Lang) {
 	grayBg := &props.Color{Red: 240, Green: 240, Blue: 240}
 	cellStyle := &props.Cell{BackgroundColor: grayBg, BorderType: border.Full, BorderColor: &props.Color{Red: 200, Green: 200, Blue: 200}}
 	labelColor := &props.Color{Red: 100, Green: 100, Blue: 100}
+	const pad = 1.0
 
 	if opts.HasBankInfo {
 		m.AddRow(15,
 			col.New(4).Add(
-				text.New(i18n.TForLang(lang, "pdf.variable_symbol"), props.Text{Size: 8, Color: labelColor}),
-				text.New(data.Invoice.VariableSymbol, props.Text{Size: 10, Style: fontstyle.Bold, Top: 4}),
+				text.New(i18n.TForLang(lang, "pdf.variable_symbol"), props.Text{Size: 8, Color: labelColor, Left: pad}),
+				text.New(data.Invoice.VariableSymbol, props.Text{Size: 10, Style: fontstyle.Bold, Top: 4, Left: pad}),
 			).WithStyle(cellStyle),
 			col.New(4).Add(
-				text.New(i18n.TForLang(lang, "pdf.due_date"), props.Text{Size: 8, Color: labelColor}),
-				text.New(data.Invoice.DueDate.Format("02.01.2006"), props.Text{Size: 10, Style: fontstyle.Bold, Top: 4}),
+				text.New(i18n.TForLang(lang, "pdf.due_date"), props.Text{Size: 8, Color: labelColor, Left: pad}),
+				text.New(data.Invoice.DueDate.Format("02.01.2006"), props.Text{Size: 10, Style: fontstyle.Bold, Top: 4, Left: pad}),
 			).WithStyle(cellStyle),
 			col.New(4).Add(
-				text.New(i18n.TForLang(lang, "pdf.amount_due"), props.Text{Size: 8, Color: labelColor}),
-				text.New(formatMoneyDefault(data.Invoice.Total, data.Invoice.Currency), props.Text{Size: 10, Style: fontstyle.Bold, Top: 4}),
+				text.New(i18n.TForLang(lang, "pdf.amount_due"), props.Text{Size: 8, Color: labelColor, Left: pad}),
+				text.New(formatMoneyDefault(data.Invoice.Total, data.Invoice.Currency), props.Text{Size: 10, Style: fontstyle.Bold, Top: 4, Left: pad}),
 			).WithStyle(cellStyle),
 		)
 	} else {
 		m.AddRow(15,
 			col.New(4).Add(
-				text.New(i18n.TForLang(lang, "pdf.payment_method"), props.Text{Size: 8, Color: labelColor}),
-				text.New(data.Invoice.PaymentMethod, props.Text{Size: 10, Style: fontstyle.Bold, Top: 4}),
+				text.New(i18n.TForLang(lang, "pdf.payment_method"), props.Text{Size: 8, Color: labelColor, Left: pad}),
+				text.New(data.Invoice.PaymentMethod, props.Text{Size: 10, Style: fontstyle.Bold, Top: 4, Left: pad}),
 			).WithStyle(cellStyle),
 			col.New(4).Add(
-				text.New(i18n.TForLang(lang, "pdf.due_date"), props.Text{Size: 8, Color: labelColor}),
-				text.New(data.Invoice.DueDate.Format("02.01.2006"), props.Text{Size: 10, Style: fontstyle.Bold, Top: 4}),
+				text.New(i18n.TForLang(lang, "pdf.due_date"), props.Text{Size: 8, Color: labelColor, Left: pad}),
+				text.New(data.Invoice.DueDate.Format("02.01.2006"), props.Text{Size: 10, Style: fontstyle.Bold, Top: 4, Left: pad}),
 			).WithStyle(cellStyle),
 			col.New(4).Add(
-				text.New(i18n.TForLang(lang, "pdf.amount_due"), props.Text{Size: 8, Color: labelColor}),
-				text.New(formatMoneyDefault(data.Invoice.Total, data.Invoice.Currency), props.Text{Size: 10, Style: fontstyle.Bold, Top: 4}),
+				text.New(i18n.TForLang(lang, "pdf.amount_due"), props.Text{Size: 8, Color: labelColor, Left: pad}),
+				text.New(formatMoneyDefault(data.Invoice.Total, data.Invoice.Currency), props.Text{Size: 10, Style: fontstyle.Bold, Top: 4, Left: pad}),
 			).WithStyle(cellStyle),
 		)
 	}
 	m.AddRow(5)
 }
 
-func (t *DefaultTemplate) addItemsTable(m core.Maroto, data *InvoiceData, lang i18n.Lang) {
+func (t *TableTemplate) addItemsTable(m core.Maroto, data *InvoiceData, lang i18n.Lang) {
 	headerColor := &props.Color{Red: 220, Green: 220, Blue: 220}
-	headerStyle := props.Text{Size: 8, Style: fontstyle.Bold}
+	headerStyle := props.Text{Size: 8, Style: fontstyle.Bold, Left: 1}
+	headerNumStyle := props.Text{Size: 8, Style: fontstyle.Bold, Align: align.Right, Right: 1}
+	headerCell := &props.Cell{BackgroundColor: headerColor, BorderType: border.Full}
 
 	m.AddRow(8,
-		col.New(5).Add(text.New(i18n.TForLang(lang, "pdf.col_description"), headerStyle)).WithStyle(&props.Cell{BackgroundColor: headerColor, BorderType: border.Full}),
-		col.New(1).Add(text.New(i18n.TForLang(lang, "pdf.col_quantity"), headerStyle)).WithStyle(&props.Cell{BackgroundColor: headerColor, BorderType: border.Full}),
-		col.New(2).Add(text.New(i18n.TForLang(lang, "pdf.col_unit_price"), headerStyle)).WithStyle(&props.Cell{BackgroundColor: headerColor, BorderType: border.Full}),
-		col.New(1).Add(text.New(i18n.TForLang(lang, "pdf.col_vat_rate"), headerStyle)).WithStyle(&props.Cell{BackgroundColor: headerColor, BorderType: border.Full}),
-		col.New(1).Add(text.New(i18n.TForLang(lang, "pdf.col_vat"), headerStyle)).WithStyle(&props.Cell{BackgroundColor: headerColor, BorderType: border.Full}),
-		col.New(2).Add(text.New(i18n.TForLang(lang, "pdf.col_total"), headerStyle)).WithStyle(&props.Cell{BackgroundColor: headerColor, BorderType: border.Full}),
+		col.New(5).Add(text.New(i18n.TForLang(lang, "pdf.col_description"), headerStyle)).WithStyle(headerCell),
+		col.New(1).Add(text.New(i18n.TForLang(lang, "pdf.col_quantity"), headerNumStyle)).WithStyle(headerCell),
+		col.New(2).Add(text.New(i18n.TForLang(lang, "pdf.col_unit_price"), headerNumStyle)).WithStyle(headerCell),
+		col.New(1).Add(text.New(i18n.TForLang(lang, "pdf.col_vat_rate"), headerNumStyle)).WithStyle(headerCell),
+		col.New(1).Add(text.New(i18n.TForLang(lang, "pdf.col_vat"), headerNumStyle)).WithStyle(headerCell),
+		col.New(2).Add(text.New(i18n.TForLang(lang, "pdf.col_total"), headerNumStyle)).WithStyle(headerCell),
 	)
 
-	cellStyle := props.Text{Size: 8}
-	numStyle := props.Text{Size: 8, Align: align.Right}
+	cellStyle := props.Text{Size: 8, Left: 1}
+	numStyle := props.Text{Size: 8, Align: align.Right, Right: 1}
 	borderStyle := &props.Cell{BorderType: border.Full, BorderColor: &props.Color{Red: 200, Green: 200, Blue: 200}}
 
 	for _, item := range data.Items {
@@ -201,7 +219,7 @@ func (t *DefaultTemplate) addItemsTable(m core.Maroto, data *InvoiceData, lang i
 	m.AddRow(5)
 }
 
-func (t *DefaultTemplate) addTotals(m core.Maroto, data *InvoiceData, lang i18n.Lang) {
+func (t *TableTemplate) addTotals(m core.Maroto, data *InvoiceData, lang i18n.Lang) {
 	rightStyle := props.Text{Size: 9, Align: align.Right}
 	rightBold := props.Text{Size: 10, Align: align.Right, Style: fontstyle.Bold}
 
@@ -217,7 +235,7 @@ func (t *DefaultTemplate) addTotals(m core.Maroto, data *InvoiceData, lang i18n.
 	)
 	m.AddRow(2,
 		col.New(8),
-		col.New(4).Add(line.New(props.Line{Color: &props.Color{Red: 0, Green: 0, Blue: 0}})),
+		col.New(4).Add(line.New(props.Line{Color: &props.Color{Red: 0, Green: 0, Blue: 0}, SizePercent: 100})),
 	)
 	m.AddRow(8,
 		col.New(8),
@@ -227,7 +245,7 @@ func (t *DefaultTemplate) addTotals(m core.Maroto, data *InvoiceData, lang i18n.
 	m.AddRow(10)
 }
 
-func (t *DefaultTemplate) addFooter(m core.Maroto, data *InvoiceData, opts *TemplateOptions, lang i18n.Lang) {
+func (t *TableTemplate) addFooter(m core.Maroto, data *InvoiceData, opts *TemplateOptions, lang i18n.Lang) {
 	if opts.ShowQR && opts.QRType != "none" {
 		spayd := GenerateQRPayload(opts.QRType, data)
 		if spayd != "" {
@@ -242,6 +260,7 @@ func (t *DefaultTemplate) addFooter(m core.Maroto, data *InvoiceData, opts *Temp
 					text.New(i18n.TForLang(lang, "pdf.qr_payment"), props.Text{Size: 8, Style: fontstyle.Italic}),
 				),
 			)
+			m.AddRow(5)
 		}
 	}
 
@@ -254,7 +273,7 @@ func (t *DefaultTemplate) addFooter(m core.Maroto, data *InvoiceData, opts *Temp
 	}
 }
 
-func (t *DefaultTemplate) vatPayerText(isVATPayer bool, lang i18n.Lang) string {
+func (t *TableTemplate) vatPayerText(isVATPayer bool, lang i18n.Lang) string {
 	if isVATPayer {
 		return i18n.TForLang(lang, "pdf.vat_payer")
 	}

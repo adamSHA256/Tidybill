@@ -265,7 +265,8 @@ var messagesCS = map[string]string{
 	"default.unit_pcs":     "ks",
 
 	// ── PDF ─────────────────────────────────────────────────────────────
-	"pdf.invoice_title":    "Faktura - daňový doklad %s",
+	"pdf.invoice_title":        "Faktura - daňový doklad %s",
+	"pdf.invoice_title_simple": "Faktura %s",
 	"pdf.supplier":         "DODAVATEL",
 	"pdf.customer":         "ODBĚRATEL",
 	"pdf.ico":              "IČO: %s",

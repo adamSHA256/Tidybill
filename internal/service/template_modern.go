@@ -46,32 +46,24 @@ func (t *ModernTemplate) Render(m core.Maroto, data *InvoiceData, opts *Template
 
 func (t *ModernTemplate) header(data *InvoiceData, opts *TemplateOptions, lang i18n.Lang) []core.Row {
 	var rows []core.Row
-	darkGray := &props.Color{Red: 50, Green: 50, Blue: 50}
-	title := i18n.TfForLang(lang, "pdf.invoice_title", data.Invoice.InvoiceNumber)
+	title := invoiceTitle(lang, data.Invoice.InvoiceNumber, data.Supplier.IsVATPayer)
 
 	if opts.ShowLogo && data.Supplier.LogoPath != "" {
 		if _, err := os.Stat(data.Supplier.LogoPath); err == nil {
 			rows = append(rows, row.New(20).Add(
 				image.NewFromFileCol(4, data.Supplier.LogoPath, props.Rect{Percent: 90}),
-				col.New(4),
-				col.New(4).Add(
-					text.New(title, props.Text{Size: 28, Style: fontstyle.Bold, Align: align.Right, Color: darkGray}),
+				col.New(2),
+				col.New(6).Add(
+					text.New(title, props.Text{Size: 16, Align: align.Right, Top: 4, Color: lightGray}),
 				),
-			))
-			rows = append(rows, row.New(10).Add(
-				col.New(8),
-				text.NewCol(4, data.Invoice.InvoiceNumber, props.Text{Size: 16, Align: align.Right, Color: lightGray}),
 			))
 			return rows
 		}
 	}
 
 	rows = append(rows, row.New(20).Add(
-		col.New(6).Add(
-			text.New(title, props.Text{Size: 28, Style: fontstyle.Bold, Color: darkGray}),
-		),
-		col.New(6).Add(
-			text.New(data.Invoice.InvoiceNumber, props.Text{Size: 16, Align: align.Right, Top: 8, Color: lightGray}),
+		col.New(12).Add(
+			text.New(title, props.Text{Size: 16, Align: align.Right, Top: 4, Color: lightGray}),
 		),
 	))
 	return rows
@@ -137,6 +129,13 @@ func (t *ModernTemplate) parties(data *InvoiceData, lang i18n.Lang) []core.Row {
 			text.NewCol(5, sICDPH, props.Text{Size: 9}),
 			col.New(2),
 			text.NewCol(5, cICDPH, props.Text{Size: 9}),
+		))
+	}
+
+	if !data.Supplier.IsVATPayer {
+		rows = append(rows, row.New(5).Add(
+			text.NewCol(5, i18n.TForLang(lang, "pdf.not_vat_payer"), props.Text{Size: 8, Style: fontstyle.Italic, Color: grayText}),
+			col.New(7),
 		))
 	}
 

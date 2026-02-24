@@ -50,7 +50,7 @@ func (t *MinimalTemplate) header(data *InvoiceData, lang i18n.Lang) []core.Row {
 	issueDate := data.Invoice.IssueDate.Format("02.01.2006")
 
 	rows = append(rows, row.New(12).Add(
-		text.NewCol(6, i18n.TfForLang(lang, "pdf.invoice_title", data.Invoice.InvoiceNumber), props.Text{
+		text.NewCol(6, invoiceTitle(lang, data.Invoice.InvoiceNumber, data.Supplier.IsVATPayer), props.Text{
 			Size: 18, Style: fontstyle.Bold,
 		}),
 		text.NewCol(6, issueDate, props.Text{
@@ -71,6 +71,12 @@ func (t *MinimalTemplate) parties(data *InvoiceData, lang i18n.Lang) []core.Row 
 			data.Supplier.Street, data.Supplier.ZIP, data.Supplier.City, i18n.TfForLang(lang, "pdf.ico", data.Supplier.ICO)),
 			props.Text{Size: 9, Color: minGray}),
 	))
+
+	if !data.Supplier.IsVATPayer {
+		rows = append(rows, row.New(4).Add(
+			text.NewCol(12, i18n.TForLang(lang, "pdf.not_vat_payer"), props.Text{Size: 8, Style: fontstyle.Italic, Color: minLightGray}),
+		))
+	}
 
 	rows = append(rows, row.New(8))
 
@@ -94,22 +100,28 @@ func (t *MinimalTemplate) payment(data *InvoiceData, opts *TemplateOptions, lang
 	var rows []core.Row
 	dueDate := data.Invoice.DueDate.Format("02.01.2006")
 
-	rows = append(rows, row.New(1).Add(line.NewCol(12, props.Line{Color: minLineColor})))
+	rows = append(rows, row.New(1).Add(line.NewCol(12, props.Line{Color: minLineColor, SizePercent: 100})))
 
 	if opts.HasBankInfo {
-		rows = append(rows, row.New(8).Add(
-			text.NewCol(3, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.due_date"), dueDate), props.Text{Size: 9, Style: fontstyle.Bold, Top: 2}),
-			text.NewCol(3, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.variable_symbol_short"), data.Invoice.VariableSymbol), props.Text{Size: 9, Top: 2}),
-			text.NewCol(6, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.bank_account"), data.BankAccount.AccountNumber), props.Text{Size: 9, Align: align.Right, Top: 2}),
+		rows = append(rows, row.New(12).Add(
+			col.New(4).Add(
+				text.New(i18n.TForLang(lang, "pdf.due_date"), props.Text{Size: 9, Style: fontstyle.Bold, Top: 2}),
+				text.New(dueDate, props.Text{Size: 9, Style: fontstyle.Bold, Top: 6}),
+			),
+			text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.variable_symbol_short"), data.Invoice.VariableSymbol), props.Text{Size: 9, Top: 2}),
+			text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.bank_account"), data.BankAccount.AccountNumber), props.Text{Size: 9, Align: align.Right, Top: 2}),
 		))
 	} else {
-		rows = append(rows, row.New(8).Add(
-			text.NewCol(6, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.due_date"), dueDate), props.Text{Size: 9, Style: fontstyle.Bold, Top: 2}),
-			col.New(6),
+		rows = append(rows, row.New(12).Add(
+			col.New(4).Add(
+				text.New(i18n.TForLang(lang, "pdf.due_date"), props.Text{Size: 9, Style: fontstyle.Bold, Top: 2}),
+				text.New(dueDate, props.Text{Size: 9, Style: fontstyle.Bold, Top: 6}),
+			),
+			col.New(8),
 		))
 	}
 
-	rows = append(rows, row.New(1).Add(line.NewCol(12, props.Line{Color: minLineColor})))
+	rows = append(rows, row.New(1).Add(line.NewCol(12, props.Line{Color: minLineColor, SizePercent: 100})))
 	return rows
 }
 
@@ -136,7 +148,7 @@ func (t *MinimalTemplate) totals(data *InvoiceData, lang i18n.Lang) []core.Row {
 	var rows []core.Row
 	currency := data.Invoice.Currency
 
-	rows = append(rows, row.New(1).Add(line.NewCol(12, props.Line{Color: minDivider})))
+	rows = append(rows, row.New(1).Add(line.NewCol(12, props.Line{Color: minDivider, SizePercent: 100})))
 
 	rows = append(rows, row.New(12).Add(
 		col.New(8),
@@ -145,14 +157,6 @@ func (t *MinimalTemplate) totals(data *InvoiceData, lang i18n.Lang) []core.Row {
 			Size: 14, Style: fontstyle.Bold, Align: align.Right, Top: 2,
 		}),
 	))
-
-	if !data.Supplier.IsVATPayer {
-		rows = append(rows, row.New(5).Add(
-			text.NewCol(12, i18n.TForLang(lang, "pdf.not_vat_payer"), props.Text{
-				Size: 8, Align: align.Right, Color: minLightGray,
-			}),
-		))
-	}
 
 	return rows
 }

@@ -29,7 +29,7 @@ type TemplateMargins struct {
 }
 
 var templateRegistry = map[string]TemplateRenderer{
-	"default": &DefaultTemplate{},
+	"table": &TableTemplate{},
 	"classic": &ClassicTemplate{},
 	"modern":  &ModernTemplate{},
 	"minimal": &MinimalTemplate{},
@@ -39,7 +39,7 @@ func GetTemplateRenderer(code string) TemplateRenderer {
 	if r, ok := templateRegistry[code]; ok {
 		return r
 	}
-	return templateRegistry["default"]
+	return templateRegistry["table"]
 }
 
 // invoiceLang extracts the language from invoice data, falling back to the global setting.
@@ -48,4 +48,13 @@ func invoiceLang(data *InvoiceData) i18n.Lang {
 		return i18n.Lang(data.Invoice.Language)
 	}
 	return i18n.GetLang()
+}
+
+// invoiceTitle returns the invoice header text.
+// VAT payers get "Faktura - daňový doklad XXX", others get "Faktura XXX".
+func invoiceTitle(lang i18n.Lang, invoiceNumber string, isVATPayer bool) string {
+	if isVATPayer {
+		return i18n.TfForLang(lang, "pdf.invoice_title", invoiceNumber)
+	}
+	return i18n.TfForLang(lang, "pdf.invoice_title_simple", invoiceNumber)
 }

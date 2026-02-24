@@ -93,7 +93,8 @@ type YAMLItems struct {
 }
 
 type YAMLLineStyle struct {
-	Color string `yaml:"color"`
+	Color       string  `yaml:"color"`
+	SizePercent float64 `yaml:"size_percent"`
 }
 
 type YAMLElement struct {
@@ -174,9 +175,12 @@ func (d *DeclarativeTemplate) renderElement(m core.Maroto, elem YAMLElement, dat
 	}
 
 	if elem.Line != nil {
-		lineColor := d.resolveColor(elem.Line.Color)
+		lineProp := props.Line{Color: d.resolveColor(elem.Line.Color)}
+		if elem.Line.SizePercent > 0 {
+			lineProp.SizePercent = elem.Line.SizePercent
+		}
 		m.AddRows(row.New(1).Add(
-			line.NewCol(12, props.Line{Color: lineColor}),
+			line.NewCol(12, lineProp),
 		))
 		return
 	}
@@ -546,6 +550,9 @@ func templateFuncs(lang i18n.Lang) template.FuncMap {
 		},
 		"labelf": func(key string, args ...interface{}) string {
 			return i18n.TfForLang(lang, key, args...)
+		},
+		"invoiceTitle": func(number string, isVATPayer bool) string {
+			return invoiceTitle(lang, number, isVATPayer)
 		},
 	}
 }

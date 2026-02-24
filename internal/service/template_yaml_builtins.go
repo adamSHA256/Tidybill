@@ -3,7 +3,7 @@ package service
 // BuiltinYAMLTemplates maps template codes to their YAML equivalents.
 // These are used as the starting point when a user duplicates a built-in template.
 var BuiltinYAMLTemplates = map[string]string{
-	"default": yamlDefault,
+	"table": yamlDefault,
 	"classic": yamlClassic,
 	"modern":  yamlModern,
 	"minimal": yamlMinimal,
@@ -34,9 +34,10 @@ layout:
     cols:
       - width: 3
         logo: true
-      - width: 9
-        text: "{{ labelf \"pdf.invoice_title\" .Invoice.InvoiceNumber }}"
+      - width: 6
+        text: "{{ invoiceTitle .Invoice.InvoiceNumber .Supplier.IsVATPayer }}"
         style: { size: 16, bold: true, align: center }
+      - width: 3
 
   - if: "and .Options.ShowLogo .Supplier.LogoPath"
     row: 5
@@ -49,10 +50,10 @@ layout:
     row: 15
     cols:
       - width: 12
-        text: "{{ labelf \"pdf.invoice_title\" .Invoice.InvoiceNumber }}"
+        text: "{{ invoiceTitle .Invoice.InvoiceNumber .Supplier.IsVATPayer }}"
         style: { size: 16, bold: true, align: center }
 
-  - line: { color: black }
+  - line: { color: black, size_percent: 100 }
   - spacer: 5
 
   # ── Parties (3-column layout) ──
@@ -267,20 +268,21 @@ layout:
     cols:
       - width: 3
         logo: true
-      - width: 9
-        text: "{{ labelf \"pdf.invoice_title\" .Invoice.InvoiceNumber }}"
+      - width: 6
+        text: "{{ invoiceTitle .Invoice.InvoiceNumber .Supplier.IsVATPayer }}"
         style: { size: 20, bold: true, align: center, top: 5 }
+      - width: 3
 
   # ── Header without logo ──
   - if: "not (and .Options.ShowLogo .Supplier.LogoPath)"
     row: 15
     cols:
       - width: 12
-        text: "{{ labelf \"pdf.invoice_title\" .Invoice.InvoiceNumber }}"
+        text: "{{ invoiceTitle .Invoice.InvoiceNumber .Supplier.IsVATPayer }}"
         style: { size: 20, bold: true, align: center, left: 2, right: 2 }
 
   - spacer: 5
-  - line: { color: black }
+  - line: { color: black, size_percent: 100 }
   - spacer: 5
 
   # ── Parties ──
@@ -354,8 +356,16 @@ layout:
         text: "{{ if .Customer.ICDPH }}{{ labelf \"pdf.ic_dph\" .Customer.ICDPH }}{{ end }}"
         style: { size: 9, right: 2 }
 
+  - if: "not .Supplier.IsVATPayer"
+    row: 5
+    cols:
+      - width: 4
+        text: "{{ label \"pdf.not_vat_payer\" }}"
+        style: { size: 8, italic: true, left: 2 }
+      - width: 8
+
   - spacer: 8
-  - line: { color: black }
+  - line: { color: black, size_percent: 100 }
   - spacer: 5
 
   # ── Payment details ──
@@ -543,29 +553,18 @@ layout:
     cols:
       - width: 4
         logo: true
-      - width: 4
-      - width: 4
-        text: "{{ labelf \"pdf.invoice_title\" .Invoice.InvoiceNumber }}"
-        style: { size: 28, bold: true, align: right, color: dark_gray }
-
-  - if: "and .Options.ShowLogo .Supplier.LogoPath"
-    row: 10
-    cols:
-      - width: 8
-      - width: 4
-        text: "{{ .Invoice.InvoiceNumber }}"
-        style: { size: 16, align: right, color: light_gray }
+      - width: 2
+      - width: 6
+        text: "{{ invoiceTitle .Invoice.InvoiceNumber .Supplier.IsVATPayer }}"
+        style: { size: 16, align: right, top: 4, color: light_gray }
 
   # ── Header without logo ──
   - if: "not (and .Options.ShowLogo .Supplier.LogoPath)"
     row: 20
     cols:
-      - width: 6
-        text: "{{ labelf \"pdf.invoice_title\" .Invoice.InvoiceNumber }}"
-        style: { size: 28, bold: true, color: dark_gray }
-      - width: 6
-        text: "{{ .Invoice.InvoiceNumber }}"
-        style: { size: 16, align: right, top: 8, color: light_gray }
+      - width: 12
+        text: "{{ invoiceTitle .Invoice.InvoiceNumber .Supplier.IsVATPayer }}"
+        style: { size: 16, align: right, top: 4, color: light_gray }
 
   - spacer: 15
 
@@ -639,6 +638,14 @@ layout:
       - width: 5
         text: "{{ if .Customer.ICDPH }}{{ labelf \"pdf.ic_dph\" .Customer.ICDPH }}{{ end }}"
         style: { size: 9 }
+
+  - if: "not .Supplier.IsVATPayer"
+    row: 5
+    cols:
+      - width: 5
+        text: "{{ label \"pdf.not_vat_payer\" }}"
+        style: { size: 8, italic: true, color: gray_text }
+      - width: 7
 
   - spacer: 15
 
@@ -836,7 +843,7 @@ layout:
   - row: 12
     cols:
       - width: 6
-        text: "{{ labelf \"pdf.invoice_title\" .Invoice.InvoiceNumber }}"
+        text: "{{ invoiceTitle .Invoice.InvoiceNumber .Supplier.IsVATPayer }}"
         style: { size: 18, bold: true }
       - width: 6
         text: "{{ .Invoice.IssueDate | date }}"
@@ -856,6 +863,13 @@ layout:
       - width: 12
         text: "{{ .Supplier.Street }}, {{ .Supplier.ZIP }} {{ .Supplier.City }} | {{ labelf \"pdf.ico\" .Supplier.ICO }}"
         style: { size: 9, color: gray }
+
+  - if: "not .Supplier.IsVATPayer"
+    row: 4
+    cols:
+      - width: 12
+        text: "{{ label \"pdf.not_vat_payer\" }}"
+        style: { size: 8, italic: true, color: light_gray }
 
   - spacer: 8
 
@@ -881,41 +895,44 @@ layout:
 
   # ── Payment info (with bank) ──
   - if: ".Options.HasBankInfo"
-    line: { color: line_color }
+    line: { color: line_color, size_percent: 100 }
 
   - if: ".Options.HasBankInfo"
-    row: 8
+    row: 12
     cols:
-      - width: 3
-        text: "{{ label \"pdf.due_date\" }} {{ .Invoice.DueDate | date }}"
-        style: { size: 9, bold: true, top: 2 }
-      - width: 3
+      - width: 4
+        texts:
+          - text: "{{ label \"pdf.due_date\" }}"
+            style: { size: 9, bold: true, top: 2 }
+          - text: "{{ .Invoice.DueDate | date }}"
+            style: { size: 9, bold: true, top: 6 }
+      - width: 4
         text: "{{ label \"pdf.variable_symbol_short\" }}: {{ .Invoice.VariableSymbol }}"
         style: { size: 9, top: 2 }
-      - width: 6
+      - width: 4
         text: "{{ label \"pdf.bank_account\" }} {{ .BankAccount.AccountNumber }}"
         style: { size: 9, align: right, top: 2 }
 
   - if: ".Options.HasBankInfo"
-    line: { color: line_color }
+    line: { color: line_color, size_percent: 100 }
 
   # ── Payment info (without bank) ──
   - if: "not .Options.HasBankInfo"
-    line: { color: line_color }
+    line: { color: line_color, size_percent: 100 }
 
   - if: "not .Options.HasBankInfo"
-    row: 8
+    row: 12
     cols:
       - width: 4
-        text: "{{ label \"pdf.due_date\" }} {{ .Invoice.DueDate | date }}"
-        style: { size: 9, bold: true, top: 2 }
-      - width: 4
-        text: "{{ label \"pdf.payment_method\" }} {{ .Invoice.PaymentMethod }}"
-        style: { size: 9, top: 2 }
-      - width: 4
+        texts:
+          - text: "{{ label \"pdf.due_date\" }}"
+            style: { size: 9, bold: true, top: 2 }
+          - text: "{{ .Invoice.DueDate | date }}"
+            style: { size: 9, bold: true, top: 6 }
+      - width: 8
 
   - if: "not .Options.HasBankInfo"
-    line: { color: line_color }
+    line: { color: line_color, size_percent: 100 }
 
   - spacer: 15
 
@@ -937,7 +954,7 @@ layout:
   - spacer: 10
 
   # ── Totals ──
-  - line: { color: divider }
+  - line: { color: divider, size_percent: 100 }
 
   - row: 12
     cols:
@@ -949,12 +966,7 @@ layout:
         text: "{{ .Invoice.Total | money }}"
         style: { size: 14, bold: true, align: right, top: 2 }
 
-  - if: "not .Supplier.IsVATPayer"
-    row: 5
-    cols:
-      - width: 12
-        text: "{{ label \"pdf.not_vat_payer\" }}"
-        style: { size: 8, align: right, color: light_gray }
+
 
   # ── QR code ──
   - if: "and .Options.ShowQR (ne .Options.QRType \"none\")"

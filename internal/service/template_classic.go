@@ -21,6 +21,7 @@ import (
 const (
 	classicPadLeft  = 2.0
 	classicPadRight = 2.0
+	classicLineSizePct = 100.0
 )
 
 type ClassicTemplate struct{}
@@ -33,11 +34,11 @@ func (t *ClassicTemplate) Render(m core.Maroto, data *InvoiceData, opts *Templat
 	lang := invoiceLang(data)
 	m.AddRows(t.header(data, opts, lang)...)
 	m.AddRow(5)
-	m.AddRow(1, line.NewCol(12))
+	m.AddRow(1, line.NewCol(12, props.Line{SizePercent: classicLineSizePct}))
 	m.AddRow(5)
 	m.AddRows(t.parties(data, lang)...)
 	m.AddRow(8)
-	m.AddRow(1, line.NewCol(12))
+	m.AddRow(1, line.NewCol(12, props.Line{SizePercent: classicLineSizePct}))
 	m.AddRow(5)
 	m.AddRows(t.details(data, opts, lang)...)
 	m.AddRow(8)
@@ -50,7 +51,7 @@ func (t *ClassicTemplate) Render(m core.Maroto, data *InvoiceData, opts *Templat
 
 func (t *ClassicTemplate) header(data *InvoiceData, opts *TemplateOptions, lang i18n.Lang) []core.Row {
 	var rows []core.Row
-	title := i18n.TfForLang(lang, "pdf.invoice_title", data.Invoice.InvoiceNumber)
+	title := invoiceTitle(lang, data.Invoice.InvoiceNumber, data.Supplier.IsVATPayer)
 
 	if opts.ShowLogo && data.Supplier.LogoPath != "" {
 		if _, err := os.Stat(data.Supplier.LogoPath); err == nil {
@@ -59,11 +60,12 @@ func (t *ClassicTemplate) header(data *InvoiceData, opts *TemplateOptions, lang 
 					Percent: 80,
 					Left:    classicPadLeft,
 				}),
-				col.New(9).Add(
+				col.New(6).Add(
 					text.New(title, props.Text{
 						Size: 20, Style: fontstyle.Bold, Align: align.Center, Top: 5,
 					}),
 				),
+				col.New(3),
 			))
 			return rows
 		}
@@ -111,7 +113,7 @@ func (t *ClassicTemplate) parties(data *InvoiceData, lang i18n.Lang) []core.Row 
 		text.NewCol(4, i18n.TfForLang(lang, "pdf.ico", data.Customer.ICO), props.Text{Size: 9, Right: classicPadRight}),
 	))
 
-	supplierDIC := i18n.TForLang(lang, "pdf.not_vat_payer")
+	supplierDIC := ""
 	if data.Supplier.DIC != "" {
 		supplierDIC = i18n.TfForLang(lang, "pdf.dic", data.Supplier.DIC)
 	}
@@ -119,11 +121,13 @@ func (t *ClassicTemplate) parties(data *InvoiceData, lang i18n.Lang) []core.Row 
 	if data.Customer.DIC != "" {
 		customerDIC = i18n.TfForLang(lang, "pdf.dic", data.Customer.DIC)
 	}
-	rows = append(rows, row.New(5).Add(
-		text.NewCol(4, supplierDIC, props.Text{Size: 9, Left: classicPadLeft}),
-		col.New(4),
-		text.NewCol(4, customerDIC, props.Text{Size: 9, Right: classicPadRight}),
-	))
+	if supplierDIC != "" || customerDIC != "" {
+		rows = append(rows, row.New(5).Add(
+			text.NewCol(4, supplierDIC, props.Text{Size: 9, Left: classicPadLeft}),
+			col.New(4),
+			text.NewCol(4, customerDIC, props.Text{Size: 9, Right: classicPadRight}),
+		))
+	}
 
 	if data.Supplier.ICDPH != "" || data.Customer.ICDPH != "" {
 		sICDPH, cICDPH := "", ""
@@ -137,6 +141,13 @@ func (t *ClassicTemplate) parties(data *InvoiceData, lang i18n.Lang) []core.Row 
 			text.NewCol(4, sICDPH, props.Text{Size: 9, Left: classicPadLeft}),
 			col.New(4),
 			text.NewCol(4, cICDPH, props.Text{Size: 9, Right: classicPadRight}),
+		))
+	}
+
+	if !data.Supplier.IsVATPayer {
+		rows = append(rows, row.New(5).Add(
+			text.NewCol(4, i18n.TForLang(lang, "pdf.not_vat_payer"), props.Text{Size: 8, Style: fontstyle.Italic, Left: classicPadLeft}),
+			col.New(8),
 		))
 	}
 
@@ -214,7 +225,7 @@ func (t *ClassicTemplate) items(data *InvoiceData, lang i18n.Lang) []core.Row {
 		text.NewCol(2, i18n.TForLang(lang, "pdf.col_total"), props.Text{Size: 9, Style: fontstyle.Bold, Align: align.Right, Right: classicPadRight}),
 	))
 
-	rows = append(rows, row.New(1).Add(line.NewCol(12)))
+	rows = append(rows, row.New(1).Add(line.NewCol(12, props.Line{SizePercent: classicLineSizePct})))
 
 	for _, item := range data.Items {
 		rows = append(rows, row.New(6).Add(
@@ -227,7 +238,7 @@ func (t *ClassicTemplate) items(data *InvoiceData, lang i18n.Lang) []core.Row {
 		))
 	}
 
-	rows = append(rows, row.New(1).Add(line.NewCol(12)))
+	rows = append(rows, row.New(1).Add(line.NewCol(12, props.Line{SizePercent: classicLineSizePct})))
 	return rows
 }
 
