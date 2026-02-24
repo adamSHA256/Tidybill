@@ -205,6 +205,10 @@ Requires: Go, Node.js, pnpm, Rust toolchain, Tauri 2 CLI.
 - [x] PDF templates (classic, modern, minimal) + Linux packages
 - [ ] Encrypted export/import for device sync
 
+## Acknowledgements
+
+- [Maroto v2](https://github.com/johnfercher/maroto) — PDF generation library for Go
+
 ## License
 
-[MIT](LICENSE)
+[AGPL-3.0](LICENSE)
