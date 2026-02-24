@@ -529,11 +529,11 @@ var messagesEN = map[string]string{
 	"error.builtin_cannot_delete": "Built-in type, cannot be deleted",
 
 	// ── PDF Template Names ──────────────────────────────────────────────
-	"template.name.default": "Tables",
+	"template.name.table": "Tables",
 	"template.name.classic": "Classic",
 	"template.name.modern":  "Modern",
 	"template.name.minimal": "Minimal",
-	"template.desc.default": "Template with gray header and full table borders",
+	"template.desc.table": "Template with gray header and full table borders",
 	"template.desc.classic": "Traditional black and white invoice with page numbers and formal layout",
 	"template.desc.modern":  "Contemporary design with steel blue accent and color hierarchy",
 	"template.desc.minimal": "Minimalist style with maximum white space and no decorations",

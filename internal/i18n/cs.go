@@ -529,11 +529,11 @@ var messagesCS = map[string]string{
 	"error.builtin_cannot_delete": "Vestavěný typ, nelze smazat",
 
 	// ── PDF Template Names ──────────────────────────────────────────────
-	"template.name.default": "Tabulková",
+	"template.name.table": "Tabulková",
 	"template.name.classic": "Klasická",
 	"template.name.modern":  "Moderní",
 	"template.name.minimal": "Minimální",
-	"template.desc.default": "Šablona s šedým záhlavím a plnými okraji tabulky",
+	"template.desc.table": "Šablona s šedým záhlavím a plnými okraji tabulky",
 	"template.desc.classic": "Tradiční černobílá faktura s čísly stránek a formálním rozložením",
 	"template.desc.modern":  "Současný design s ocelovým modrým akcentem a barevnou hierarchií",
 	"template.desc.minimal": "Minimalistický styl s maximem bílého prostoru a bez dekorací",
