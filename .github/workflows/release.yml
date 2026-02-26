@@ -210,8 +210,12 @@ jobs:
           VERSION="${TAG#v}"
           REPO="${{ github.repository }}"
 
-          # Get all release assets as JSON
-          ASSETS=$(gh api "repos/${REPO}/releases/tags/${TAG}" --jq '.assets[] | "\(.id) \(.name)"')
+          # Find release (including drafts) by tag name
+          RELEASE_ID=$(gh api "repos/${REPO}/releases" --jq ".[] | select(.tag_name==\"${TAG}\") | .id")
+          echo "Release ID: ${RELEASE_ID}"
+
+          # Get all release assets
+          ASSETS=$(gh api "repos/${REPO}/releases/${RELEASE_ID}/assets" --jq '.[] | "\(.id) \(.name)"')
 
           rename_asset() {
             local old_name="$1"
@@ -243,7 +247,7 @@ jobs:
           rename_asset "TidyBill-${VERSION}-1.x86_64.rpm.sig"    "TidyBill_Linux_Desktop_${VERSION}_x86_64.rpm.sig"
 
           # Update release body with download table
-          gh release edit "${TAG}" --repo "${REPO}" --notes "$(cat <<EOF
+          gh api "repos/${REPO}/releases/${RELEASE_ID}" -X PATCH -f body="$(cat <<EOF
           # Download
 
           > **Not sure which to pick?** If you want a graphical app with buttons and menus, download the **Desktop App**. If you prefer working in a terminal, download the **CLI**.
@@ -272,7 +276,7 @@ jobs:
 
           See [README](https://github.com/adamSHA256/Tidybill#readme) for features and screenshots.
           EOF
-          )"
+          )" --silent
 
   # Attach standalone CLI binaries to the release
   upload-cli:
