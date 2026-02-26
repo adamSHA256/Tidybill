@@ -166,7 +166,7 @@
 | PDF | Maroto v2 (pure Go, built-in QR codes) |
 | Desktop | Tauri 2 (Rust shell + webview) |
 | Frontend | React 19, TypeScript, Mantine 8 |
-| Distribution | CLI: single binary / Desktop: AppImage, deb, rpm |
+| Distribution | CLI: single binary / Desktop: deb, rpm (AppImage: local build only) |
 
 ## Quick Start
 
@@ -182,10 +182,12 @@ On first run, TidyBill walks you through setting up your company profile and ban
 ### Desktop App
 
 ```bash
-make desktop         # Build AppImage, deb, rpm
+make desktop         # Build deb, rpm (and AppImage locally)
 ```
 
 Requires: Go, Node.js, pnpm, Rust toolchain, Tauri 2 CLI.
+
+**AppImage**: Not included in releases due to GPU compatibility issues across distributions. Build locally with `make desktop` — the AppImage will be in `desktop/src-tauri/target/release/bundle/appimage/`.
 
 ### Data location
 

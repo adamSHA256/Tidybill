@@ -63,7 +63,7 @@ jobs:
             rust-target: x86_64-unknown-linux-gnu
             goos: linux
             goarch: amd64
-            tauri-args: ""
+            tauri-args: "--bundles deb,rpm"
             ext: ""
 
           - os: windows-latest
@@ -168,35 +168,6 @@ jobs:
           releaseDraft: true
           prerelease: false
 
-      - name: Fix AppImage GPU library conflicts
-        if: runner.os == 'Linux'
-        run: |
-          cd desktop/src-tauri/target/release/bundle/appimage
-          APPIMAGE=$(ls *.AppImage)
-          chmod +x "$APPIMAGE"
-          "./$APPIMAGE" --appimage-extract
-
-          # Remove bundled GPU/EGL libs that conflict with host drivers
-          rm -f squashfs-root/usr/lib/libEGL* \
-                squashfs-root/usr/lib/libGL* \
-                squashfs-root/usr/lib/libgbm* \
-                squashfs-root/usr/lib/libdrm* \
-                squashfs-root/usr/lib/libGLX* \
-                squashfs-root/usr/lib/libGLdispatch* \
-                squashfs-root/usr/lib/libOpenGL*
-          rm -rf squashfs-root/usr/lib/dri
-
-          # Repack
-          wget -q https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
-          chmod +x appimagetool
-          ARCH=x86_64 ./appimagetool --appimage-extract-and-run squashfs-root "$APPIMAGE"
-
-          # Re-upload to release (overwrite the original)
-          gh release upload "${{ github.ref_name }}" "$APPIMAGE" \
-            --repo "${{ github.repository }}" --clobber
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   # Rename release assets and set release body
   rename-assets:
     needs: [build-cli, build-desktop]
@@ -234,14 +205,12 @@ jobs:
           # Desktop apps
           rename_asset "TidyBill_${VERSION}_x64-setup.exe"      "TidyBill_Windows_Desktop_${VERSION}_x64_setup.exe"
           rename_asset "TidyBill_${VERSION}_x64-setup.exe.sig"   "TidyBill_Windows_Desktop_${VERSION}_x64_setup.exe.sig"
-          rename_asset "TidyBill_${VERSION}_amd64.AppImage"      "TidyBill_Linux_Desktop_${VERSION}_amd64.AppImage"
           rename_asset "TidyBill_${VERSION}_amd64.deb"           "TidyBill_Linux_Desktop_${VERSION}_amd64.deb"
           rename_asset "TidyBill-${VERSION}-1.x86_64.rpm"        "TidyBill_Linux_Desktop_${VERSION}_x86_64.rpm"
           rename_asset "TidyBill_${VERSION}_aarch64.dmg"         "TidyBill_Mac_Desktop_${VERSION}_aarch64.dmg"
           rename_asset "TidyBill_${VERSION}_x64.dmg"             "TidyBill_Mac_Desktop_${VERSION}_x64.dmg"
 
           # Signature files for updater (if present)
-          rename_asset "TidyBill_${VERSION}_amd64.AppImage.sig"  "TidyBill_Linux_Desktop_${VERSION}_amd64.AppImage.sig"
           rename_asset "TidyBill_${VERSION}_aarch64.dmg.sig"     "TidyBill_Mac_Desktop_${VERSION}_aarch64.dmg.sig"
           rename_asset "TidyBill_${VERSION}_x64.dmg.sig"         "TidyBill_Mac_Desktop_${VERSION}_x64.dmg.sig"
           rename_asset "TidyBill-${VERSION}-1.x86_64.rpm.sig"    "TidyBill_Linux_Desktop_${VERSION}_x86_64.rpm.sig"
@@ -257,7 +226,6 @@ jobs:
           | Platform | File | Notes |
           |----------|------|-------|
           | **Windows** | \`TidyBill_Windows_Desktop_${VERSION}_x64_setup.exe\` | Double-click to install. SmartScreen may warn — click "More info" → "Run anyway" |
-          | **Linux** | \`TidyBill_Linux_Desktop_${VERSION}_amd64.AppImage\` | \`chmod +x\` and run. Works on any distro |
           | **Linux (Debian/Ubuntu)** | \`TidyBill_Linux_Desktop_${VERSION}_amd64.deb\` | \`sudo dpkg -i TidyBill_Linux_Desktop_${VERSION}_amd64.deb\` |
           | **Linux (Fedora/RHEL)** | \`TidyBill_Linux_Desktop_${VERSION}_x86_64.rpm\` | \`sudo rpm -i TidyBill_Linux_Desktop_${VERSION}_x86_64.rpm\` |
           | **macOS (Apple Silicon)** | \`TidyBill_Mac_Desktop_${VERSION}_aarch64.dmg\` | For M1/M2/M3/M4 Macs |
@@ -295,7 +263,28 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ github.ref_name }}"
+          REPO="${{ github.repository }}"
+
+          # Find release (including drafts) by tag name
+          RELEASE_ID=$(gh api "repos/${REPO}/releases" --jq ".[] | select(.tag_name==\"${TAG}\") | .id")
+          echo "Release ID: ${RELEASE_ID}"
+
+          UPLOAD_URL="https://uploads.github.com/repos/${REPO}/releases/${RELEASE_ID}/assets"
+
           for file in cli-binaries/*; do
-            echo "Uploading $file ..."
-            gh release upload "$TAG" "$file" --repo "${{ github.repository }}" --clobber
+            filename=$(basename "$file")
+            echo "Uploading ${filename} ..."
+
+            # Delete existing asset with same name if present (--clobber equivalent)
+            existing_id=$(gh api "repos/${REPO}/releases/${RELEASE_ID}/assets" \
+              --jq ".[] | select(.name==\"${filename}\") | .id" 2>/dev/null || true)
+            if [ -n "$existing_id" ]; then
+              echo "Deleting existing asset ${filename} (id: ${existing_id})"
+              gh api "repos/${REPO}/releases/assets/${existing_id}" -X DELETE --silent
+            fi
+
+            gh api "${UPLOAD_URL}?name=${filename}" \
+              -X POST \
+              -H "Content-Type: application/octet-stream" \
+              --input "$file" --silent
           done
