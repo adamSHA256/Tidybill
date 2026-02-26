@@ -1,7 +1,14 @@
 <div align="center">
-  <img src="desktop/src/assets/tidybill_logo.png" alt="TidyBill" width="280" />
+  <a href="https://github.com/adamSHA256/Tidybill">
+    <img src="desktop/src/assets/tidybill_logo.png" alt="TidyBill" width="280" />
+  </a>
   <p><strong>Clean invoices, zero clutter.</strong></p>
   <p>Local-first invoice manager for freelancers — CLI + Desktop GUI, 3 languages.</p>
+  <p>
+    <a href="https://github.com/adamSHA256/Tidybill/releases/latest">
+      <img src="https://img.shields.io/github/v/release/adamSHA256/Tidybill?label=Download&style=for-the-badge&color=4A9E8E" alt="Download" />
+    </a>
+  </p>
 </div>
 
 ---
@@ -145,7 +152,7 @@
 ## Features
 
 - **Full CLI + Desktop GUI** — terminal for power users, Tauri-based desktop app for everyone else
-- **PDF generation** — professional invoices with QR payment codes (SPAYD format)
+- **PDF generation** — professional invoices with QR payment codes (SPAYD, EPC/GiroCode, Pay by Square)
 - **Multi-language** — Czech, Slovak, and English (UI + PDF output)
 - **Items catalog** — reusable items with smart suggestions and customer price history
 - **Multi-supplier** — manage multiple companies from one installation
