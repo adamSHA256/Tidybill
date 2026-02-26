@@ -20,7 +20,7 @@ import {
   CopyButton,
   Tooltip,
 } from '@mantine/core'
-import { IconCopy, IconCheck } from '@tabler/icons-react'
+import { IconCopy, IconCheck, IconFolderOpen } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
@@ -302,24 +302,48 @@ export function Settings() {
         <Paper p="md" radius="md" withBorder>
           <Text fw={500} mb="md">{t('settings.directories')}</Text>
           <Stack gap="md">
-            <TextInput
-              label={t('settings.dir_logos')}
-              placeholder={t('settings.dir_placeholder')}
-              value={dirLogos}
-              onChange={(e) => setDirLogos(e.currentTarget.value)}
-            />
-            <TextInput
-              label={t('settings.dir_pdfs')}
-              placeholder={t('settings.dir_placeholder')}
-              value={dirPdfs}
-              onChange={(e) => setDirPdfs(e.currentTarget.value)}
-            />
-            <TextInput
-              label={t('settings.dir_previews')}
-              placeholder={t('settings.dir_placeholder')}
-              value={dirPreviews}
-              onChange={(e) => setDirPreviews(e.currentTarget.value)}
-            />
+            <Group align="end" gap="xs">
+              <TextInput
+                label={t('settings.dir_logos')}
+                placeholder={t('settings.dir_placeholder')}
+                value={dirLogos}
+                onChange={(e) => setDirLogos(e.currentTarget.value)}
+                style={{ flex: 1 }}
+              />
+              <Tooltip label={t('invoice.open_folder')}>
+                <ActionIcon variant="light" size="lg" onClick={() => { if (dirLogos) openInBrowser(dirLogos) }}>
+                  <IconFolderOpen size={18} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
+            <Group align="end" gap="xs">
+              <TextInput
+                label={t('settings.dir_pdfs')}
+                placeholder={t('settings.dir_placeholder')}
+                value={dirPdfs}
+                onChange={(e) => setDirPdfs(e.currentTarget.value)}
+                style={{ flex: 1 }}
+              />
+              <Tooltip label={t('invoice.open_folder')}>
+                <ActionIcon variant="light" size="lg" onClick={() => { if (dirPdfs) openInBrowser(dirPdfs) }}>
+                  <IconFolderOpen size={18} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
+            <Group align="end" gap="xs">
+              <TextInput
+                label={t('settings.dir_previews')}
+                placeholder={t('settings.dir_placeholder')}
+                value={dirPreviews}
+                onChange={(e) => setDirPreviews(e.currentTarget.value)}
+                style={{ flex: 1 }}
+              />
+              <Tooltip label={t('invoice.open_folder')}>
+                <ActionIcon variant="light" size="lg" onClick={() => { if (dirPreviews) openInBrowser(dirPreviews) }}>
+                  <IconFolderOpen size={18} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
             <Button
               w={200}
               onClick={() => updateMutation.mutate({

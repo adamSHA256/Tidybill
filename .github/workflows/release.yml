@@ -141,6 +141,13 @@ jobs:
           go build -ldflags="-s -w -X github.com/adamSHA256/tidybill/internal/config.Version=${{ github.ref_name }}" \
             -o "desktop/src-tauri/binaries/tidybill-${{ matrix.rust-target }}${{ matrix.ext }}" ./cmd/tidybill/
 
+      - name: Set version from git tag
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          sed -i'' -e "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" desktop/src-tauri/tauri.conf.json
+          echo "Set Tauri version to ${VERSION}"
+
       - name: Install frontend dependencies
         working-directory: desktop
         run: pnpm install --frozen-lockfile
@@ -157,7 +164,7 @@ jobs:
           args: ${{ matrix.tauri-args }}
           tagName: ${{ github.ref_name }}
           releaseName: "TidyBill ${{ github.ref_name }}"
-          releaseBody: "See the assets below to download the installer for your platform."
+          releaseBody: "Release is being built..."
           releaseDraft: true
           prerelease: false
 
@@ -190,12 +197,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # Rename release assets to clear naming convention
+  # Rename release assets and set release body
   rename-assets:
     needs: [build-cli, build-desktop]
     runs-on: ubuntu-latest
     steps:
-      - name: Rename desktop assets
+      - name: Rename assets and update release body
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -234,6 +241,38 @@ jobs:
           rename_asset "TidyBill_${VERSION}_aarch64.dmg.sig"     "TidyBill_Mac_Desktop_${VERSION}_aarch64.dmg.sig"
           rename_asset "TidyBill_${VERSION}_x64.dmg.sig"         "TidyBill_Mac_Desktop_${VERSION}_x64.dmg.sig"
           rename_asset "TidyBill-${VERSION}-1.x86_64.rpm.sig"    "TidyBill_Linux_Desktop_${VERSION}_x86_64.rpm.sig"
+
+          # Update release body with download table
+          gh release edit "${TAG}" --repo "${REPO}" --notes "$(cat <<EOF
+          # Download
+
+          > **Not sure which to pick?** If you want a graphical app with buttons and menus, download the **Desktop App**. If you prefer working in a terminal, download the **CLI**.
+
+          ### Desktop App (GUI)
+
+          | Platform | File | Notes |
+          |----------|------|-------|
+          | **Windows** | \`TidyBill_Windows_Desktop_${VERSION}_x64_setup.exe\` | Double-click to install. SmartScreen may warn — click "More info" → "Run anyway" |
+          | **Linux** | \`TidyBill_Linux_Desktop_${VERSION}_amd64.AppImage\` | \`chmod +x\` and run. Works on any distro |
+          | **Linux (Debian/Ubuntu)** | \`TidyBill_Linux_Desktop_${VERSION}_amd64.deb\` | \`sudo dpkg -i TidyBill_Linux_Desktop_${VERSION}_amd64.deb\` |
+          | **Linux (Fedora/RHEL)** | \`TidyBill_Linux_Desktop_${VERSION}_x86_64.rpm\` | \`sudo rpm -i TidyBill_Linux_Desktop_${VERSION}_x86_64.rpm\` |
+          | **macOS (Apple Silicon)** | \`TidyBill_Mac_Desktop_${VERSION}_aarch64.dmg\` | For M1/M2/M3/M4 Macs |
+          | **macOS (Intel)** | \`TidyBill_Mac_Desktop_${VERSION}_x64.dmg\` | For older Intel Macs |
+
+          ### CLI (terminal only, no GUI)
+
+          | Platform | File |
+          |----------|------|
+          | **Linux** | \`tidybill-linux-terminal-amd64\` |
+          | **Windows** | \`tidybill-windows-terminal-amd64.exe\` |
+          | **macOS (Apple Silicon)** | \`tidybill-mac-terminal-arm64\` |
+          | **macOS (Intel)** | \`tidybill-mac-terminal-amd64\` |
+
+          ## What's new
+
+          See [README](https://github.com/adamSHA256/Tidybill#readme) for features and screenshots.
+          EOF
+          )"
 
   # Attach standalone CLI binaries to the release
   upload-cli:

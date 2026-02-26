@@ -381,7 +381,7 @@ func csDataset() dataset {
 		Settings: map[string]string{
 			"language":      "cs",
 			"units":         `["ks","hod","den","m²","m","kg","l"]`,
-			"payment_types": `[{"code":"bank_transfer","is_default":true},{"code":"cash"},{"code":"card"}]`,
+			"payment_types": `[{"code":"bank_transfer","is_default":true},{"code":"cash"}]`,
 		},
 		Suppliers: []seedSupplier{
 			{
@@ -489,7 +489,7 @@ func skDataset() dataset {
 		Settings: map[string]string{
 			"language":      "sk",
 			"units":         `["ks","hod","deň","m²","m","kg","l"]`,
-			"payment_types": `[{"code":"bank_transfer","is_default":true},{"code":"cash"},{"code":"card"}]`,
+			"payment_types": `[{"code":"bank_transfer","is_default":true},{"code":"cash"}]`,
 		},
 		Suppliers: []seedSupplier{
 			{
@@ -596,7 +596,7 @@ func enDataset() dataset {
 		Settings: map[string]string{
 			"language":      "en",
 			"units":         `["pcs","hr","day","m²","m","kg","l"]`,
-			"payment_types": `[{"code":"bank_transfer","is_default":true},{"code":"cash"},{"code":"card"},{"code":"paypal"}]`,
+			"payment_types": `[{"code":"bank_transfer","is_default":true},{"code":"cash"}]`,
 		},
 		Suppliers: []seedSupplier{
 			{

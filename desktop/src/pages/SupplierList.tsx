@@ -576,7 +576,7 @@ export function SupplierList() {
             <TextInput label={t('bank_account.swift_label')} value={baSwift}
               onChange={(e) => setBaSwift(e.currentTarget.value)} />
             <Select label={t('bank_account.currency_label')}
-              data={['CZK', 'EUR', 'USD', 'GBP', 'PLN', 'CHF']}
+              data={['CZK', 'EUR', 'USD', 'GBP', 'PLN']}
               value={baCurrency} onChange={(v) => setBaCurrency(v || 'CZK')}
               allowDeselect={false} />
           </Group>

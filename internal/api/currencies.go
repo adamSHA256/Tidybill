@@ -15,7 +15,6 @@ var defaultCurrencies = []Currency{
 	{Code: "USD"},
 	{Code: "GBP"},
 	{Code: "PLN"},
-	{Code: "CHF"},
 }
 
 func (s *Server) getCurrencies(w http.ResponseWriter, r *http.Request) {
