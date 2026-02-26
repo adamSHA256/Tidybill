@@ -22,16 +22,16 @@ jobs:
         include:
           - goos: linux
             goarch: amd64
-            suffix: linux-amd64
+            suffix: linux-terminal-amd64
           - goos: windows
             goarch: amd64
-            suffix: windows-amd64.exe
+            suffix: windows-terminal-amd64.exe
           - goos: darwin
             goarch: arm64
-            suffix: darwin-arm64
+            suffix: mac-terminal-arm64
           - goos: darwin
             goarch: amd64
-            suffix: darwin-amd64
+            suffix: mac-terminal-amd64
     steps:
       - uses: actions/checkout@v4
 
@@ -189,6 +189,51 @@ jobs:
             --repo "${{ github.repository }}" --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Rename release assets to clear naming convention
+  rename-assets:
+    needs: [build-cli, build-desktop]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rename desktop assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          VERSION="${TAG#v}"
+          REPO="${{ github.repository }}"
+
+          # Get all release assets as JSON
+          ASSETS=$(gh api "repos/${REPO}/releases/tags/${TAG}" --jq '.assets[] | "\(.id) \(.name)"')
+
+          rename_asset() {
+            local old_name="$1"
+            local new_name="$2"
+            local asset_id
+            asset_id=$(echo "$ASSETS" | grep " ${old_name}$" | awk '{print $1}')
+            if [ -n "$asset_id" ]; then
+              echo "Renaming: ${old_name} -> ${new_name}"
+              gh api "repos/${REPO}/releases/assets/${asset_id}" \
+                -X PATCH -f name="${new_name}" --silent
+            else
+              echo "Asset not found: ${old_name}"
+            fi
+          }
+
+          # Desktop apps
+          rename_asset "TidyBill_${VERSION}_x64-setup.exe"      "TidyBill_Windows_Desktop_${VERSION}_x64_setup.exe"
+          rename_asset "TidyBill_${VERSION}_x64-setup.exe.sig"   "TidyBill_Windows_Desktop_${VERSION}_x64_setup.exe.sig"
+          rename_asset "TidyBill_${VERSION}_amd64.AppImage"      "TidyBill_Linux_Desktop_${VERSION}_amd64.AppImage"
+          rename_asset "TidyBill_${VERSION}_amd64.deb"           "TidyBill_Linux_Desktop_${VERSION}_amd64.deb"
+          rename_asset "TidyBill-${VERSION}-1.x86_64.rpm"        "TidyBill_Linux_Desktop_${VERSION}_x86_64.rpm"
+          rename_asset "TidyBill_${VERSION}_aarch64.dmg"         "TidyBill_Mac_Desktop_${VERSION}_aarch64.dmg"
+          rename_asset "TidyBill_${VERSION}_x64.dmg"             "TidyBill_Mac_Desktop_${VERSION}_x64.dmg"
+
+          # Signature files for updater (if present)
+          rename_asset "TidyBill_${VERSION}_amd64.AppImage.sig"  "TidyBill_Linux_Desktop_${VERSION}_amd64.AppImage.sig"
+          rename_asset "TidyBill_${VERSION}_aarch64.dmg.sig"     "TidyBill_Mac_Desktop_${VERSION}_aarch64.dmg.sig"
+          rename_asset "TidyBill_${VERSION}_x64.dmg.sig"         "TidyBill_Mac_Desktop_${VERSION}_x64.dmg.sig"
+          rename_asset "TidyBill-${VERSION}-1.x86_64.rpm.sig"    "TidyBill_Linux_Desktop_${VERSION}_x86_64.rpm.sig"
 
   # Attach standalone CLI binaries to the release
   upload-cli:
