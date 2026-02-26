@@ -161,6 +161,35 @@ jobs:
           releaseDraft: true
           prerelease: false
 
+      - name: Fix AppImage GPU library conflicts
+        if: runner.os == 'Linux'
+        run: |
+          cd desktop/src-tauri/target/release/bundle/appimage
+          APPIMAGE=$(ls *.AppImage)
+          chmod +x "$APPIMAGE"
+          "./$APPIMAGE" --appimage-extract
+
+          # Remove bundled GPU/EGL libs that conflict with host drivers
+          rm -f squashfs-root/usr/lib/libEGL* \
+                squashfs-root/usr/lib/libGL* \
+                squashfs-root/usr/lib/libgbm* \
+                squashfs-root/usr/lib/libdrm* \
+                squashfs-root/usr/lib/libGLX* \
+                squashfs-root/usr/lib/libGLdispatch* \
+                squashfs-root/usr/lib/libOpenGL*
+          rm -rf squashfs-root/usr/lib/dri
+
+          # Repack
+          wget -q https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
+          chmod +x appimagetool
+          ARCH=x86_64 ./appimagetool --appimage-extract-and-run squashfs-root "$APPIMAGE"
+
+          # Re-upload to release (overwrite the original)
+          gh release upload "${{ github.ref_name }}" "$APPIMAGE" \
+            --repo "${{ github.repository }}" --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # Attach standalone CLI binaries to the release
   upload-cli:
     needs: [build-cli, build-desktop]
