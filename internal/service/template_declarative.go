@@ -329,7 +329,7 @@ func (d *DeclarativeTemplate) renderItems(m core.Maroto, items *YAMLItems, data 
 
 			var content string
 			if yc.Field != "" {
-				content = d.resolveItemField(yc.Field, item, currency, yc.Format)
+				content = d.resolveItemField(yc.Field, item, currency, yc.Format, td.Lang)
 			} else if yc.Text != "" {
 				content = d.evalItemText(yc.Text, item, td)
 			}
@@ -356,7 +356,7 @@ func (d *DeclarativeTemplate) renderItems(m core.Maroto, items *YAMLItems, data 
 	}
 }
 
-func (d *DeclarativeTemplate) resolveItemField(field string, item interface{}, currency, format string) string {
+func (d *DeclarativeTemplate) resolveItemField(field string, item interface{}, currency, format string, lang i18n.Lang) string {
 	switch strings.ToLower(field) {
 	case "description":
 		return getItemString(item, "Description")
@@ -364,7 +364,7 @@ func (d *DeclarativeTemplate) resolveItemField(field string, item interface{}, c
 		v := getItemFloat(item, "Quantity")
 		return fmt.Sprintf("%.0f", v)
 	case "unit":
-		return getItemString(item, "Unit")
+		return i18n.TranslateUnit(getItemString(item, "Unit"), lang)
 	case "unitprice", "unit_price":
 		v := getItemFloat(item, "UnitPrice")
 		if format == "money" {

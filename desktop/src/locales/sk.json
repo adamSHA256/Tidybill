@@ -367,6 +367,10 @@
   "settings.pdf_output_hint": "Logo, QR kód a ďalšie nastavenia sa konfigurujú priamo pri jednotlivých šablónach.",
   "settings.go_to_templates": "Spravovať šablóny PDF",
 
+  "unit.ks": "ks",
+  "unit.hod": "hod",
+  "unit.den": "deň",
+
   "settings.units": "Jednotky",
   "settings.units_desc": "Spravujte jednotky pre položky faktúr",
   "settings.add_unit": "Pridať jednotku",

@@ -367,6 +367,10 @@
   "settings.pdf_output_hint": "Logo, QR code and other settings are configured per template.",
   "settings.go_to_templates": "Manage PDF templates",
 
+  "unit.ks": "pcs",
+  "unit.hod": "hr",
+  "unit.den": "day",
+
   "settings.units": "Units",
   "settings.units_desc": "Manage units for invoice items",
   "settings.add_unit": "Add unit",

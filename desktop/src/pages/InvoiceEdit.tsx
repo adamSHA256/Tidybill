@@ -347,7 +347,9 @@ export function InvoiceEdit() {
 
   // Build unit select data with "Add new" option
   const unitSelectData = [
-    ...(unitOptions.length > 0 ? unitOptions : ['ks', 'hod', 'den', 'm\u00B2']).map((u) => ({ value: u, label: u })),
+    ...(unitOptions.length > 0 ? unitOptions : ['ks', 'hod', 'den', 'm\u00B2']).map((u) => {
+      const key = 'unit.' + u; const translated = t(key); return { value: u, label: translated !== key ? translated : u }
+    }),
     { value: ADD_UNIT, label: `+ ${t('invoice.add_unit')}` },
   ]
 

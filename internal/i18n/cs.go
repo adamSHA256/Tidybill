@@ -268,6 +268,9 @@ var messagesCS = map[string]string{
 	// ── Defaults ────────────────────────────────────────────────────────
 	"default.main_account": "Hlavní účet",
 	"default.unit_pcs":     "ks",
+	"unit.ks":              "ks",
+	"unit.hod":             "hod",
+	"unit.den":             "den",
 
 	// ── PDF ─────────────────────────────────────────────────────────────
 	"pdf.invoice_title":        "Faktura - daňový doklad %s",

@@ -514,7 +514,7 @@ export function Settings() {
                     setLocalUnits(localUnits.map((unit, idx) => ({ ...unit, is_default: idx === i })))
                   }}
                 >
-                  {u.name}
+                  {(() => { const k = 'unit.' + u.name; const tr = t(k); return tr !== k ? tr : u.name })()}
                 </Pill>
               ))}
             </Group>

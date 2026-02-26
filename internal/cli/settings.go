@@ -174,7 +174,7 @@ func (c *CLI) selectUnit(preferredDefault string) string {
 		if u.Name == defaultName {
 			marker = "* "
 		}
-		fmt.Printf("  %s%d) %s\n", marker, i+1, u.Name)
+		fmt.Printf("  %s%d) %s\n", marker, i+1, i18n.TranslateUnit(u.Name, i18n.GetLang()))
 	}
 	fmt.Printf("  %s\n", i18n.T("settings.add_unit_or_type"))
 	fmt.Println()
@@ -230,7 +230,7 @@ func (c *CLI) manageUnits() {
 			if u.IsDefault {
 				def = " " + i18n.T("label.default_upper")
 			}
-			fmt.Printf("  %d) %s%s\n", i+1, u.Name, def)
+			fmt.Printf("  %d) %s%s\n", i+1, i18n.TranslateUnit(u.Name, i18n.GetLang()), def)
 		}
 		fmt.Println()
 

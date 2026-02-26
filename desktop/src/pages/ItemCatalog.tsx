@@ -257,7 +257,9 @@ export function ItemCatalog() {
               onChange={(val) => setDefaultPrice(Number(val) || 0)} />
             <Select label={t('item.unit_label')}
               data={[
-                ...(unitOptions.length > 0 ? unitOptions : ['ks', 'hod', 'den', 'm\u00B2']).map((u) => ({ value: u, label: u })),
+                ...(unitOptions.length > 0 ? unitOptions : ['ks', 'hod', 'den', 'm\u00B2']).map((u) => {
+                  const key = 'unit.' + u; const translated = t(key); return { value: u, label: translated !== key ? translated : u }
+                }),
                 { value: ADD_UNIT, label: `+ ${t('invoice.add_unit')}` },
               ]}
               value={defaultUnit}

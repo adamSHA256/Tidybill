@@ -304,7 +304,7 @@ export function InvoiceDetail() {
                   <Text size="sm">{item.description}</Text>
                 </Table.Td>
                 <Table.Td fz="sm">{item.quantity}</Table.Td>
-                <Table.Td fz="sm">{item.unit}</Table.Td>
+                <Table.Td fz="sm">{(() => { const k = 'unit.' + item.unit; const tr = t(k); return tr !== k ? tr : item.unit })()}</Table.Td>
                 <Table.Td fz="sm">{formatMoney(item.unit_price, invoice.currency)}</Table.Td>
                 <Table.Td fz="sm">{item.vat_rate}%</Table.Td>
                 <Table.Td fz="sm" fw={600} ta="right">{formatMoney(item.subtotal, invoice.currency)}</Table.Td>

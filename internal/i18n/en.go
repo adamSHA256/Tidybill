@@ -268,6 +268,9 @@ var messagesEN = map[string]string{
 	// ── Defaults ────────────────────────────────────────────────────────
 	"default.main_account": "Main account",
 	"default.unit_pcs":     "pcs",
+	"unit.ks":              "pcs",
+	"unit.hod":             "hr",
+	"unit.den":             "day",
 
 	// ── PDF ─────────────────────────────────────────────────────────────
 	"pdf.invoice_title":        "Invoice - Tax Document %s",

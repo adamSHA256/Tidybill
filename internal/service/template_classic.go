@@ -231,7 +231,7 @@ func (t *ClassicTemplate) items(data *InvoiceData, lang i18n.Lang) []core.Row {
 		rows = append(rows, row.New(6).Add(
 			text.NewCol(5, item.Description, props.Text{Size: 9, Left: classicPadLeft}),
 			text.NewCol(1, fmt.Sprintf("%.0f", item.Quantity), props.Text{Size: 9, Align: align.Right}),
-			text.NewCol(1, item.Unit, props.Text{Size: 9, Align: align.Center}),
+			text.NewCol(1, i18n.TranslateUnit(item.Unit, lang), props.Text{Size: 9, Align: align.Center}),
 			text.NewCol(2, formatSimple(item.UnitPrice, currency), props.Text{Size: 9, Align: align.Right}),
 			text.NewCol(1, fmt.Sprintf("%.0f%%", item.VATRate), props.Text{Size: 9, Align: align.Right}),
 			text.NewCol(2, formatSimple(item.Total, currency), props.Text{Size: 9, Align: align.Right, Right: classicPadRight}),

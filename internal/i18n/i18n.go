@@ -62,6 +62,17 @@ func TfForLang(lang Lang, key string, args ...interface{}) string {
 	return fmt.Sprintf(TForLang(lang, key), args...)
 }
 
+// TranslateUnit translates a unit string for the given language.
+// Known units (ks, hod, den) are looked up via "unit.<name>" keys.
+// Unknown/custom units are returned as-is.
+func TranslateUnit(unit string, lang Lang) string {
+	key := "unit." + unit
+	if msg, ok := messages[lang][key]; ok {
+		return msg
+	}
+	return unit
+}
+
 // AvailableLanguages returns all supported language codes.
 func AvailableLanguages() []Lang {
 	return []Lang{CS, SK, EN}
