@@ -80,6 +80,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <MantineAppShell
       navbar={{ width: 260, breakpoint: 'sm' }}
       padding="md"
+      styles={{ navbar: { height: '100%' } }}
     >
       <MantineAppShell.Navbar p="md">
         <MantineAppShell.Section>
