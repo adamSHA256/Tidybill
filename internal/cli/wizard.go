@@ -3,7 +3,6 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/adamSHA256/tidybill/internal/i18n"
 	"github.com/adamSHA256/tidybill/internal/model"
@@ -51,9 +50,12 @@ func (c *CLI) firstRunWizard() error {
 
 	supplier := model.NewSupplier()
 
-	supplier.Name = c.prompt(i18n.T("prompt.company_name"))
-	if supplier.Name == "" {
-		return errors.New(i18n.T("error.name_required_lower"))
+	for {
+		supplier.Name = c.prompt(i18n.T("prompt.company_name"))
+		if supplier.Name != "" {
+			break
+		}
+		c.printError(i18n.T("error.name_required"))
 	}
 
 	supplier.Street = c.prompt(i18n.T("prompt.street"))
@@ -62,7 +64,7 @@ func (c *CLI) firstRunWizard() error {
 	supplier.Country = c.promptDefault(i18n.T("prompt.country"), "CZ")
 	supplier.ICO = c.prompt(i18n.T("prompt.ico"))
 	supplier.DIC = c.prompt(i18n.T("prompt.dic_with_hint"))
-	if strings.ToUpper(supplier.Country) == "SK" {
+	if isSlovakia(supplier.Country) {
 		supplier.ICDPH = c.prompt(i18n.T("prompt.ic_dph"))
 	}
 	supplier.Phone = c.prompt(i18n.T("prompt.phone"))

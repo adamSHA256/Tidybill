@@ -19,6 +19,7 @@ import {
   ActionIcon,
   Divider,
   Box,
+  SegmentedControl,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { IconPlus, IconUpload, IconTrash, IconPencil, IconBuildingBank } from '@tabler/icons-react'
@@ -507,6 +508,18 @@ export function SupplierList() {
               onChange={(e) => setIco(e.currentTarget.value)} />
             <TextInput label={t('supplier.dic_label')} value={dic}
               onChange={(e) => setDic(e.currentTarget.value)} />
+            <div>
+              <Text size="sm" fw={500} mb={4}>{t('supplier.is_vat_payer_label')}</Text>
+              <SegmentedControl
+                value={isVatPayer ? 'yes' : 'no'}
+                onChange={(v) => setIsVatPayer(v === 'yes')}
+                data={[
+                  { label: t('supplier.no'), value: 'no' },
+                  { label: t('supplier.yes'), value: 'yes' },
+                ]}
+                fullWidth
+              />
+            </div>
           </Group>
           {country.toUpperCase() === 'SK' && (
             <TextInput label={t('supplier.ic_dph_label')} value={icDph}
@@ -534,8 +547,6 @@ export function SupplierList() {
             <TextInput label={t('supplier.invoice_prefix_label')} value={invoicePrefix}
               onChange={(e) => setInvoicePrefix(e.currentTarget.value)} />
           </Group>
-          <Switch label={t('supplier.is_vat_payer_label')} checked={isVatPayer}
-            onChange={(e) => setIsVatPayer(e.currentTarget.checked)} />
           <Textarea label={t('supplier.notes_label')} value={notes}
             onChange={(e) => setNotes(e.currentTarget.value)} minRows={2} />
           <Group justify="end" mt="md">

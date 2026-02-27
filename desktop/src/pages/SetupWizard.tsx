@@ -6,7 +6,6 @@ import {
   Stack,
   TextInput,
   Select,
-  Switch,
   Title,
   Text,
   Paper,
@@ -21,6 +20,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api, type Supplier, type BankAccount } from '../api/client'
 import { useT } from '../i18n'
 import { IconFolderOpen } from '@tabler/icons-react'
+import { CountrySelect } from '../components/CountrySelect'
 
 const langLabels: Record<string, string> = {
   cs: 'Čeština',
@@ -32,6 +32,12 @@ const currencyForLang: Record<string, string> = {
   cs: 'CZK',
   sk: 'EUR',
   en: 'EUR',
+}
+
+const countryForLang: Record<string, string> = {
+  cs: 'CZ',
+  sk: 'SK',
+  en: '',
 }
 
 interface Props {
@@ -113,6 +119,8 @@ export function SetupWizard({ onComplete }: Props) {
     setSelectedLang(value)
     setLang(value as 'cs' | 'sk' | 'en')
     setBankCurrency(currencyForLang[value] || 'EUR')
+    const country = countryForLang[value]
+    if (country) setSupplierCountry(country)
   }
 
   const handleLangNext = () => {
@@ -310,11 +318,10 @@ export function SetupWizard({ onComplete }: Props) {
                     onChange={(e) => setSupplierZip(e.currentTarget.value)}
                     w={120}
                   />
-                  <TextInput
+                  <CountrySelect
                     label={t('supplier.country_label')}
                     value={supplierCountry}
-                    onChange={(e) => setSupplierCountry(e.currentTarget.value)}
-                    w={80}
+                    onChange={(v) => setSupplierCountry(v)}
                   />
                 </Group>
                 <Group grow>
@@ -328,19 +335,24 @@ export function SetupWizard({ onComplete }: Props) {
                     value={supplierDic}
                     onChange={(e) => setSupplierDic(e.currentTarget.value)}
                   />
+                  <div>
+                    <Text size="sm" fw={500} mb={4}>{t('supplier.is_vat_payer_label')}</Text>
+                    <SegmentedControl
+                      value={supplierVat ? 'yes' : 'no'}
+                      onChange={(v) => setSupplierVat(v === 'yes')}
+                      data={[
+                        { label: t('supplier.no'), value: 'no' },
+                        { label: t('supplier.yes'), value: 'yes' },
+                      ]}
+                      fullWidth
+                    />
+                  </div>
                 </Group>
                 {supplierCountry.toUpperCase() === 'SK' && (
                   <TextInput
                     label={t('supplier.ic_dph_label')}
                     value={supplierIcDph}
                     onChange={(e) => setSupplierIcDph(e.currentTarget.value)}
-                  />
-                )}
-                {supplierDic && (
-                  <Switch
-                    label={t('supplier.is_vat_payer_label')}
-                    checked={supplierVat}
-                    onChange={(e) => setSupplierVat(e.currentTarget.checked)}
                   />
                 )}
                 <Group grow>

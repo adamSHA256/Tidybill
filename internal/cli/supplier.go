@@ -76,7 +76,7 @@ func (c *CLI) createSupplier() {
 	supplier.Country = c.promptDefault(i18n.T("prompt.country"), "CZ")
 	supplier.ICO = c.prompt(i18n.T("prompt.ico"))
 	supplier.DIC = c.prompt(i18n.T("prompt.dic"))
-	if strings.ToUpper(supplier.Country) == "SK" {
+	if isSlovakia(supplier.Country) {
 		supplier.ICDPH = c.prompt(i18n.T("prompt.ic_dph"))
 	}
 	supplier.Phone = c.prompt(i18n.T("prompt.phone"))
@@ -188,7 +188,7 @@ func (c *CLI) editSupplierDetails(s *model.Supplier) {
 	s.Country = c.promptDefault(i18n.T("prompt.country"), s.Country)
 	s.ICO = c.promptDefault(i18n.T("prompt.ico"), s.ICO)
 	s.DIC = c.promptDefault(i18n.T("prompt.dic"), s.DIC)
-	if strings.ToUpper(s.Country) == "SK" {
+	if isSlovakia(s.Country) {
 		s.ICDPH = c.promptDefault(i18n.T("prompt.ic_dph"), s.ICDPH)
 	}
 	s.Phone = c.promptDefault(i18n.T("prompt.phone"), s.Phone)
