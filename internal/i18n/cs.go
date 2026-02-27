@@ -24,7 +24,6 @@ var messagesCS = map[string]string{
 	"menu.sync":                "Sync / Import / Export",
 	"menu.pdf_templates":       "Šablony PDF",
 	"menu.settings":            "Nastavení",
-	"menu.overview":            "Přehled",
 	"menu.quit":                "Ukončit",
 
 	// ── Headings ────────────────────────────────────────────────────────
@@ -216,9 +215,6 @@ var messagesCS = map[string]string{
 	"error.load_bank_account":   "Nepodařilo se načíst bankovní účet",
 	"error.load_items":          "Nepodařilo se načíst položky",
 	"error.open_file":           "Nepodařilo se otevřít soubor: %v",
-	"error.stats_suppliers":     "Nelze zobrazit statistiku dodavatelů",
-	"error.stats_invoices":      "Nelze zobrazit statistiku faktur",
-
 	// ── Info ────────────────────────────────────────────────────────────
 	"info.no_customers":        "Zatím nemáte žádné odběratele.",
 	"info.no_customers_create": "Nemáte žádné odběratele. Vytvořte nového:",
@@ -229,10 +225,6 @@ var messagesCS = map[string]string{
 	"info.generating_pdf":      "Generuji PDF...",
 	"info.coming_soon":         "Funkce bude brzy dostupná...",
 	"info.feature_coming":      "Tato funkce bude dostupná v další verzi.",
-
-	// ── Stats ───────────────────────────────────────────────────────────
-	"stats.suppliers_count":       "Vytvořených dodavatelů: %d",
-	"stats.unpaid_invoices_count": "Celkový nezaplacených faktur: %d",
 
 	// ── Status ──────────────────────────────────────────────────────────
 	"status.draft":     "Koncept",

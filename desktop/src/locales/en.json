@@ -234,7 +234,7 @@
   "template.notes": "Notes",
   "template.set_default": "Set as Default",
   "template.generate_preview": "Generate Preview",
-  "template.duplicate_btn": "Duplicate",
+  "template.duplicate_btn": "Duplicate and edit",
   "template.duplicate_title": "Duplicate Template",
   "template.new_name": "New template name",
   "template.duplicated": "Template duplicated",

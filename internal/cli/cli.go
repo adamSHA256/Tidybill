@@ -110,7 +110,6 @@ func (c *CLI) mainMenu() error {
 		fmt.Printf("  8) %s\n", i18n.T("menu.sync"))
 		fmt.Printf("  9) %s\n", i18n.T("menu.pdf_templates"))
 		fmt.Printf("  S) %s\n", i18n.T("menu.settings"))
-		fmt.Printf("  W) %s\n", i18n.T("menu.overview"))
 		fmt.Printf("  0) %s\n", i18n.T("menu.quit"))
 		fmt.Println()
 
@@ -137,8 +136,6 @@ func (c *CLI) mainMenu() error {
 			c.templatesMenu()
 		case "s":
 			c.settingsMenu()
-		case "w":
-			c.showStats()
 		case "0", "q":
 			fmt.Println(i18n.T("app.goodbye"))
 			return nil
@@ -370,18 +367,3 @@ func (c *CLI) editNotes(current string) string {
 	return strings.TrimRight(string(content), "\n\r ")
 }
 
-func (c *CLI) showStats() {
-	count, err := c.suppliers.Count()
-	if err != nil {
-		fmt.Println(i18n.T("error.stats_suppliers"), err)
-	} else {
-		fmt.Println(i18n.Tf("stats.suppliers_count", count))
-	}
-	invoices, err := c.invoices.CountUnpaid()
-	if err != nil {
-		fmt.Println(i18n.T("error.stats_invoices"), err)
-	} else {
-		fmt.Println(i18n.Tf("stats.unpaid_invoices_count", invoices))
-	}
-	c.waitEnter()
-}

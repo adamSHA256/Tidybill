@@ -253,7 +253,7 @@ export function Settings() {
         <Text c="dimmed" size="sm">{t('settings.subtitle')}</Text>
       </div>
 
-      {/* Row 1: General + Directories */}
+      {/* Row 1: General + About */}
       <SimpleGrid cols={{ base: 1, md: 2 }}>
         <Paper p="md" radius="md" withBorder>
           <Text fw={500} mb="md">{t('settings.general')}</Text>
@@ -299,64 +299,57 @@ export function Settings() {
           </Stack>
         </Paper>
 
-        <Paper p="md" radius="md" withBorder>
-          <Text fw={500} mb="md">{t('settings.directories')}</Text>
-          <Stack gap="md">
-            <Group align="end" gap="xs">
-              <TextInput
-                label={t('settings.dir_logos')}
-                placeholder={t('settings.dir_placeholder')}
-                value={dirLogos}
-                onChange={(e) => setDirLogos(e.currentTarget.value)}
-                style={{ flex: 1 }}
-              />
-              <Tooltip label={t('invoice.open_folder')}>
-                <ActionIcon variant="light" size="lg" onClick={() => { if (dirLogos) openInBrowser(dirLogos) }}>
-                  <IconFolderOpen size={18} />
-                </ActionIcon>
-              </Tooltip>
+        {aboutInfo && (
+          <Paper p="md" radius="md" withBorder>
+            <Group mb="md" gap="sm">
+              <Title order={3}>TidyBill</Title>
+              <Badge variant="light" color="blue" size="lg">v{aboutInfo.version}</Badge>
             </Group>
-            <Group align="end" gap="xs">
-              <TextInput
-                label={t('settings.dir_pdfs')}
-                placeholder={t('settings.dir_placeholder')}
-                value={dirPdfs}
-                onChange={(e) => setDirPdfs(e.currentTarget.value)}
-                style={{ flex: 1 }}
-              />
-              <Tooltip label={t('invoice.open_folder')}>
-                <ActionIcon variant="light" size="lg" onClick={() => { if (dirPdfs) openInBrowser(dirPdfs) }}>
-                  <IconFolderOpen size={18} />
-                </ActionIcon>
-              </Tooltip>
-            </Group>
-            <Group align="end" gap="xs">
-              <TextInput
-                label={t('settings.dir_previews')}
-                placeholder={t('settings.dir_placeholder')}
-                value={dirPreviews}
-                onChange={(e) => setDirPreviews(e.currentTarget.value)}
-                style={{ flex: 1 }}
-              />
-              <Tooltip label={t('invoice.open_folder')}>
-                <ActionIcon variant="light" size="lg" onClick={() => { if (dirPreviews) openInBrowser(dirPreviews) }}>
-                  <IconFolderOpen size={18} />
-                </ActionIcon>
-              </Tooltip>
-            </Group>
-            <Button
-              w={200}
-              onClick={() => updateMutation.mutate({
-                dir_logos: dirLogos,
-                dir_pdfs: dirPdfs,
-                dir_previews: dirPreviews,
-              })}
-              loading={updateMutation.isPending}
+            <Text size="sm" mb="xs">{t('about.description')}</Text>
+            <Text size="sm" c="dimmed" mb="lg">{t('about.opensource')}</Text>
+
+            <Text fw={500} size="sm" mb={4}>{t('about.issues_title')}</Text>
+            <Anchor
+              size="sm"
+              mb="lg"
+              onClick={(e) => { e.preventDefault(); openInBrowser(aboutInfo.github_issues_url) }}
+              style={{ cursor: 'pointer' }}
             >
-              {t('settings.save_directories')}
-            </Button>
-          </Stack>
-        </Paper>
+              {t('about.issues_link')}
+            </Anchor>
+
+            <Text fw={500} size="sm" mt="md" mb={4}>{t('about.support_title')}</Text>
+            <Text size="sm" c="dimmed" mb="sm">{t('about.support_desc')}</Text>
+            <Stack gap="xs">
+              <Group gap="xs">
+                <Text size="sm" fw={500} w={100}>Monero (XMR)</Text>
+                <Code>{aboutInfo.monero_address}</Code>
+                <CopyButton value={aboutInfo.monero_address}>
+                  {({ copied, copy }) => (
+                    <Tooltip label={copied ? t('about.copied') : t('common.copy')}>
+                      <ActionIcon variant="subtle" color={copied ? 'teal' : 'gray'} onClick={copy}>
+                        {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+                      </ActionIcon>
+                    </Tooltip>
+                  )}
+                </CopyButton>
+              </Group>
+              <Group gap="xs">
+                <Text size="sm" fw={500} w={100}>Bitcoin (BTC)</Text>
+                <Code>{aboutInfo.bitcoin_address}</Code>
+                <CopyButton value={aboutInfo.bitcoin_address}>
+                  {({ copied, copy }) => (
+                    <Tooltip label={copied ? t('about.copied') : t('common.copy')}>
+                      <ActionIcon variant="subtle" color={copied ? 'teal' : 'gray'} onClick={copy}>
+                        {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+                      </ActionIcon>
+                    </Tooltip>
+                  )}
+                </CopyButton>
+              </Group>
+            </Stack>
+          </Paper>
+        )}
       </SimpleGrid>
 
       {/* Row 2: Dashboard — switches in 2-column grid */}
@@ -785,7 +778,7 @@ export function Settings() {
         </Paper>
       </SimpleGrid>
 
-      {/* Row 6: PDF Output + About */}
+      {/* Row 6: PDF Output + Directories */}
       <SimpleGrid cols={{ base: 1, md: 2 }}>
         <Paper p="md" radius="md" withBorder>
           <Text fw={500} mb="md">{t('settings.pdf_output')}</Text>
@@ -807,57 +800,64 @@ export function Settings() {
           </Stack>
         </Paper>
 
-        {aboutInfo && (
-          <Paper p="md" radius="md" withBorder>
-            <Group mb="md" gap="sm">
-              <Title order={3}>TidyBill</Title>
-              <Badge variant="light" color="blue" size="lg">v{aboutInfo.version}</Badge>
+        <Paper p="md" radius="md" withBorder>
+          <Text fw={500} mb="md">{t('settings.directories')}</Text>
+          <Stack gap="md">
+            <Group align="end" gap="xs">
+              <TextInput
+                label={t('settings.dir_logos')}
+                placeholder={t('settings.dir_placeholder')}
+                value={dirLogos}
+                onChange={(e) => setDirLogos(e.currentTarget.value)}
+                style={{ flex: 1 }}
+              />
+              <Tooltip label={t('invoice.open_folder')}>
+                <ActionIcon variant="light" size="lg" onClick={() => { if (dirLogos) openInBrowser(dirLogos) }}>
+                  <IconFolderOpen size={18} />
+                </ActionIcon>
+              </Tooltip>
             </Group>
-            <Text size="sm" mb="xs">{t('about.description')}</Text>
-            <Text size="sm" c="dimmed" mb="lg">{t('about.opensource')}</Text>
-
-            <Text fw={500} size="sm" mb={4}>{t('about.issues_title')}</Text>
-            <Anchor
-              size="sm"
-              mb="lg"
-              onClick={(e) => { e.preventDefault(); openInBrowser(aboutInfo.github_issues_url) }}
-              style={{ cursor: 'pointer' }}
+            <Group align="end" gap="xs">
+              <TextInput
+                label={t('settings.dir_pdfs')}
+                placeholder={t('settings.dir_placeholder')}
+                value={dirPdfs}
+                onChange={(e) => setDirPdfs(e.currentTarget.value)}
+                style={{ flex: 1 }}
+              />
+              <Tooltip label={t('invoice.open_folder')}>
+                <ActionIcon variant="light" size="lg" onClick={() => { if (dirPdfs) openInBrowser(dirPdfs) }}>
+                  <IconFolderOpen size={18} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
+            <Group align="end" gap="xs">
+              <TextInput
+                label={t('settings.dir_previews')}
+                placeholder={t('settings.dir_placeholder')}
+                value={dirPreviews}
+                onChange={(e) => setDirPreviews(e.currentTarget.value)}
+                style={{ flex: 1 }}
+              />
+              <Tooltip label={t('invoice.open_folder')}>
+                <ActionIcon variant="light" size="lg" onClick={() => { if (dirPreviews) openInBrowser(dirPreviews) }}>
+                  <IconFolderOpen size={18} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
+            <Button
+              w={200}
+              onClick={() => updateMutation.mutate({
+                dir_logos: dirLogos,
+                dir_pdfs: dirPdfs,
+                dir_previews: dirPreviews,
+              })}
+              loading={updateMutation.isPending}
             >
-              {t('about.issues_link')}
-            </Anchor>
-
-            <Text fw={500} size="sm" mt="md" mb={4}>{t('about.support_title')}</Text>
-            <Text size="sm" c="dimmed" mb="sm">{t('about.support_desc')}</Text>
-            <Stack gap="xs">
-              <Group gap="xs">
-                <Text size="sm" fw={500} w={100}>Monero (XMR)</Text>
-                <Code>{aboutInfo.monero_address}</Code>
-                <CopyButton value={aboutInfo.monero_address}>
-                  {({ copied, copy }) => (
-                    <Tooltip label={copied ? t('about.copied') : t('common.copy')}>
-                      <ActionIcon variant="subtle" color={copied ? 'teal' : 'gray'} onClick={copy}>
-                        {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
-                      </ActionIcon>
-                    </Tooltip>
-                  )}
-                </CopyButton>
-              </Group>
-              <Group gap="xs">
-                <Text size="sm" fw={500} w={100}>Bitcoin (BTC)</Text>
-                <Code>{aboutInfo.bitcoin_address}</Code>
-                <CopyButton value={aboutInfo.bitcoin_address}>
-                  {({ copied, copy }) => (
-                    <Tooltip label={copied ? t('about.copied') : t('common.copy')}>
-                      <ActionIcon variant="subtle" color={copied ? 'teal' : 'gray'} onClick={copy}>
-                        {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
-                      </ActionIcon>
-                    </Tooltip>
-                  )}
-                </CopyButton>
-              </Group>
-            </Stack>
-          </Paper>
-        )}
+              {t('settings.save_directories')}
+            </Button>
+          </Stack>
+        </Paper>
       </SimpleGrid>
 
     </Stack>

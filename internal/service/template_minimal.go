@@ -135,7 +135,7 @@ func (t *MinimalTemplate) items(data *InvoiceData) []core.Row {
 			text.NewCol(2, fmt.Sprintf("%.0f x %.0f", item.Quantity, item.UnitPrice), props.Text{
 				Size: 9, Align: align.Right, Color: minGray,
 			}),
-			text.NewCol(2, formatSimple(item.Total, currency), props.Text{
+			text.NewCol(2, formatMoneyDefault(item.Total, currency), props.Text{
 				Size: 10, Align: align.Right,
 			}),
 		))
@@ -153,7 +153,7 @@ func (t *MinimalTemplate) totals(data *InvoiceData, lang i18n.Lang) []core.Row {
 	rows = append(rows, row.New(12).Add(
 		col.New(8),
 		text.NewCol(2, i18n.TForLang(lang, "pdf.total"), props.Text{Size: 12, Align: align.Right, Top: 3}),
-		text.NewCol(2, formatSimple(data.Invoice.Total, currency), props.Text{
+		text.NewCol(2, formatMoneyDefault(data.Invoice.Total, currency), props.Text{
 			Size: 14, Style: fontstyle.Bold, Align: align.Right, Top: 2,
 		}),
 	))

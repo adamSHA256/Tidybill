@@ -24,7 +24,6 @@ var messagesSK = map[string]string{
 	"menu.sync":                "Sync / Import / Export",
 	"menu.pdf_templates":       "Šablóny PDF",
 	"menu.settings":            "Nastavenia",
-	"menu.overview":            "Prehľad",
 	"menu.quit":                "Ukončiť",
 
 	// ── Headings ────────────────────────────────────────────────────────
@@ -216,9 +215,6 @@ var messagesSK = map[string]string{
 	"error.load_bank_account":   "Nepodarilo sa načítať bankový účet",
 	"error.load_items":          "Nepodarilo sa načítať položky",
 	"error.open_file":           "Nepodarilo sa otvoriť súbor: %v",
-	"error.stats_suppliers":     "Nemožno zobraziť štatistiku dodávateľov",
-	"error.stats_invoices":      "Nemožno zobraziť štatistiku faktúr",
-
 	// ── Info ────────────────────────────────────────────────────────────
 	"info.no_customers":        "Zatiaľ nemáte žiadnych odberateľov.",
 	"info.no_customers_create": "Nemáte žiadnych odberateľov. Vytvorte nového:",
@@ -229,10 +225,6 @@ var messagesSK = map[string]string{
 	"info.generating_pdf":      "Generujem PDF...",
 	"info.coming_soon":         "Funkcia bude čoskoro dostupná...",
 	"info.feature_coming":      "Táto funkcia bude dostupná v ďalšej verzii.",
-
-	// ── Stats ───────────────────────────────────────────────────────────
-	"stats.suppliers_count":       "Vytvorených dodávateľov: %d",
-	"stats.unpaid_invoices_count": "Celkovo nezaplatených faktúr: %d",
 
 	// ── Status ──────────────────────────────────────────────────────────
 	"status.draft":     "Koncept",

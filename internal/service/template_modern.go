@@ -204,9 +204,9 @@ func (t *ModernTemplate) items(data *InvoiceData, lang i18n.Lang) []core.Row {
 		rows = append(rows, row.New(8).Add(
 			text.NewCol(5, item.Description, props.Text{Size: 10}),
 			text.NewCol(2, fmt.Sprintf("%.0f %s", item.Quantity, i18n.TranslateUnit(item.Unit, lang)), props.Text{Size: 10, Align: align.Right}),
-			text.NewCol(2, formatSimple(item.UnitPrice, currency), props.Text{Size: 10, Align: align.Right}),
+			text.NewCol(2, formatMoneyDefault(item.UnitPrice, currency), props.Text{Size: 10, Align: align.Right}),
 			text.NewCol(1, fmt.Sprintf("%.0f%%", item.VATRate), props.Text{Size: 10, Align: align.Right}),
-			text.NewCol(2, formatSimple(item.Total, currency), props.Text{Size: 10, Align: align.Right, Style: fontstyle.Bold}),
+			text.NewCol(2, formatMoneyDefault(item.Total, currency), props.Text{Size: 10, Align: align.Right, Style: fontstyle.Bold}),
 		))
 	}
 
@@ -220,21 +220,21 @@ func (t *ModernTemplate) totals(data *InvoiceData, lang i18n.Lang) []core.Row {
 	rows = append(rows, row.New(7).Add(
 		col.New(8),
 		text.NewCol(2, i18n.TForLang(lang, "pdf.subtotal"), props.Text{Size: 10, Align: align.Right, Color: lightGray}),
-		text.NewCol(2, formatSimple(data.Invoice.Subtotal, currency), props.Text{Size: 10, Align: align.Right}),
+		text.NewCol(2, formatMoneyDefault(data.Invoice.Subtotal, currency), props.Text{Size: 10, Align: align.Right}),
 	))
 
 	if data.Invoice.VATTotal > 0 {
 		rows = append(rows, row.New(7).Add(
 			col.New(8),
 			text.NewCol(2, i18n.TForLang(lang, "pdf.vat_total"), props.Text{Size: 10, Align: align.Right, Color: lightGray}),
-			text.NewCol(2, formatSimple(data.Invoice.VATTotal, currency), props.Text{Size: 10, Align: align.Right}),
+			text.NewCol(2, formatMoneyDefault(data.Invoice.VATTotal, currency), props.Text{Size: 10, Align: align.Right}),
 		))
 	}
 
 	rows = append(rows, row.New(12).Add(
 		col.New(8),
 		text.NewCol(2, i18n.TForLang(lang, "pdf.total"), props.Text{Size: 14, Style: fontstyle.Bold, Align: align.Right, Top: 3}),
-		text.NewCol(2, formatSimple(data.Invoice.Total, currency), props.Text{Size: 14, Style: fontstyle.Bold, Align: align.Right, Top: 3, Color: steelBlue}),
+		text.NewCol(2, formatMoneyDefault(data.Invoice.Total, currency), props.Text{Size: 14, Style: fontstyle.Bold, Align: align.Right, Top: 3, Color: steelBlue}),
 	))
 
 	return rows

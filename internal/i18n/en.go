@@ -24,7 +24,6 @@ var messagesEN = map[string]string{
 	"menu.sync":                "Sync / Import / Export",
 	"menu.pdf_templates":       "PDF templates",
 	"menu.settings":            "Settings",
-	"menu.overview":            "Overview",
 	"menu.quit":                "Quit",
 
 	// ── Headings ────────────────────────────────────────────────────────
@@ -216,9 +215,6 @@ var messagesEN = map[string]string{
 	"error.load_bank_account":   "Failed to load bank account",
 	"error.load_items":          "Failed to load items",
 	"error.open_file":           "Failed to open file: %v",
-	"error.stats_suppliers":     "Cannot display supplier statistics",
-	"error.stats_invoices":      "Cannot display invoice statistics",
-
 	// ── Info ────────────────────────────────────────────────────────────
 	"info.no_customers":        "You have no customers yet.",
 	"info.no_customers_create": "You have no customers. Create a new one:",
@@ -229,10 +225,6 @@ var messagesEN = map[string]string{
 	"info.generating_pdf":      "Generating PDF...",
 	"info.coming_soon":         "Coming soon...",
 	"info.feature_coming":      "This feature will be available in the next version.",
-
-	// ── Stats ───────────────────────────────────────────────────────────
-	"stats.suppliers_count":       "Suppliers created: %d",
-	"stats.unpaid_invoices_count": "Total unpaid invoices: %d",
 
 	// ── Status ──────────────────────────────────────────────────────────
 	"status.draft":     "Draft",
