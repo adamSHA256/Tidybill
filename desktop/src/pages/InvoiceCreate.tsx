@@ -431,12 +431,17 @@ export function InvoiceCreate() {
   const handleAddUnit = async () => {
     const name = newUnitValue.trim()
     if (!name) return
+    const idx = unitTargetIndex
     const currentUnits = units || []
     if (!currentUnits.some((u) => u.name === name)) {
       await api.updateUnits([...currentUnits, { name }])
       await queryClient.invalidateQueries({ queryKey: ['units'] })
     }
-    if (unitTargetIndex >= 0) updateItem(unitTargetIndex, 'unit', name)
+    if (idx >= 0) {
+      setItems(prev => prev.map((item, i) =>
+        i === idx ? { ...item, unit: name } : item
+      ))
+    }
     setUnitModalOpen(false)
   }
 
