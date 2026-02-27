@@ -14,6 +14,7 @@ import {
   Loader,
   Center,
   Modal,
+  Tooltip,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import {
@@ -25,6 +26,7 @@ import {
   IconNotes,
   IconEdit,
   IconCopy,
+  IconInfoCircle,
 } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -341,7 +343,12 @@ export function InvoiceDetail() {
 
       <Paper p="md" radius="md" withBorder>
         <Group justify="space-between" mb="xs">
-          <Text fw={500}>{t('invoice.internal_notes')}</Text>
+          <Group gap={4}>
+            <Text fw={500}>{t('invoice.internal_notes')}</Text>
+            <Tooltip label={t('invoice.internal_notes_hint')} multiline w={300} withArrow>
+              <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+            </Tooltip>
+          </Group>
           <Button variant="light" size="xs" leftSection={<IconNotes size={14} />}
             onClick={() => { setInternalNotes(invoice.internal_notes || ''); setNotesOpen(true) }}>
             {t('common.edit')}

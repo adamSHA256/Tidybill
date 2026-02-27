@@ -408,8 +408,11 @@ export function InvoiceCreate() {
   }
 
   // Build unit select data with "Add new" option
+  const baseUnits = unitOptions.length > 0 ? unitOptions : ['ks', 'hod', 'den', 'm\u00B2']
+  const itemUnits = items.map((item) => item.unit).filter((u) => u && !baseUnits.includes(u))
+  const allUnits = [...baseUnits, ...itemUnits.filter((u, i) => itemUnits.indexOf(u) === i)]
   const unitSelectData = [
-    ...(unitOptions.length > 0 ? unitOptions : ['ks', 'hod', 'den', 'm\u00B2']).map((u) => {
+    ...allUnits.map((u) => {
       const key = 'unit.' + u; const translated = t(key); return { value: u, label: translated !== key ? translated : u }
     }),
     { value: ADD_UNIT, label: `+ ${t('invoice.add_unit')}` },
@@ -705,7 +708,14 @@ export function InvoiceCreate() {
 
       <Paper p="md" radius="md" withBorder>
         <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
-          <TextInput label={t('invoice.invoice_number')} placeholder={t('invoice.invoice_number_placeholder')} value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.currentTarget.value)} />
+          <TextInput label={
+            <Group gap={4}>
+              <span>{t('invoice.invoice_number')}</span>
+              <Tooltip label={t('invoice.invoice_number_hint')} multiline w={300} withArrow>
+                <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+              </Tooltip>
+            </Group>
+          } placeholder={t('invoice.invoice_number_placeholder')} value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.currentTarget.value)} />
           <DateInput label={t('invoice.issue_date')} valueFormat="DD.MM.YYYY" value={issueDate} onChange={setIssueDate} clearable />
           <DateInput
             label={
@@ -1053,7 +1063,14 @@ export function InvoiceCreate() {
             description={t('customer.default_due_days_desc')}
             value={cDueDays} onChange={(v) => setCDueDays(Number(v) || 0)}
             min={0} max={365} w={200} />
-          <Textarea label={t('customer.notes_label')} value={cNotes}
+          <Textarea label={
+            <Group gap={4}>
+              <span>{t('customer.notes_label')}</span>
+              <Tooltip label={t('customer.notes_hint')} multiline w={300} withArrow>
+                <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+              </Tooltip>
+            </Group>
+          } value={cNotes}
             onChange={(e) => setCNotes(e.currentTarget.value)} minRows={2} />
           <Group justify="end" mt="md">
             <Button variant="default" onClick={() => setCustomerModalOpen(false)}>{t('common.cancel')}</Button>

@@ -51,6 +51,7 @@
   "invoice.create_subtitle": "Fill in the details below",
   "invoice.invoice_number": "Invoice Number",
   "invoice.invoice_number_placeholder": "Leave empty for auto",
+  "invoice.invoice_number_hint": "If you are continuing from invoices in another program, make sure this invoice has the number you need. The next invoice will be numbered automatically.",
   "invoice.invoice_number_desc": "Optional — auto-generated if empty",
   "invoice.invoice_number_auto_desc": "Auto-generated — edit to override",
   "invoice.currency": "Currency",
@@ -119,6 +120,7 @@
   "invoice.delete_title": "Delete Invoice",
   "invoice.delete_confirm": "Are you sure you want to delete invoice <strong>{number}</strong>? This action cannot be undone.",
   "invoice.internal_notes_title": "Internal Notes",
+  "invoice.internal_notes_hint": "This note is only for you and will not be shown on the generated PDF invoice.",
   "invoice.internal_notes_placeholder": "Private notes (not shown on PDF)...",
 
   "customer.title": "Customers",
@@ -142,6 +144,7 @@
   "customer.email_label": "Email",
   "customer.phone_label": "Phone",
   "customer.notes_label": "Notes",
+  "customer.notes_hint": "This note is only for you and will not be shown on the generated PDF invoice.",
   "customer.default_due_days_label": "Payment due (days)",
   "customer.default_due_days_desc": "0 = use global default",
   "customer.missing_name_title": "Missing fields",

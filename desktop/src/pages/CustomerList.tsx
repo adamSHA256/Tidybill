@@ -15,9 +15,10 @@ import {
   ActionIcon,
   Loader,
   Center,
+  Tooltip,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import { IconSearch, IconPlus, IconPencil, IconTrash } from '@tabler/icons-react'
+import { IconSearch, IconPlus, IconPencil, IconTrash, IconInfoCircle } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, type Customer } from '../api/client'
@@ -281,7 +282,14 @@ export function CustomerList() {
             description={t('customer.default_due_days_desc')}
             value={defaultDueDays} onChange={(v) => setDefaultDueDays(Number(v) || 0)}
             min={0} max={365} w={200} />
-          <Textarea label={t('customer.notes_label')} value={notes}
+          <Textarea label={
+            <Group gap={4}>
+              <span>{t('customer.notes_label')}</span>
+              <Tooltip label={t('customer.notes_hint')} multiline w={300} withArrow>
+                <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+              </Tooltip>
+            </Group>
+          } value={notes}
             onChange={(e) => setNotes(e.currentTarget.value)} minRows={2} />
           <Group justify="end" mt="md">
             <Button variant="default" onClick={closeModal}>{t('common.cancel')}</Button>
