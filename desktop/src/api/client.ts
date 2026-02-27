@@ -403,6 +403,8 @@ export interface AppSettings {
   invoice_default_sort?: string // TODO: also expose in CLI settings menu
   ui_scale?: string
   default_pdf_dir?: string
+  default_logo_dir?: string
+  default_preview_dir?: string
 }
 
 export interface Unit {
