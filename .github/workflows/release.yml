@@ -203,46 +203,60 @@ jobs:
           }
 
           # Desktop apps
-          rename_asset "TidyBill_${VERSION}_x64-setup.exe"      "TidyBill_Windows_Desktop_${VERSION}_x64_setup.exe"
-          rename_asset "TidyBill_${VERSION}_x64-setup.exe.sig"   "TidyBill_Windows_Desktop_${VERSION}_x64_setup.exe.sig"
-          rename_asset "TidyBill_${VERSION}_amd64.deb"           "TidyBill_Linux_Desktop_${VERSION}_amd64.deb"
-          rename_asset "TidyBill-${VERSION}-1.x86_64.rpm"        "TidyBill_Linux_Desktop_${VERSION}_x86_64.rpm"
-          rename_asset "TidyBill_${VERSION}_aarch64.dmg"         "TidyBill_Mac_Desktop_${VERSION}_aarch64.dmg"
-          rename_asset "TidyBill_${VERSION}_x64.dmg"             "TidyBill_Mac_Desktop_${VERSION}_x64.dmg"
+          rename_asset "TidyBill_${VERSION}_x64-setup.exe"      "TidyBill_Windows_Desktop_x64_setup.exe"
+          rename_asset "TidyBill_${VERSION}_x64-setup.exe.sig"   "TidyBill_Windows_Desktop_x64_setup.exe.sig"
+          rename_asset "TidyBill_${VERSION}_amd64.deb"           "TidyBill_Linux_Desktop_amd64.deb"
+          rename_asset "TidyBill-${VERSION}-1.x86_64.rpm"        "TidyBill_Linux_Desktop_x86_64.rpm"
+          rename_asset "TidyBill_${VERSION}_aarch64.dmg"         "TidyBill_Mac_Desktop_aarch64.dmg"
+          rename_asset "TidyBill_${VERSION}_x64.dmg"             "TidyBill_Mac_Desktop_x64.dmg"
 
           # Signature files for updater (if present)
-          rename_asset "TidyBill_${VERSION}_aarch64.dmg.sig"     "TidyBill_Mac_Desktop_${VERSION}_aarch64.dmg.sig"
-          rename_asset "TidyBill_${VERSION}_x64.dmg.sig"         "TidyBill_Mac_Desktop_${VERSION}_x64.dmg.sig"
-          rename_asset "TidyBill-${VERSION}-1.x86_64.rpm.sig"    "TidyBill_Linux_Desktop_${VERSION}_x86_64.rpm.sig"
+          rename_asset "TidyBill_${VERSION}_aarch64.dmg.sig"     "TidyBill_Mac_Desktop_aarch64.dmg.sig"
+          rename_asset "TidyBill_${VERSION}_x64.dmg.sig"         "TidyBill_Mac_Desktop_x64.dmg.sig"
+          rename_asset "TidyBill-${VERSION}-1.x86_64.rpm.sig"    "TidyBill_Linux_Desktop_x86_64.rpm.sig"
 
           # Update release body with download table
+          DOWNLOAD_BASE="https://github.com/${REPO}/releases/download/${TAG}"
           gh api "repos/${REPO}/releases/${RELEASE_ID}" -X PATCH -f body="$(cat <<EOF
-          # Download
+          # Download for Windows
 
-          > **Not sure which to pick?** If you want a graphical app with buttons and menus, download the **Desktop App**. If you prefer working in a terminal, download the **CLI**.
+          ### [>>> Click here to download TidyBill for Windows <<<](${DOWNLOAD_BASE}/TidyBill_Windows_Desktop_x64_setup.exe)
+
+          Double-click the downloaded file to install. Windows may show a security warning — this is normal for apps that aren't code-signed yet:
+
+          1. Click **"More info"**
+          2. Click **"Run anyway"**
+
+          ![SmartScreen warning](https://raw.githubusercontent.com/${REPO}/main/.github/smart-screen.png)
+
+          ---
+
+          <details>
+          <summary>Other platforms (Linux, macOS, CLI)</summary>
 
           ### Desktop App (GUI)
 
           | Platform | File | Notes |
           |----------|------|-------|
-          | **Windows** | \`TidyBill_Windows_Desktop_${VERSION}_x64_setup.exe\` | Double-click to install. SmartScreen may warn — click "More info" → "Run anyway" |
-          | **Linux (Debian/Ubuntu)** | \`TidyBill_Linux_Desktop_${VERSION}_amd64.deb\` | \`sudo dpkg -i TidyBill_Linux_Desktop_${VERSION}_amd64.deb\` |
-          | **Linux (Fedora/RHEL)** | \`TidyBill_Linux_Desktop_${VERSION}_x86_64.rpm\` | \`sudo rpm -i TidyBill_Linux_Desktop_${VERSION}_x86_64.rpm\` |
-          | **macOS (Apple Silicon)** | \`TidyBill_Mac_Desktop_${VERSION}_aarch64.dmg\` | For M1/M2/M3/M4 Macs |
-          | **macOS (Intel)** | \`TidyBill_Mac_Desktop_${VERSION}_x64.dmg\` | For older Intel Macs |
+          | **Linux (Debian/Ubuntu)** | [TidyBill_Linux_Desktop_amd64.deb](${DOWNLOAD_BASE}/TidyBill_Linux_Desktop_amd64.deb) | \`sudo dpkg -i TidyBill_Linux_Desktop_amd64.deb\` |
+          | **Linux (Fedora/RHEL)** | [TidyBill_Linux_Desktop_x86_64.rpm](${DOWNLOAD_BASE}/TidyBill_Linux_Desktop_x86_64.rpm) | \`sudo rpm -i TidyBill_Linux_Desktop_x86_64.rpm\` |
+          | **macOS (Apple Silicon)** | [TidyBill_Mac_Desktop_aarch64.dmg](${DOWNLOAD_BASE}/TidyBill_Mac_Desktop_aarch64.dmg) | For M1/M2/M3/M4 Macs. Gatekeeper may warn — open System Settings → Privacy & Security → click "Open Anyway" |
+          | **macOS (Intel)** | [TidyBill_Mac_Desktop_x64.dmg](${DOWNLOAD_BASE}/TidyBill_Mac_Desktop_x64.dmg) | For older Intel Macs. Gatekeeper may warn — open System Settings → Privacy & Security → click "Open Anyway" |
 
           ### CLI (terminal only, no GUI)
 
           | Platform | File |
           |----------|------|
-          | **Linux** | \`tidybill-linux-terminal-amd64\` |
-          | **Windows** | \`tidybill-windows-terminal-amd64.exe\` |
-          | **macOS (Apple Silicon)** | \`tidybill-mac-terminal-arm64\` |
-          | **macOS (Intel)** | \`tidybill-mac-terminal-amd64\` |
+          | **Linux** | [tidybill-linux-terminal-amd64](${DOWNLOAD_BASE}/tidybill-linux-terminal-amd64) |
+          | **Windows** | [tidybill-windows-terminal-amd64.exe](${DOWNLOAD_BASE}/tidybill-windows-terminal-amd64.exe) |
+          | **macOS (Apple Silicon)** | [tidybill-mac-terminal-arm64](${DOWNLOAD_BASE}/tidybill-mac-terminal-arm64) |
+          | **macOS (Intel)** | [tidybill-mac-terminal-amd64](${DOWNLOAD_BASE}/tidybill-mac-terminal-amd64) |
+
+          </details>
 
           ## What's new
 
-          See [README](https://github.com/adamSHA256/Tidybill#readme) for features and screenshots.
+          See [README](https://github.com/${REPO}#readme) for features and screenshots.
           EOF
           )" --silent
 
