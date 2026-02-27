@@ -159,6 +159,10 @@ func (t *ClassicTemplate) details(data *InvoiceData, opts *TemplateOptions, lang
 	issueDate := data.Invoice.IssueDate.Format("02.01.2006")
 	dueDate := data.Invoice.DueDate.Format("02.01.2006")
 	taxDate := data.Invoice.TaxableDate.Format("02.01.2006")
+	taxDateText := ""
+	if data.Supplier.IsVATPayer {
+		taxDateText = fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.taxable_date"), taxDate)
+	}
 
 	rows = append(rows, row.New(7).Add(
 		text.NewCol(4, i18n.TForLang(lang, "pdf.payment_info")+":", props.Text{Size: 11, Style: fontstyle.Bold, Left: classicPadLeft}),
@@ -168,44 +172,46 @@ func (t *ClassicTemplate) details(data *InvoiceData, opts *TemplateOptions, lang
 
 	if opts.HasBankInfo {
 		rows = append(rows, row.New(5).Add(
-			text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.bank_account"), data.BankAccount.AccountNumber), props.Text{Size: 9, Left: classicPadLeft}),
+			text.NewCol(4, fmt.Sprintf("%s %s", i18n.TForLang(lang, "pdf.bank_account"), data.BankAccount.AccountNumber), props.Text{Size: 9, Left: classicPadLeft}),
 			col.New(4),
-			text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.issue_date"), issueDate), props.Text{Size: 9, Right: classicPadRight}),
+			text.NewCol(4, fmt.Sprintf("%s %s", i18n.TForLang(lang, "pdf.issue_date"), issueDate), props.Text{Size: 9, Right: classicPadRight}),
 		))
 
 		rows = append(rows, row.New(5).Add(
 			text.NewCol(4, fmt.Sprintf("IBAN: %s", data.BankAccount.IBAN), props.Text{Size: 9, Left: classicPadLeft}),
 			col.New(4),
-			text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.due_date"), dueDate), props.Text{Size: 9, Style: fontstyle.Bold, Right: classicPadRight}),
+			text.NewCol(4, fmt.Sprintf("%s %s", i18n.TForLang(lang, "pdf.due_date"), dueDate), props.Text{Size: 9, Style: fontstyle.Bold, Right: classicPadRight}),
 		))
 
 		rows = append(rows, row.New(5).Add(
-			text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.variable_symbol"), data.Invoice.VariableSymbol), props.Text{Size: 9, Style: fontstyle.Bold, Left: classicPadLeft}),
+			text.NewCol(4, fmt.Sprintf("%s %s", i18n.TForLang(lang, "pdf.variable_symbol"), data.Invoice.VariableSymbol), props.Text{Size: 9, Style: fontstyle.Bold, Left: classicPadLeft}),
 			col.New(4),
-			text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.taxable_date"), taxDate), props.Text{Size: 9, Right: classicPadRight}),
+			text.NewCol(4, taxDateText, props.Text{Size: 9, Right: classicPadRight}),
 		))
 	} else {
 		rows = append(rows, row.New(5).Add(
 			col.New(4),
 			col.New(4),
-			text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.issue_date"), issueDate), props.Text{Size: 9, Right: classicPadRight}),
+			text.NewCol(4, fmt.Sprintf("%s %s", i18n.TForLang(lang, "pdf.issue_date"), issueDate), props.Text{Size: 9, Right: classicPadRight}),
 		))
 
 		rows = append(rows, row.New(5).Add(
 			col.New(4),
 			col.New(4),
-			text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.due_date"), dueDate), props.Text{Size: 9, Style: fontstyle.Bold, Right: classicPadRight}),
+			text.NewCol(4, fmt.Sprintf("%s %s", i18n.TForLang(lang, "pdf.due_date"), dueDate), props.Text{Size: 9, Style: fontstyle.Bold, Right: classicPadRight}),
 		))
 
-		rows = append(rows, row.New(5).Add(
-			col.New(4),
-			col.New(4),
-			text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.taxable_date"), taxDate), props.Text{Size: 9, Right: classicPadRight}),
-		))
+		if data.Supplier.IsVATPayer {
+			rows = append(rows, row.New(5).Add(
+				col.New(4),
+				col.New(4),
+				text.NewCol(4, taxDateText, props.Text{Size: 9, Right: classicPadRight}),
+			))
+		}
 	}
 
 	rows = append(rows, row.New(5).Add(
-		text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.payment_method"), data.Invoice.PaymentMethod), props.Text{Size: 9, Left: classicPadLeft}),
+		text.NewCol(4, fmt.Sprintf("%s %s", i18n.TForLang(lang, "pdf.payment_method"), data.Invoice.PaymentMethod), props.Text{Size: 9, Left: classicPadLeft}),
 		col.New(8),
 	))
 
@@ -232,9 +238,9 @@ func (t *ClassicTemplate) items(data *InvoiceData, lang i18n.Lang) []core.Row {
 			text.NewCol(5, item.Description, props.Text{Size: 9, Left: classicPadLeft}),
 			text.NewCol(1, fmt.Sprintf("%.0f", item.Quantity), props.Text{Size: 9, Align: align.Right}),
 			text.NewCol(1, i18n.TranslateUnit(item.Unit, lang), props.Text{Size: 9, Align: align.Center}),
-			text.NewCol(2, formatSimple(item.UnitPrice, currency), props.Text{Size: 9, Align: align.Right}),
+			text.NewCol(2, formatMoneyDefault(item.UnitPrice, currency), props.Text{Size: 9, Align: align.Right}),
 			text.NewCol(1, fmt.Sprintf("%.0f%%", item.VATRate), props.Text{Size: 9, Align: align.Right}),
-			text.NewCol(2, formatSimple(item.Total, currency), props.Text{Size: 9, Align: align.Right, Right: classicPadRight}),
+			text.NewCol(2, formatMoneyDefault(item.Total, currency), props.Text{Size: 9, Align: align.Right, Right: classicPadRight}),
 		))
 	}
 
@@ -248,22 +254,22 @@ func (t *ClassicTemplate) totals(data *InvoiceData, lang i18n.Lang) []core.Row {
 
 	rows = append(rows, row.New(6).Add(
 		col.New(8),
-		text.NewCol(2, i18n.TForLang(lang, "pdf.subtotal")+":", props.Text{Size: 10, Align: align.Right}),
-		text.NewCol(2, formatSimple(data.Invoice.Subtotal, currency), props.Text{Size: 10, Align: align.Right, Right: classicPadRight}),
+		text.NewCol(2, i18n.TForLang(lang, "pdf.subtotal"), props.Text{Size: 10, Align: align.Right}),
+		text.NewCol(2, formatMoneyDefault(data.Invoice.Subtotal, currency), props.Text{Size: 10, Align: align.Right, Right: classicPadRight}),
 	))
 
 	if data.Invoice.VATTotal > 0 {
 		rows = append(rows, row.New(6).Add(
 			col.New(8),
-			text.NewCol(2, i18n.TForLang(lang, "pdf.vat_total")+":", props.Text{Size: 10, Align: align.Right}),
-			text.NewCol(2, formatSimple(data.Invoice.VATTotal, currency), props.Text{Size: 10, Align: align.Right, Right: classicPadRight}),
+			text.NewCol(2, i18n.TForLang(lang, "pdf.vat_total"), props.Text{Size: 10, Align: align.Right}),
+			text.NewCol(2, formatMoneyDefault(data.Invoice.VATTotal, currency), props.Text{Size: 10, Align: align.Right, Right: classicPadRight}),
 		))
 	}
 
 	rows = append(rows, row.New(8).Add(
 		col.New(8),
-		text.NewCol(2, i18n.TForLang(lang, "pdf.total")+":", props.Text{Size: 12, Style: fontstyle.Bold, Align: align.Right}),
-		text.NewCol(2, formatSimple(data.Invoice.Total, currency), props.Text{Size: 12, Style: fontstyle.Bold, Align: align.Right, Right: classicPadRight}),
+		text.NewCol(2, i18n.TForLang(lang, "pdf.total"), props.Text{Size: 12, Style: fontstyle.Bold, Align: align.Right}),
+		text.NewCol(2, formatMoneyDefault(data.Invoice.Total, currency), props.Text{Size: 12, Style: fontstyle.Bold, Align: align.Right, Right: classicPadRight}),
 	))
 
 	return rows

@@ -440,6 +440,7 @@
   "invoice.missing_fields_msg_no_bank": "Vyberte dodavatele a odběratele",
   "invoice.due_date_changed_by_customer": "Splatnost změněna dle nastavení odběratele",
   "invoice.taxable_date": "DÚZP",
+  "invoice.taxable_date_hint": "Datum uskutečnění zdanitelného plnění. Vyplňte pouze pokud jste plátce DPH, jinak můžete ignorovat.",
   "invoice.payment_method": "Forma úhrady",
 
   "wizard.title": "Vítejte v TidyBill",

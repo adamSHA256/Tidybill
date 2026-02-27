@@ -440,6 +440,7 @@
   "invoice.missing_fields_msg_no_bank": "Select supplier and customer",
   "invoice.due_date_changed_by_customer": "Due date changed based on customer settings",
   "invoice.taxable_date": "Taxable supply date",
+  "invoice.taxable_date_hint": "Date of taxable supply. Only relevant for VAT payers — if you are not a VAT payer, you can ignore this field.",
   "invoice.payment_method": "Payment method",
 
   "wizard.title": "Welcome to TidyBill",

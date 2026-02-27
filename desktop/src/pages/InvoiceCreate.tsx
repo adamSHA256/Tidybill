@@ -20,10 +20,11 @@ import {
   Switch,
   Textarea,
   Alert,
+  Tooltip,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { DateInput } from '@mantine/dates'
-import { IconTrash, IconPlus, IconPackage, IconAlertTriangle } from '@tabler/icons-react'
+import { IconTrash, IconPlus, IconPackage, IconAlertTriangle, IconInfoCircle } from '@tabler/icons-react'
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -424,14 +425,13 @@ export function InvoiceCreate() {
     updateItem(index, 'unit', val || unitOptions[0] || 'ks')
   }
 
-  const handleAddUnit = () => {
+  const handleAddUnit = async () => {
     const name = newUnitValue.trim()
     if (!name) return
     const currentUnits = units || []
     if (!currentUnits.some((u) => u.name === name)) {
-      api.updateUnits([...currentUnits, { name }]).then(() => {
-        queryClient.invalidateQueries({ queryKey: ['units'] })
-      })
+      await api.updateUnits([...currentUnits, { name }])
+      await queryClient.invalidateQueries({ queryKey: ['units'] })
     }
     if (unitTargetIndex >= 0) updateItem(unitTargetIndex, 'unit', name)
     setUnitModalOpen(false)
@@ -707,7 +707,20 @@ export function InvoiceCreate() {
         <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
           <TextInput label={t('invoice.invoice_number')} placeholder={t('invoice.invoice_number_placeholder')} value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.currentTarget.value)} />
           <DateInput label={t('invoice.issue_date')} valueFormat="DD.MM.YYYY" value={issueDate} onChange={setIssueDate} clearable />
-          <DateInput label={t('invoice.taxable_date')} valueFormat="DD.MM.YYYY" value={taxableDate ?? issueDate} onChange={setTaxableDate} clearable />
+          <DateInput
+            label={
+              <Group gap={4}>
+                <span>{t('invoice.taxable_date')}</span>
+                <Tooltip label={t('invoice.taxable_date_hint')} multiline w={300} withArrow>
+                  <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+                </Tooltip>
+              </Group>
+            }
+            valueFormat="DD.MM.YYYY"
+            value={taxableDate ?? issueDate}
+            onChange={setTaxableDate}
+            clearable
+          />
           <Select label={t('invoice.payment_method')} data={paymentTypeSelectData} value={paymentMethod} onChange={handlePaymentTypeSelect} searchable />
           <Select label={t('invoice.currency')} data={currencyData} value={currency} onChange={(v) => handleCurrencySelect(v, 'invoice')} searchable />
           <div>

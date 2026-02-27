@@ -109,22 +109,26 @@ layout:
             style: { size: 9, top: 6 }
           - text: "{{ .Invoice.DueDate | date }}"
             style: { size: 9, bold: true, top: 6, left: 35 }
-          - text: "{{ label \"pdf.payment_method\" }}"
+          - text: "{{ if .Supplier.IsVATPayer }}{{ label \"pdf.taxable_date\" }}{{ end }}"
             style: { size: 9, top: 12 }
-          - text: "{{ .Invoice.PaymentMethod }}"
+          - text: "{{ if .Supplier.IsVATPayer }}{{ .Invoice.TaxableDate | date }}{{ end }}"
             style: { size: 9, bold: true, top: 12, left: 35 }
+          - text: "{{ label \"pdf.payment_method\" }}"
+            style: { size: 9, top: 18 }
+          - text: "{{ .Invoice.PaymentMethod }}"
+            style: { size: 9, bold: true, top: 18, left: 35 }
           - text: "{{ if .Options.HasBankInfo }}{{ label \"pdf.bank_account\" }}{{ end }}"
-            style: { size: 9, top: 20 }
-          - text: "{{ if .Options.HasBankInfo }}{{ .BankAccount.AccountNumber }}{{ end }}"
-            style: { size: 9, bold: true, top: 20, left: 35 }
-          - text: "{{ if .Options.HasBankInfo }}{{ label \"pdf.iban\" }}{{ end }}"
             style: { size: 9, top: 26 }
+          - text: "{{ if .Options.HasBankInfo }}{{ .BankAccount.AccountNumber }}{{ end }}"
+            style: { size: 9, bold: true, top: 26, left: 35 }
+          - text: "{{ if .Options.HasBankInfo }}{{ label \"pdf.iban\" }}{{ end }}"
+            style: { size: 9, top: 32 }
           - text: "{{ if .Options.HasBankInfo }}{{ .BankAccount.IBAN }}{{ end }}"
-            style: { size: 8, bold: true, top: 26, left: 35 }
+            style: { size: 8, bold: true, top: 32, left: 35 }
           - text: "{{ if .Options.HasBankInfo }}{{ label \"pdf.variable_symbol\" }}{{ end }}"
-            style: { size: 9, top: 34 }
+            style: { size: 9, top: 40 }
           - text: "{{ if .Options.HasBankInfo }}{{ .Invoice.VariableSymbol }}{{ end }}"
-            style: { size: 9, bold: true, top: 34, left: 35 }
+            style: { size: 9, bold: true, top: 40, left: 35 }
 
   # ── Payment bar ──
   - row: 15
@@ -409,7 +413,7 @@ layout:
         style: { size: 9, bold: true, left: 2 }
       - width: 4
       - width: 4
-        text: "{{ label \"pdf.taxable_date\" }}: {{ .Invoice.TaxableDate | date }}"
+        text: "{{ if .Supplier.IsVATPayer }}{{ label \"pdf.taxable_date\" }}: {{ .Invoice.TaxableDate | date }}{{ end }}"
         style: { size: 9, right: 2 }
 
   - if: "not .Options.HasBankInfo"
@@ -431,6 +435,15 @@ layout:
       - width: 4
         text: "{{ label \"pdf.due_date\" }} {{ .Invoice.DueDate | date }}"
         style: { size: 9, bold: true, right: 2 }
+
+  - if: "and (not .Options.HasBankInfo) .Supplier.IsVATPayer"
+    row: 5
+    cols:
+      - width: 4
+      - width: 4
+      - width: 4
+        text: "{{ label \"pdf.taxable_date\" }}: {{ .Invoice.TaxableDate | date }}"
+        style: { size: 9, right: 2 }
 
   - row: 5
     cols:
@@ -682,6 +695,22 @@ layout:
         text: "{{ .Invoice.PaymentMethod }}"
         style: { size: 10 }
 
+  - if: "and .Options.HasBankInfo .Supplier.IsVATPayer"
+    row: 6
+    cols:
+      - width: 3
+        text: "{{ label \"pdf.taxable_date\" }}"
+        style: { size: 8, color: label_gray }
+      - width: 9
+
+  - if: "and .Options.HasBankInfo .Supplier.IsVATPayer"
+    row: 6
+    cols:
+      - width: 3
+        text: "{{ .Invoice.TaxableDate | date }}"
+        style: { size: 10 }
+      - width: 9
+
   - if: ".Options.HasBankInfo"
     spacer: 8
 
@@ -731,6 +760,22 @@ layout:
       - width: 4
         text: "{{ .Invoice.PaymentMethod }}"
         style: { size: 10 }
+
+  - if: "and (not .Options.HasBankInfo) .Supplier.IsVATPayer"
+    row: 6
+    cols:
+      - width: 4
+        text: "{{ label \"pdf.taxable_date\" }}"
+        style: { size: 8, color: label_gray }
+      - width: 8
+
+  - if: "and (not .Options.HasBankInfo) .Supplier.IsVATPayer"
+    row: 6
+    cols:
+      - width: 4
+        text: "{{ .Invoice.TaxableDate | date }}"
+        style: { size: 10 }
+      - width: 8
 
   - spacer: 15
 
@@ -913,6 +958,14 @@ layout:
         text: "{{ label \"pdf.bank_account\" }} {{ .BankAccount.AccountNumber }}"
         style: { size: 9, align: right, top: 2 }
 
+  - if: "and .Options.HasBankInfo .Supplier.IsVATPayer"
+    row: 6
+    cols:
+      - width: 8
+      - width: 4
+        text: "{{ label \"pdf.taxable_date\" }}: {{ .Invoice.TaxableDate | date }}"
+        style: { size: 9, align: right }
+
   - if: ".Options.HasBankInfo"
     line: { color: line_color, size_percent: 100 }
 
@@ -930,6 +983,14 @@ layout:
           - text: "{{ .Invoice.DueDate | date }}"
             style: { size: 9, bold: true, top: 6 }
       - width: 8
+
+  - if: "and (not .Options.HasBankInfo) .Supplier.IsVATPayer"
+    row: 6
+    cols:
+      - width: 8
+      - width: 4
+        text: "{{ label \"pdf.taxable_date\" }}: {{ .Invoice.TaxableDate | date }}"
+        style: { size: 9, align: right }
 
   - if: "not .Options.HasBankInfo"
     line: { color: line_color, size_percent: 100 }
