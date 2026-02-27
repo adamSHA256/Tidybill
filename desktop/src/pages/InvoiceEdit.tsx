@@ -318,12 +318,16 @@ export function InvoiceEdit() {
   }
 
   // Build VAT rate select data with "Add new" option
+  const baseVatRates = vatRateOptions.length > 0 ? vatRateOptions : ['0', '12', '21']
+  const itemVatRates = items.map((item) => String(item.vat_rate)).filter((r) => r && !baseVatRates.includes(r))
+  const allVatRates = [...baseVatRates, ...itemVatRates.filter((r, i) => itemVatRates.indexOf(r) === i)]
   const vatRateSelectData = [
-    ...(vatRateOptions.length > 0 ? vatRateOptions : ['0', '12', '21']).map((r) => ({ value: r, label: `${r}%` })),
+    ...allVatRates.map((r) => ({ value: r, label: `${r}%` })),
     { value: ADD_VAT_RATE, label: `+ ${t('invoice.add_vat_rate')}` },
   ]
 
   const handleVatRateSelect = (val: string | null, index: number) => {
+    if (!val) return
     if (val === ADD_VAT_RATE) {
       setNewVatRateValue('')
       setVatRateTargetIndex(index)
@@ -336,13 +340,18 @@ export function InvoiceEdit() {
   const handleAddVatRate = () => {
     const rate = parseFloat(newVatRateValue.trim())
     if (isNaN(rate) || rate < 0) return
+    const idx = vatRateTargetIndex
     const currentRates = vatRates || []
     if (!currentRates.some((r) => r.rate === rate)) {
       api.updateVATRates([...currentRates, { rate }]).then(() => {
         queryClient.invalidateQueries({ queryKey: ['vat-rates'] })
       })
     }
-    if (vatRateTargetIndex >= 0) updateItem(vatRateTargetIndex, 'vat_rate', rate)
+    if (idx >= 0) {
+      setItems(prev => prev.map((item, i) =>
+        i === idx ? { ...item, vat_rate: rate } : item
+      ))
+    }
     setVatRateModalOpen(false)
   }
 
@@ -768,7 +777,7 @@ export function InvoiceEdit() {
                     </Table.Td>
                     <Table.Td>
                       <Select size="sm" data={vatRateSelectData} value={String(item.vat_rate)}
-                        onChange={(val) => handleVatRateSelect(val, i)} />
+                        onChange={(val) => handleVatRateSelect(val, i)} allowDeselect={false} />
                     </Table.Td>
                     <Table.Td>
                       <Text size="sm" fw={600}>{formatMoney(item.quantity * item.unit_price, currency)}</Text>

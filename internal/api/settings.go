@@ -48,6 +48,8 @@ func (s *Server) getSettings(w http.ResponseWriter, r *http.Request) {
 		"invoice_default_sort": invoiceDefaultSort,
 		"ui_scale":             uiScale,
 		"default_pdf_dir":      s.cfg.PDFDir,
+		"default_logo_dir":     s.cfg.LogoDir,
+		"default_preview_dir":  s.cfg.PreviewDir,
 	})
 }
 

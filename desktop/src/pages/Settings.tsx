@@ -129,9 +129,9 @@ export function Settings() {
 
   useEffect(() => {
     if (settings) {
-      setDirLogos(settings.dir_logos || '')
-      setDirPdfs(settings.dir_pdfs || '')
-      setDirPreviews(settings.dir_previews || '')
+      setDirLogos(settings.dir_logos || settings.default_logo_dir || '')
+      setDirPdfs(settings.dir_pdfs || settings.default_pdf_dir || '')
+      setDirPreviews(settings.dir_previews || settings.default_preview_dir || '')
       setDashWidgets(parseWidgets(settings.dashboard_widgets))
     }
   }, [settings])
@@ -323,7 +323,6 @@ export function Settings() {
             <Stack gap="xs">
               <Group gap="xs">
                 <Text size="sm" fw={500} w={100}>Monero (XMR)</Text>
-                <Code>{aboutInfo.monero_address}</Code>
                 <CopyButton value={aboutInfo.monero_address}>
                   {({ copied, copy }) => (
                     <Tooltip label={copied ? t('about.copied') : t('common.copy')}>
@@ -333,10 +332,10 @@ export function Settings() {
                     </Tooltip>
                   )}
                 </CopyButton>
+                <Code>{aboutInfo.monero_address}</Code>
               </Group>
               <Group gap="xs">
                 <Text size="sm" fw={500} w={100}>Bitcoin (BTC)</Text>
-                <Code>{aboutInfo.bitcoin_address}</Code>
                 <CopyButton value={aboutInfo.bitcoin_address}>
                   {({ copied, copy }) => (
                     <Tooltip label={copied ? t('about.copied') : t('common.copy')}>
@@ -346,6 +345,7 @@ export function Settings() {
                     </Tooltip>
                   )}
                 </CopyButton>
+                <Code>{aboutInfo.bitcoin_address}</Code>
               </Group>
             </Stack>
           </Paper>
