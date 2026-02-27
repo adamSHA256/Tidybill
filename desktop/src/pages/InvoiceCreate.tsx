@@ -419,13 +419,14 @@ export function InvoiceCreate() {
   ]
 
   const handleUnitSelect = (val: string | null, index: number) => {
+    if (!val) return
     if (val === ADD_UNIT) {
       setNewUnitValue('')
       setUnitTargetIndex(index)
       setUnitModalOpen(true)
       return
     }
-    updateItem(index, 'unit', val || unitOptions[0] || 'ks')
+    updateItem(index, 'unit', val)
   }
 
   const handleAddUnit = async () => {
@@ -932,7 +933,7 @@ export function InvoiceCreate() {
                 </Table.Td>
                 <Table.Td>
                   <Select size="sm" data={unitSelectData} value={item.unit}
-                    onChange={(val) => handleUnitSelect(val, i)} />
+                    onChange={(val) => handleUnitSelect(val, i)} allowDeselect={false} />
                 </Table.Td>
                 <Table.Td>
                   <NumberInput size="sm" min={0} value={item.unit_price}
