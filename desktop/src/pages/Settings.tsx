@@ -323,7 +323,7 @@ export function Settings() {
             <Stack gap="xs">
               <Group gap="xs">
                 <Text size="sm" fw={500} w={100}>Monero (XMR)</Text>
-                <CopyButton value={aboutInfo.monero_address}>
+                <CopyButton value={aboutInfo.monero_address.replace(/^<|>$/g, '')}>
                   {({ copied, copy }) => (
                     <Tooltip label={copied ? t('about.copied') : t('common.copy')}>
                       <ActionIcon variant="subtle" color={copied ? 'teal' : 'gray'} onClick={copy}>
@@ -336,7 +336,7 @@ export function Settings() {
               </Group>
               <Group gap="xs">
                 <Text size="sm" fw={500} w={100}>Bitcoin (BTC)</Text>
-                <CopyButton value={aboutInfo.bitcoin_address}>
+                <CopyButton value={aboutInfo.bitcoin_address.replace(/^<|>$/g, '')}>
                   {({ copied, copy }) => (
                     <Tooltip label={copied ? t('about.copied') : t('common.copy')}>
                       <ActionIcon variant="subtle" color={copied ? 'teal' : 'gray'} onClick={copy}>
