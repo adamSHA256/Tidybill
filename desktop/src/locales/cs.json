@@ -192,6 +192,7 @@
   "supplier.phone_label": "Telefon",
   "supplier.website_label": "Webové stránky",
   "supplier.invoice_prefix_label": "Prefix faktury",
+  "supplier.invoice_prefix_hint": "Běžný prefix v České republice je VF (Vydaná Faktura), následuje pak automaticky doplněný rok a číslo faktury v daném roce. Na Slovensku je zase běžný prefix FV (Faktúra vydaná). Pokud nepoužíváte, nevyplňujte.",
   "supplier.is_vat_payer_label": "Plátce DPH",
   "supplier.notes_label": "Poznámky",
   "supplier.missing_name_title": "Chybějící údaje",

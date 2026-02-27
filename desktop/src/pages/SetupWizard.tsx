@@ -14,12 +14,13 @@ import {
   SegmentedControl,
   Divider,
   Center,
+  Tooltip,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useQuery } from '@tanstack/react-query'
 import { api, type Supplier, type BankAccount } from '../api/client'
 import { useT } from '../i18n'
-import { IconFolderOpen } from '@tabler/icons-react'
+import { IconFolderOpen, IconInfoCircle } from '@tabler/icons-react'
 import { CountrySelect } from '../components/CountrySelect'
 
 const langLabels: Record<string, string> = {
@@ -368,7 +369,14 @@ export function SetupWizard({ onComplete }: Props) {
                   />
                 </Group>
                 <TextInput
-                  label={t('supplier.invoice_prefix_label')}
+                  label={
+                    <Group gap={4}>
+                      <span>{t('supplier.invoice_prefix_label')}</span>
+                      <Tooltip label={t('supplier.invoice_prefix_hint')} multiline w={300} withArrow>
+                        <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+                      </Tooltip>
+                    </Group>
+                  }
                   value={supplierPrefix}
                   onChange={(e) => setSupplierPrefix(e.currentTarget.value)}
                   w={120}

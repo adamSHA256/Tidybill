@@ -187,6 +187,7 @@
   "supplier.phone_label": "Phone",
   "supplier.website_label": "Website",
   "supplier.invoice_prefix_label": "Invoice Prefix",
+  "supplier.invoice_prefix_hint": "In the Czech Republic, the common prefix is VF (Vydaná Faktura), followed by the auto-generated year and invoice number. In Slovakia, the common prefix is FV (Faktúra vydaná). If you don't use a prefix, leave it empty.",
   "supplier.is_vat_payer_label": "VAT Payer",
   "supplier.notes_label": "Notes",
   "supplier.missing_name_title": "Missing fields",

@@ -20,9 +20,10 @@ import {
   Divider,
   Box,
   SegmentedControl,
+  Tooltip,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import { IconPlus, IconUpload, IconTrash, IconPencil, IconBuildingBank } from '@tabler/icons-react'
+import { IconPlus, IconUpload, IconTrash, IconPencil, IconBuildingBank, IconInfoCircle } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, type Supplier, type BankAccount } from '../api/client'
@@ -544,7 +545,14 @@ export function SupplierList() {
           <Group grow>
             <TextInput label={t('supplier.website_label')} value={website}
               onChange={(e) => setWebsite(e.currentTarget.value)} />
-            <TextInput label={t('supplier.invoice_prefix_label')} value={invoicePrefix}
+            <TextInput label={
+              <Group gap={4}>
+                <span>{t('supplier.invoice_prefix_label')}</span>
+                <Tooltip label={t('supplier.invoice_prefix_hint')} multiline w={300} withArrow>
+                  <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+                </Tooltip>
+              </Group>
+            } value={invoicePrefix}
               onChange={(e) => setInvoicePrefix(e.currentTarget.value)} />
           </Group>
           <Textarea label={t('supplier.notes_label')} value={notes}
