@@ -238,9 +238,11 @@ export function InvoiceCreate() {
     }
   }, [vatRates]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Initialize default unit from settings for the initial empty item
+  // Initialize default unit from settings for the initial empty item (only on first load)
+  const unitsInitialized = useRef(false)
   useEffect(() => {
-    if (units && units.length > 0) {
+    if (units && units.length > 0 && !unitsInitialized.current) {
+      unitsInitialized.current = true
       setItems((prev) => prev.length === 1 && !prev[0].description ? [{ ...prev[0], unit: defaultUnit }] : prev)
     }
   }, [units]) // eslint-disable-line react-hooks/exhaustive-deps
