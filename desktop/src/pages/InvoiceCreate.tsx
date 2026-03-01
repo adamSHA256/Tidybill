@@ -167,6 +167,8 @@ export function InvoiceCreate() {
   const [bIban, setBIban] = useState('')
   const [bSwift, setBSwift] = useState('')
   const [bCurrency, setBCurrency] = useState('CZK')
+  const [bIsDefault, setBIsDefault] = useState(false)
+  const [bQrType, setBQrType] = useState('spayd')
 
   const { data: suppliers, isLoading: suppliersLoading } = useQuery({
     queryKey: ['suppliers'],
@@ -329,12 +331,12 @@ export function InvoiceCreate() {
 
   const createMutation = useMutation({
     mutationFn: api.createInvoice,
-    onSuccess: () => {
+    onSuccess: (newInvoice) => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
       queryClient.invalidateQueries({ queryKey: ['items'] })
       notifications.show({ title: t('notify.invoice_created'), message: t('notify.invoice_created_msg'), color: 'green' })
-      navigate('/invoices')
+      navigate(`/invoices/${newInvoice.id}`)
     },
     onError: (err: Error) => {
       notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
@@ -534,6 +536,8 @@ export function InvoiceCreate() {
 
   const openBankModal = () => {
     setBName(''); setBAccountNumber(''); setBIban(''); setBSwift(''); setBCurrency('CZK')
+    setBIsDefault(!bankAccounts || bankAccounts.length === 0)
+    setBQrType('spayd')
     setBankModalOpen(true)
   }
 
@@ -567,6 +571,7 @@ export function InvoiceCreate() {
     }
     createBankMutation.mutate({
       name: bName, account_number: bAccountNumber, iban: bIban, swift: bSwift, currency: bCurrency,
+      is_default: bIsDefault, qr_type: bQrType,
     })
   }
 
@@ -679,16 +684,17 @@ export function InvoiceCreate() {
     // Recalculate due date from customer's default_due_days or global setting
     const cust = customers?.find((c) => c.id === v)
     const days = (cust && cust.default_due_days > 0) ? cust.default_due_days : globalDueDays
-    setDueDate(new Date(Date.now() + days * 86400000).toISOString().slice(0, 10))
+    const newDueDate = new Date(Date.now() + days * 86400000).toISOString().slice(0, 10)
 
-    // Show indicator if customer has custom due days different from global
-    if (cust && cust.default_due_days > 0 && cust.default_due_days !== globalDueDays) {
+    // Show indicator if the due date actually changed
+    if (dueDate && newDueDate !== dueDate) {
       setDueDateChangedByCustomer(true)
       if (dueDateTimerRef.current) clearTimeout(dueDateTimerRef.current)
       dueDateTimerRef.current = setTimeout(() => setDueDateChangedByCustomer(false), 10000)
     } else {
       setDueDateChangedByCustomer(false)
     }
+    setDueDate(newDueDate)
   }
 
   const handleBankSelect = (v: string | null) => {
@@ -1114,6 +1120,31 @@ export function InvoiceCreate() {
             <Select label={t('bank_account.currency_label')} data={currencyData}
               value={bCurrency} onChange={(v) => handleCurrencySelect(v, 'bank')} searchable />
           </Group>
+          <Select label={
+            <Group gap={4}>
+              <span>{t('bank_account.qr_type_label')}</span>
+              <Tooltip label={t('bank_account.qr_type_hint')} multiline w={300} withArrow>
+                <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+              </Tooltip>
+            </Group>
+          }
+            data={[
+              { value: 'spayd', label: t('bank_account.qr_spayd') },
+              { value: 'pay_by_square', label: t('bank_account.qr_pbs') },
+              { value: 'epc', label: t('bank_account.qr_epc') },
+              { value: 'none', label: t('bank_account.qr_none') },
+            ]}
+            value={bQrType} onChange={(v) => setBQrType(v || 'spayd')}
+            allowDeselect={false} />
+          <Switch label={
+            <Group gap={4}>
+              <span>{t('bank_account.is_default_label')}</span>
+              <Tooltip label={t('bank_account.is_default_hint')} multiline w={300} withArrow>
+                <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+              </Tooltip>
+            </Group>
+          } checked={bIsDefault}
+            onChange={(e) => setBIsDefault(e.currentTarget.checked)} />
           <Group justify="end" mt="md">
             <Button variant="default" onClick={() => setBankModalOpen(false)}>{t('common.cancel')}</Button>
             <Button onClick={handleSaveBank} loading={createBankMutation.isPending}>{t('common.create')}</Button>

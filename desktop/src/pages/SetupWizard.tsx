@@ -75,6 +75,7 @@ export function SetupWizard({ onComplete }: Props) {
   const [bankAccountNumber, setBankAccountNumber] = useState('')
   const [bankIban, setBankIban] = useState('')
   const [bankCurrency, setBankCurrency] = useState('CZK')
+  const [bankQrType, setBankQrType] = useState('spayd')
 
   // Step 4: PDF Directory
   const [pdfDir, setPdfDir] = useState('')
@@ -189,6 +190,7 @@ export function SetupWizard({ onComplete }: Props) {
         iban: bankIban,
         currency: bankCurrency,
         is_default: true,
+        qr_type: bankQrType,
       } as Partial<BankAccount>)
       setBankSkipped(false)
       goNext()
@@ -432,6 +434,25 @@ export function SetupWizard({ onComplete }: Props) {
                       if (v) setBankCurrency(v)
                     }}
                     w={200}
+                  />
+                  <Select
+                    label={
+                      <Group gap={4}>
+                        <span>{t('bank_account.qr_type_label')}</span>
+                        <Tooltip label={t('bank_account.qr_type_wizard_hint')} multiline w={300} withArrow>
+                          <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+                        </Tooltip>
+                      </Group>
+                    }
+                    data={[
+                      { value: 'spayd', label: t('bank_account.qr_spayd') },
+                      { value: 'pay_by_square', label: t('bank_account.qr_pbs') },
+                      { value: 'epc', label: t('bank_account.qr_epc') },
+                      { value: 'none', label: t('bank_account.qr_none') },
+                    ]}
+                    value={bankQrType}
+                    onChange={(v) => setBankQrType(v || 'spayd')}
+                    allowDeselect={false}
                   />
                 </Stack>
               </Paper>

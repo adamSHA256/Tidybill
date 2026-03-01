@@ -227,12 +227,12 @@ jobs:
           1. Click **"More info"**
           2. Click **"Run anyway"**
 
-          ![SmartScreen warning](https://raw.githubusercontent.com/${REPO}/main/.github/smart-screen.png)
+          <img src="https://raw.githubusercontent.com/${REPO}/main/.github/smart-screen.png" alt="SmartScreen warning" width="400">
 
           ---
 
-          <details>
-          <summary>Other platforms (Linux, macOS, CLI)</summary>
+          # Download for Linux, macOS & CLI version
+          <details> <summary>Open here</summary>
 
           ### Desktop App (GUI)
 
