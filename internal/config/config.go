@@ -49,6 +49,28 @@ func New() (*Config, error) {
 	return cfg, nil
 }
 
+// NewWithDataDir creates a Config using the specified data directory.
+// Used by the mobile app where the data directory is provided by the platform.
+func NewWithDataDir(dataDir string) (*Config, error) {
+	cfg := &Config{
+		DataDir:    dataDir,
+		DBPath:     filepath.Join(dataDir, "invoices.db"),
+		PDFDir:     filepath.Join(dataDir, "pdfs"),
+		LogoDir:    filepath.Join(dataDir, "logos"),
+		ExportDir:  filepath.Join(dataDir, "exports"),
+		PreviewDir: filepath.Join(dataDir, "previews"),
+	}
+
+	dirs := []string{cfg.DataDir, cfg.PDFDir, cfg.LogoDir, cfg.ExportDir, cfg.PreviewDir}
+	for _, dir := range dirs {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return nil, err
+		}
+	}
+
+	return cfg, nil
+}
+
 func getDataDir() (string, error) {
 	var baseDir string
 
