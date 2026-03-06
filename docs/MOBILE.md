@@ -78,14 +78,53 @@ If you change any Go code (`internal/`, `pkg/mobile/`), you MUST rebuild the AAR
 
 Building for all architectures uses ~30-40GB RAM. Always use `--target aarch64` during development (builds for arm64 only, ~8GB RAM).
 
+## Mobile Navigation
+
+The app uses separate layout components for desktop and mobile (no shared conditional logic):
+
+| File | Purpose |
+|------|---------|
+| `desktop/src/components/AppShell.tsx` | Desktop sidebar layout (unchanged) |
+| `desktop/src/components/MobileShell.tsx` | Mobile bottom tab bar layout |
+| `desktop/src/pages/MorePage.tsx` | "More" tab page (Customers, Suppliers, Templates, Items, Settings) |
+| `desktop/src/hooks/useIsMobile.ts` | `useMediaQuery` hook — switches layout at 48em (768px) breakpoint |
+
+**Bottom tab bar tabs:** Dashboard, Invoices, New Invoice, More
+
+**How it works:**
+- `App.tsx` calls `useIsMobile()` and renders either `AppShell` (desktop sidebar) or `MobileShell` (bottom tabs)
+- Pages are identical on both platforms — only the navigation shell changes
+- The "More" page shows all nav items not in the bottom bar (Customers, Suppliers, Templates, Items, Settings, theme toggle)
+- Active tab detection: `/invoices/new` highlights "New Invoice", other `/invoices/*` paths highlight "Invoices", all other non-root paths highlight "More"
+
 ## Current Limitations (PoC)
 
 - Port is hardcoded to 18080 (should be dynamic with Kotlin→Rust bridge)
-- No mobile-specific UI (sidebar disappears on small screens)
+- Mobile UI is basic — bottom tab bar with 4 tabs, no responsive table/form adaptations yet
 - No PDF sharing (desktop uses "open folder", Android needs share intent)
 - No Android file picker adaptation
 - Default Android icon (no custom app icon)
 - Debug-signed APK only (needs proper keystore for Play Store)
+- Edge-to-edge disabled (see below)
+
+## Possible Improvements
+
+### Edge-to-edge display
+
+Currently `enableEdgeToEdge()` is disabled in `MainActivity.kt` because Android WebView (Chromium < 140) has a bug where CSS `env(safe-area-inset-*)` returns `0px`, making the app draw behind system bars with no way to compensate via CSS alone.
+
+When re-enabling edge-to-edge in the future, the established industry approach (used by Ionic/Capacitor, React Native, Flutter) is a **native-to-web bridge**:
+
+1. In `MainActivity.kt`, read insets via `WindowInsetsCompat` (Android's native API)
+2. Inject the values into the WebView as CSS custom properties via `webView.evaluateJavascript()`
+3. Use those CSS variables (`--safe-area-inset-top`, etc.) in `MobileShell.tsx`
+
+This is the same approach used by the [`@capacitor-community/safe-area`](https://github.com/capacitor-community/safe-area) plugin. Do **not** use `window.visualViewport` to calculate insets — that API is designed for zoom/keyboard tracking, not safe area measurement.
+
+References:
+- [Android Developers: Understand window insets in WebView](https://developer.android.com/develop/ui/views/layout/webapps/understand-window-insets)
+- [Android Developers: Make WebViews edge-to-edge](https://medium.com/androiddevelopers/make-webviews-edge-to-edge-a6ef319adfac)
+- [Chromium bug: safe-area-inset-* always 0px](https://issuetracker.google.com/issues/396827865)
 
 ## How the Conditional Compilation Works
 
