@@ -213,8 +213,8 @@ export function Dashboard() {
                     (Date.now() - new Date(inv.due_date).getTime()) / (1000 * 60 * 60 * 24)
                   )
                   return (
-                    <div key={inv.id}>
-                      <Text size="sm" fw={500}>{inv.invoice_number} — {inv.customer?.name || '—'}</Text>
+                    <div key={inv.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/invoices/${inv.id}`)}>
+                      <Text size="sm" fw={500} td="underline">{inv.invoice_number} — {inv.customer?.name || '—'}</Text>
                       <Text size="xs" c="red">{formatMoney(inv.total, inv.currency)} — {t('dashboard.days_overdue').replace('{days}', String(daysOverdue))}</Text>
                     </div>
                   )
