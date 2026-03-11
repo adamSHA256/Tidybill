@@ -24,10 +24,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, type Customer } from '../api/client'
 import { CountrySelect } from '../components/CountrySelect'
 import { useT } from '../i18n'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 const avatarColors = ['blue', 'green', 'yellow', 'violet', 'orange', 'teal', 'red', 'pink']
 
 export function CustomerList() {
+  const isMobile = useIsMobile()
   const [search, setSearch] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
@@ -173,7 +175,7 @@ export function CustomerList() {
           <Title order={2}>{t('customer.title')}</Title>
           <Text c="dimmed" size="sm">{t('customer.subtitle')}</Text>
         </div>
-        <Group>
+        <Group wrap="wrap">
           <TextInput
             placeholder={t('customer.search')}
             leftSection={<IconSearch size={16} />}
@@ -248,36 +250,36 @@ export function CustomerList() {
       )}
 
       <Modal opened={modalOpen} onClose={closeModal}
-        title={editingCustomer ? t('customer.edit_title') : t('customer.new_title')} size="lg">
+        title={editingCustomer ? t('customer.edit_title') : t('customer.new_title')} size="lg" fullScreen={isMobile}>
         <Stack gap="md">
           <TextInput label={t('customer.name_label')} value={name}
             onChange={(e) => setName(e.currentTarget.value)} required />
-          <Group grow>
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
             <TextInput label={t('customer.ico_label')} value={ico}
               onChange={(e) => setIco(e.currentTarget.value)} />
             <TextInput label={t('customer.dic_label')} value={dic}
               onChange={(e) => setDic(e.currentTarget.value)} />
-          </Group>
+          </SimpleGrid>
           {country.toUpperCase() === 'SK' && (
             <TextInput label={t('customer.ic_dph_label')} value={icDph}
               onChange={(e) => setIcDph(e.currentTarget.value)} />
           )}
           <TextInput label={t('customer.street_label')} value={street}
             onChange={(e) => setStreet(e.currentTarget.value)} />
-          <Group grow>
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
             <TextInput label={t('customer.city_label')} value={city}
               onChange={(e) => setCity(e.currentTarget.value)} />
             <TextInput label={t('customer.zip_label')} value={zip}
               onChange={(e) => setZip(e.currentTarget.value)} />
-          </Group>
+          </SimpleGrid>
           <CountrySelect label={t('customer.country_label')}
             value={country} onChange={(v) => setCountry(v || 'CZ')} />
-          <Group grow>
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
             <TextInput label={t('customer.email_label')} value={email}
               onChange={(e) => setEmail(e.currentTarget.value)} />
             <TextInput label={t('customer.phone_label')} value={phone}
               onChange={(e) => setPhone(e.currentTarget.value)} />
-          </Group>
+          </SimpleGrid>
           <NumberInput label={t('customer.default_due_days_label')}
             description={t('customer.default_due_days_desc')}
             value={defaultDueDays} onChange={(v) => setDefaultDueDays(Number(v) || 0)}

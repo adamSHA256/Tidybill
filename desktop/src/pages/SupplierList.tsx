@@ -21,6 +21,7 @@ import {
   Box,
   SegmentedControl,
   Tooltip,
+  SimpleGrid,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { IconPlus, IconUpload, IconTrash, IconPencil, IconBuildingBank, IconInfoCircle } from '@tabler/icons-react'
@@ -29,6 +30,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, type Supplier, type BankAccount } from '../api/client'
 import { CountrySelect } from '../components/CountrySelect'
 import { useT } from '../i18n'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 function BankAccountsRow({ supplierId, supplierName, onEdit, onDelete, onCreate }: {
   supplierId: string
@@ -111,6 +113,7 @@ function BankAccountsRow({ supplierId, supplierName, onEdit, onDelete, onCreate 
 }
 
 export function SupplierList() {
+  const isMobile = useIsMobile()
   const [modalOpen, setModalOpen] = useState(false)
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -371,7 +374,7 @@ export function SupplierList() {
           <Title order={2}>{pageTitle}</Title>
           <Text c="dimmed" size="sm">{pageSubtitle}</Text>
         </div>
-        <Group gap="sm">
+        <Group gap="sm" wrap="wrap">
           {supplierCount > 0 && (
             <Button
               variant={expandedBanks.size > 0 ? 'filled' : 'light'}
@@ -395,7 +398,8 @@ export function SupplierList() {
         {supplierCount === 0 ? (
           <Text c="dimmed" size="sm" ta="center" py="xl">{t('supplier.no_suppliers')}</Text>
         ) : (
-          <Table>
+          <Box style={{ overflowX: 'auto' }}>
+          <Table style={{ minWidth: 700 }}>
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>{t('supplier.logo')}</Table.Th>
@@ -495,16 +499,17 @@ export function SupplierList() {
               ))}
             </Table.Tbody>
           </Table>
+          </Box>
         )}
       </Paper>
 
       {/* Supplier create/edit modal */}
       <Modal opened={modalOpen} onClose={closeModal}
-        title={editingSupplier ? t('supplier.edit_title') : t('supplier.new_title')} size="lg">
+        title={editingSupplier ? t('supplier.edit_title') : t('supplier.new_title')} size="lg" fullScreen={isMobile}>
         <Stack gap="md">
           <TextInput label={t('supplier.name_label')} value={name}
             onChange={(e) => setName(e.currentTarget.value)} required />
-          <Group grow>
+          <SimpleGrid cols={{ base: 1, sm: 3 }}>
             <TextInput label={t('supplier.ico_label')} value={ico}
               onChange={(e) => setIco(e.currentTarget.value)} />
             <TextInput label={t('supplier.dic_label')} value={dic}
@@ -521,28 +526,28 @@ export function SupplierList() {
                 fullWidth
               />
             </div>
-          </Group>
+          </SimpleGrid>
           {country.toUpperCase() === 'SK' && (
             <TextInput label={t('supplier.ic_dph_label')} value={icDph}
               onChange={(e) => setIcDph(e.currentTarget.value)} />
           )}
           <TextInput label={t('supplier.street_label')} value={street}
             onChange={(e) => setStreet(e.currentTarget.value)} />
-          <Group grow>
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
             <TextInput label={t('supplier.city_label')} value={city}
               onChange={(e) => setCity(e.currentTarget.value)} />
             <TextInput label={t('supplier.zip_label')} value={zip}
               onChange={(e) => setZip(e.currentTarget.value)} />
-          </Group>
+          </SimpleGrid>
           <CountrySelect label={t('supplier.country_label')}
             value={country} onChange={(v) => setCountry(v || 'CZ')} />
-          <Group grow>
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
             <TextInput label={t('supplier.email_label')} value={email}
               onChange={(e) => setEmail(e.currentTarget.value)} />
             <TextInput label={t('supplier.phone_label')} value={phone}
               onChange={(e) => setPhone(e.currentTarget.value)} />
-          </Group>
-          <Group grow>
+          </SimpleGrid>
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
             <TextInput label={t('supplier.website_label')} value={website}
               onChange={(e) => setWebsite(e.currentTarget.value)} />
             <TextInput label={
@@ -554,7 +559,7 @@ export function SupplierList() {
               </Group>
             } value={invoicePrefix}
               onChange={(e) => setInvoicePrefix(e.currentTarget.value)} />
-          </Group>
+          </SimpleGrid>
           <Textarea label={t('supplier.notes_label')} value={notes}
             onChange={(e) => setNotes(e.currentTarget.value)} minRows={2} />
           <Group justify="end" mt="md">
@@ -583,7 +588,7 @@ export function SupplierList() {
 
       {/* Bank account create/edit modal */}
       <Modal opened={bankModalOpen} onClose={closeBankModal}
-        title={editingBank ? t('bank_account.edit_title') : t('bank_account.new_title')} size="md">
+        title={editingBank ? t('bank_account.edit_title') : t('bank_account.new_title')} size="md" fullScreen={isMobile}>
         <Stack gap="md">
           <TextInput label={t('bank_account.name_label')} value={baName}
             onChange={(e) => setBaName(e.currentTarget.value)} />
@@ -591,14 +596,14 @@ export function SupplierList() {
             onChange={(e) => setBaAccountNumber(e.currentTarget.value)} required />
           <TextInput label={t('bank_account.iban_label')} value={baIban}
             onChange={(e) => setBaIban(e.currentTarget.value)} />
-          <Group grow>
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
             <TextInput label={t('bank_account.swift_label')} value={baSwift}
               onChange={(e) => setBaSwift(e.currentTarget.value)} />
             <Select label={t('bank_account.currency_label')}
               data={['CZK', 'EUR', 'USD', 'GBP', 'PLN']}
               value={baCurrency} onChange={(v) => setBaCurrency(v || 'CZK')}
               allowDeselect={false} />
-          </Group>
+          </SimpleGrid>
           <Select label={t('bank_account.qr_type_label')}
             data={[
               { value: 'spayd', label: t('bank_account.qr_spayd') },
