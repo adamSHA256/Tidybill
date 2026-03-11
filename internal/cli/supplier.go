@@ -84,6 +84,12 @@ func (c *CLI) createSupplier() {
 	supplier.Website = c.prompt(i18n.T("prompt.website"))
 	supplier.InvoicePrefix = c.promptDefault(i18n.T("prompt.invoice_prefix_short"), "VF")
 
+	// First supplier is auto-default
+	existing, _ := c.suppliers.List()
+	if len(existing) == 0 {
+		supplier.IsDefault = true
+	}
+
 	if err := c.suppliers.Create(supplier); err != nil {
 		c.printError(err.Error())
 		c.waitEnter()
@@ -433,6 +439,14 @@ func (c *CLI) editBankAccount(acc *model.BankAccount) {
 			}
 			if c.confirm(i18n.T("confirm.delete_account")) {
 				c.bankAccs.Delete(acc.ID)
+				// If deleted account was default, reassign to first remaining
+				if acc.IsDefault {
+					remaining, _ := c.bankAccs.GetBySupplier(acc.SupplierID)
+					if len(remaining) > 0 {
+						remaining[0].IsDefault = true
+						c.bankAccs.Update(remaining[0])
+					}
+				}
 				c.printSuccess(i18n.T("success.account_deleted"))
 				c.waitEnter()
 				return
