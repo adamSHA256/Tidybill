@@ -34,6 +34,9 @@ func (s *Server) getNextInvoiceNumber(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) listInvoices(w http.ResponseWriter, r *http.Request) {
+	// Auto-mark overdue invoices
+	s.invoices.MarkOverdue()
+
 	status := model.InvoiceStatus(r.URL.Query().Get("status"))
 	customerID := r.URL.Query().Get("customer_id")
 	supplierID := r.URL.Query().Get("supplier_id")

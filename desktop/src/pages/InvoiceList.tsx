@@ -15,7 +15,7 @@ import {
 } from '@mantine/core'
 import { IconSearch, IconPlus, IconArrowsSort, IconSortAscending, IconSortDescending } from '@tabler/icons-react'
 import { useState, useMemo, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api, formatMoney, formatDate, type Invoice } from '../api/client'
 import { useT } from '../i18n'
@@ -36,7 +36,8 @@ const statusColors: Record<string, string> = {
 }
 
 export function InvoiceList() {
-  const [filter, setFilter] = useState('all')
+  const [searchParams] = useSearchParams()
+  const [filter, setFilter] = useState(searchParams.get('status') || 'all')
   const [search, setSearch] = useState('')
   const [supplierFilter, setSupplierFilter] = useState<string | null>(null)
   const [sortField, setSortField] = useState<SortField | null>(DEFAULT_SORT_FIELD)
@@ -140,6 +141,7 @@ export function InvoiceList() {
             { label: t('invoice.filter_sent'), value: 'sent' },
             { label: t('invoice.filter_paid'), value: 'paid' },
             { label: t('invoice.filter_overdue'), value: 'overdue' },
+            { label: t('invoice.filter_unpaid'), value: 'unpaid' },
           ]}
         />
         <TextInput

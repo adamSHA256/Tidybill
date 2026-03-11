@@ -590,7 +590,7 @@ export function MobileInvoiceEdit() {
           {/* Header */}
           <Group justify="space-between">
             <div>
-              <Title order={2}>{t('invoice.edit_title')}</Title>
+              <Title order={3}>{t('invoice.edit_title')}</Title>
               <Text c="dimmed" size="sm">{t('invoice.edit_subtitle')}</Text>
             </div>
             <Button size="sm" onClick={handleSave} loading={updateMutation.isPending}>

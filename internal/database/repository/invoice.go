@@ -85,7 +85,9 @@ func (r *InvoiceRepository) List(status model.InvoiceStatus, customerID string, 
 		language, pdf_path, COALESCE(template_id, 'table'), created_at, updated_at FROM invoices WHERE 1=1`
 	var args []interface{}
 
-	if status != "" {
+	if status == "unpaid" {
+		query += " AND status NOT IN ('paid', 'cancelled')"
+	} else if status != "" {
 		query += " AND status = ?"
 		args = append(args, status)
 	}

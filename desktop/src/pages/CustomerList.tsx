@@ -172,7 +172,7 @@ export function CustomerList() {
     <Stack gap="lg">
       <Group justify="space-between">
         <div>
-          <Title order={2}>{t('customer.title')}</Title>
+          <Title order={isMobile ? 3 : 2}>{t('customer.title')}</Title>
           <Text c="dimmed" size="sm">{t('customer.subtitle')}</Text>
         </div>
         <Group wrap="wrap">

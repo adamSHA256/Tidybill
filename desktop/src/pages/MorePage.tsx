@@ -49,7 +49,7 @@ export function MorePage() {
   return (
     <Stack>
       <Group justify="space-between">
-        <Title order={2}>TidyBill</Title>
+        <Title order={3}>TidyBill</Title>
         <ActionIcon variant="subtle" onClick={toggleColorScheme} size="lg">
           {colorScheme === 'dark' ? <IconSun size={20} /> : <IconMoon size={20} />}
         </ActionIcon>

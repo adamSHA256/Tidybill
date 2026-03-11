@@ -25,6 +25,9 @@ type DashboardStats struct {
 }
 
 func (s *Server) getDashboardStats(w http.ResponseWriter, r *http.Request) {
+	// Auto-mark overdue invoices on every dashboard load
+	s.invoices.MarkOverdue()
+
 	stats := DashboardStats{}
 
 	// Unpaid count

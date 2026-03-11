@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api, formatMoney, type Invoice } from '../api/client'
 import { useT } from '../i18n'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 interface DashboardWidgets {
   revenue: boolean
@@ -60,6 +61,7 @@ const statusColors: Record<string, string> = {
 export function Dashboard() {
   const navigate = useNavigate()
   const { t } = useT()
+  const isMobile = useIsMobile()
 
   const { data: settings } = useQuery({
     queryKey: ['settings'],
@@ -95,7 +97,7 @@ export function Dashboard() {
   return (
     <Stack gap="lg">
       <div>
-        <Title order={2}>{t('dashboard.title')}</Title>
+        <Title order={isMobile ? 3 : 2}>{t('dashboard.title')}</Title>
         <Text c="dimmed" size="sm">{t('dashboard.subtitle')}</Text>
       </div>
 
@@ -114,7 +116,9 @@ export function Dashboard() {
         )}
 
         {widgets.unpaid && (
-          <Paper p="md" radius="md" withBorder>
+          <Paper p="md" radius="md" withBorder
+            style={{ cursor: stats?.unpaid_count ? 'pointer' : undefined }}
+            onClick={() => stats?.unpaid_count && navigate('/invoices?status=unpaid')}>
             <Text size="xs" c="dimmed">{t('dashboard.unpaid_invoices')}</Text>
             <Title order={2} mt={4} c={stats?.unpaid_count ? 'red' : undefined}>
               {stats?.unpaid_count || 0}

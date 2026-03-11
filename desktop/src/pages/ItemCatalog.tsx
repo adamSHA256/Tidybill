@@ -174,7 +174,7 @@ export function ItemCatalog() {
     <Stack gap="lg">
       <Group justify="space-between" wrap="wrap">
         <div>
-          <Title order={2}>{t('item.title')}</Title>
+          <Title order={isMobile ? 3 : 2}>{t('item.title')}</Title>
           <Text c="dimmed" size="sm">{t('item.subtitle')}</Text>
         </div>
         <Group wrap="wrap">

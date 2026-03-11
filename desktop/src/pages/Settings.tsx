@@ -251,7 +251,7 @@ export function Settings() {
   return (
     <Stack gap="lg">
       <div>
-        <Title order={2}>{t('settings.title')}</Title>
+        <Title order={isMobile ? 3 : 2}>{t('settings.title')}</Title>
         <Text c="dimmed" size="sm">{t('settings.subtitle')}</Text>
       </div>
 

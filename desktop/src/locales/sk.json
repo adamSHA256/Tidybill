@@ -47,6 +47,7 @@
   "invoice.filter_sent": "Odoslané",
   "invoice.filter_paid": "Zaplatené",
   "invoice.filter_overdue": "Po splatnosti",
+  "invoice.filter_unpaid": "Nezaplatené",
 
   "invoice.create_title": "Vytvoriť faktúru",
   "invoice.create_subtitle": "Vyplňte údaje nižšie",
