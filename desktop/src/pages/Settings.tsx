@@ -28,6 +28,7 @@ import { useNavigate } from 'react-router-dom'
 import { api, openInBrowser, type Unit, type PDFTemplate, type VATRate, type CurrencyItem, type PaymentType, type DueDaysOption } from '../api/client'
 import { applyZoom } from '../utils/zoom'
 import { useT } from '../i18n'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 const langOptions = [
   { value: 'cs', label: 'Čeština' },
@@ -66,6 +67,7 @@ function parseWidgets(raw?: string): DashboardWidgets {
 }
 
 export function Settings() {
+  const isMobile = useIsMobile()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { t, setLang } = useT()
@@ -265,27 +267,29 @@ export function Settings() {
               onChange={(v) => { if (v) setLang(v as 'cs' | 'sk' | 'en') }}
               w={300}
             />
-            <div>
-              <Text size="sm" fw={500} mb={4}>{t('settings.ui_scale')}</Text>
-              <Text size="xs" c="dimmed" mb="xs">{t('settings.ui_scale_desc')}</Text>
-              <SegmentedControl
-                value={String(Math.round((parseFloat(settings?.ui_scale || '1') || 1) * 100))}
-                onChange={(val) => {
-                  const factor = Number(val) / 100
-                  applyZoom(factor)
-                  api.updateSettings({ ui_scale: String(factor) }).then(() => {
-                    queryClient.invalidateQueries({ queryKey: ['settings'] })
-                  })
-                }}
-                data={[
-                  { value: '100', label: '100%' },
-                  { value: '125', label: '125%' },
-                  { value: '150', label: '150%' },
-                  { value: '175', label: '175%' },
-                  { value: '200', label: '200%' },
-                ]}
-              />
-            </div>
+            {!isMobile && (
+              <div>
+                <Text size="sm" fw={500} mb={4}>{t('settings.ui_scale')}</Text>
+                <Text size="xs" c="dimmed" mb="xs">{t('settings.ui_scale_desc')}</Text>
+                <SegmentedControl
+                  value={String(Math.round((parseFloat(settings?.ui_scale || '1') || 1) * 100))}
+                  onChange={(val) => {
+                    const factor = Number(val) / 100
+                    applyZoom(factor)
+                    api.updateSettings({ ui_scale: String(factor) }).then(() => {
+                      queryClient.invalidateQueries({ queryKey: ['settings'] })
+                    })
+                  }}
+                  data={[
+                    { value: '100', label: '100%' },
+                    { value: '125', label: '125%' },
+                    { value: '150', label: '150%' },
+                    { value: '175', label: '175%' },
+                    { value: '200', label: '200%' },
+                  ]}
+                />
+              </div>
+            )}
             <Group gap="xs">
               <Select
                 label={t('settings.date_format')}

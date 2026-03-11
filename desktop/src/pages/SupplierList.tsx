@@ -112,6 +112,62 @@ function BankAccountsRow({ supplierId, supplierName, onEdit, onDelete, onCreate 
   )
 }
 
+function MobileBankAccounts({ supplierId, onEdit, onDelete, onCreate }: {
+  supplierId: string
+  onEdit: (ba: BankAccount) => void
+  onDelete: (ba: BankAccount) => void
+  onCreate: (supplierId: string) => void
+}) {
+  const { t } = useT()
+  const { data: bankAccounts, isLoading } = useQuery({
+    queryKey: ['bank-accounts', supplierId],
+    queryFn: () => api.getBankAccounts(supplierId),
+  })
+
+  if (isLoading) return <Center py="xs"><Loader size="xs" /></Center>
+
+  return (
+    <Stack gap="xs">
+      <Group justify="space-between">
+        <Group gap="xs">
+          <IconBuildingBank size={14} />
+          <Text size="xs" fw={600}>{t('bank_account.manage')}</Text>
+        </Group>
+        <Button size="compact-xs" variant="light" leftSection={<IconPlus size={12} />}
+          onClick={() => onCreate(supplierId)}>
+          {t('bank_account.add')}
+        </Button>
+      </Group>
+      {(!bankAccounts || bankAccounts.length === 0) ? (
+        <Text c="dimmed" size="xs">{t('bank_account.no_accounts')}</Text>
+      ) : bankAccounts.map((ba) => (
+        <Paper key={ba.id} p="xs" radius="sm" withBorder bg="var(--mantine-color-default-hover)">
+          <Group justify="space-between" mb={2}>
+            <Group gap="xs">
+              <Text size="xs" fw={500}>{ba.name || ba.account_number}</Text>
+              {ba.is_default && <Badge size="xs" color="teal">{t('bank_account.default')}</Badge>}
+            </Group>
+            <Group gap="xs">
+              <ActionIcon variant="subtle" size="xs" color="blue" onClick={() => onEdit(ba)}>
+                <IconPencil size={12} />
+              </ActionIcon>
+              <ActionIcon variant="subtle" size="xs" color="red" onClick={() => onDelete(ba)}>
+                <IconTrash size={12} />
+              </ActionIcon>
+            </Group>
+          </Group>
+          {ba.name && <Text size="xs" c="dimmed">{ba.account_number}</Text>}
+          {ba.iban && <Text size="xs" c="dimmed">IBAN: {ba.iban}</Text>}
+          <Group gap="xs">
+            {ba.swift && <Text size="xs" c="dimmed">SWIFT: {ba.swift}</Text>}
+            <Text size="xs" c="dimmed">{ba.currency}</Text>
+          </Group>
+        </Paper>
+      ))}
+    </Stack>
+  )
+}
+
 export function SupplierList() {
   const isMobile = useIsMobile()
   const [modalOpen, setModalOpen] = useState(false)
@@ -397,6 +453,69 @@ export function SupplierList() {
       <Paper p="md" radius="md" withBorder>
         {supplierCount === 0 ? (
           <Text c="dimmed" size="sm" ta="center" py="xl">{t('supplier.no_suppliers')}</Text>
+        ) : isMobile ? (
+          <Stack gap="sm">
+            {(suppliers || []).map((s) => (
+              <Paper key={s.id} p="sm" radius="sm" withBorder>
+                <Group mb="xs">
+                  {s.logo_path ? (
+                    <Avatar src={api.getLogoUrl(s.id)} size={40} radius="sm" />
+                  ) : (
+                    <Avatar size={40} radius="sm" color="gray">{s.name.charAt(0).toUpperCase()}</Avatar>
+                  )}
+                  <div style={{ flex: 1 }}>
+                    <Group gap="xs">
+                      <Text size="sm" fw={500}>{s.name}</Text>
+                      {s.is_default && <Badge size="xs" color="blue">{t('supplier.default')}</Badge>}
+                      <Badge size="xs" color={s.is_vat_payer ? 'green' : 'gray'} variant="light">
+                        {s.is_vat_payer ? t('supplier.yes') : t('supplier.no')}
+                      </Badge>
+                    </Group>
+                    <Text size="xs" c="dimmed">
+                      {s.ico && `IČO: ${s.ico}`}{s.dic && ` | DIČ: ${s.dic}`}{s.ic_dph && ` | IČ DPH: ${s.ic_dph}`}
+                    </Text>
+                    <Text size="xs" c="dimmed">{[s.street, s.city, s.zip].filter(Boolean).join(', ')}</Text>
+                  </div>
+                  <Group gap="xs">
+                    <FileButton onChange={(file) => { if (file) uploadMutation.mutate({ id: s.id, file }) }} accept="image/png,image/jpeg">
+                      {(props) => (
+                        <ActionIcon variant="light" size="sm" color="gray" {...props}><IconUpload size={14} /></ActionIcon>
+                      )}
+                    </FileButton>
+                    <ActionIcon variant="light" size="sm" color="blue" onClick={() => openEdit(s)}>
+                      <IconPencil size={14} />
+                    </ActionIcon>
+                    <ActionIcon variant="light" size="sm" color="red" onClick={() => { setDeleteTarget(s); setDeleteOpen(true) }}>
+                      <IconTrash size={14} />
+                    </ActionIcon>
+                  </Group>
+                </Group>
+                <Divider my="xs" />
+                <Box onClick={() => {
+                  setExpandedBanks(prev => {
+                    const next = new Set(prev)
+                    if (next.has(s.id)) next.delete(s.id); else next.add(s.id)
+                    return next
+                  })
+                }} style={{ cursor: 'pointer' }}>
+                  <Group gap="xs">
+                    <IconBuildingBank size={14} />
+                    <Text size="xs" c="dimmed">{t('bank_account.manage')}</Text>
+                  </Group>
+                </Box>
+                {expandedBanks.has(s.id) && (
+                  <Box mt="xs">
+                    <MobileBankAccounts
+                      supplierId={s.id}
+                      onEdit={openBankEdit}
+                      onDelete={(ba) => { setBankDeleteTarget(ba); setBankDeleteOpen(true) }}
+                      onCreate={openBankCreate}
+                    />
+                  </Box>
+                )}
+              </Paper>
+            ))}
+          </Stack>
         ) : (
           <Box style={{ overflowX: 'auto' }}>
           <Table style={{ minWidth: 700 }}>

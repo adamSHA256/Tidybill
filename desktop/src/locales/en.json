@@ -306,6 +306,7 @@
   "common.copied": "Copied",
   "common.collapse": "Collapse",
   "common.expand": "Expand",
+  "common.more": "More",
 
   "notify.invoice_created": "Invoice created",
   "notify.invoice_created_msg": "Invoice was created successfully",
