@@ -431,7 +431,7 @@ export function SupplierList() {
     <Stack gap="lg">
       <Group justify="space-between">
         <div>
-          <Title order={2}>{pageTitle}</Title>
+          <Title order={isMobile ? 3 : 2}>{pageTitle}</Title>
           <Text c="dimmed" size="sm">{pageSubtitle}</Text>
         </div>
         <Group gap="sm" wrap="wrap">

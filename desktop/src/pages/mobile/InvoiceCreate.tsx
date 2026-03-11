@@ -115,7 +115,7 @@ export function MobileInvoiceCreate() {
       {/* Header */}
       <Group justify="space-between">
         <div>
-          <Title order={2}>{t('invoice.create_title')}</Title>
+          <Title order={3}>{t('invoice.create_title')}</Title>
           {duplicateFrom && (
             <Text c="dimmed" size="xs">
               {t('invoice.duplicate_subtitle').replace('{number}', duplicateFrom.invoice_number)}

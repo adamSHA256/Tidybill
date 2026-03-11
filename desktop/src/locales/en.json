@@ -47,6 +47,7 @@
   "invoice.filter_sent": "Sent",
   "invoice.filter_paid": "Paid",
   "invoice.filter_overdue": "Overdue",
+  "invoice.filter_unpaid": "Not paid",
 
   "invoice.create_title": "Create Invoice",
   "invoice.create_subtitle": "Fill in the details below",
