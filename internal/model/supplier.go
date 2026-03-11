@@ -35,7 +35,7 @@ func NewSupplier() *Supplier {
 		InvoicePrefix: "VF",
 		Language:      string(i18n.GetLang()),
 		IsVATPayer:    false,
-		IsDefault:     true,
+		IsDefault:     false,
 		Website:       "printmoney.usd",
 	}
 }

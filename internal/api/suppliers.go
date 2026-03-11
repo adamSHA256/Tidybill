@@ -53,6 +53,18 @@ func (s *Server) createSupplier(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// First supplier is auto-default, subsequent ones are not
+	count, err := s.suppliers.Count()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if count == 0 {
+		supplier.IsDefault = true
+	} else {
+		supplier.IsDefault = false
+	}
+
 	if err := s.suppliers.Create(supplier); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -74,11 +86,26 @@ func (s *Server) updateSupplier(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	wasDefault := existing.IsDefault
+
 	if err := readJSON(r, existing); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid JSON: "+err.Error())
 		return
 	}
 	existing.ID = id
+
+	// Enforce single default: when setting a new default, clear others
+	if existing.IsDefault && !wasDefault {
+		if err := s.suppliers.SetDefault(id); err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
+
+	// Prevent unsetting the current default (must set another as default instead)
+	if wasDefault && !existing.IsDefault {
+		existing.IsDefault = true
+	}
 
 	if err := s.suppliers.Update(existing); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
@@ -101,9 +128,25 @@ func (s *Server) deleteSupplier(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if this is the default supplier before deleting
+	supplier, err := s.suppliers.GetByID(id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	wasDefault := supplier != nil && supplier.IsDefault
+
 	if err := s.suppliers.Delete(id); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
+	}
+
+	// If deleted supplier was default, reassign to first remaining
+	if wasDefault {
+		remaining, err := s.suppliers.List()
+		if err == nil && len(remaining) > 0 {
+			s.suppliers.SetDefault(remaining[0].ID)
+		}
 	}
 
 	w.WriteHeader(http.StatusNoContent)
@@ -138,6 +181,16 @@ func (s *Server) createBankAccount(w http.ResponseWriter, r *http.Request) {
 	if ba.AccountNumber == "" {
 		writeError(w, http.StatusBadRequest, "account_number is required")
 		return
+	}
+
+	// First bank account for a supplier is auto-default
+	baCount, err := s.bankAccounts.CountBySupplier(supplierID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if baCount == 0 {
+		ba.IsDefault = true
 	}
 
 	// Clear existing defaults before creating
@@ -351,6 +404,11 @@ func (s *Server) updateBankAccount(w http.ResponseWriter, r *http.Request) {
 		s.bankAccounts.ClearDefaults(existing.SupplierID)
 	}
 
+	// Prevent unsetting the current default (must set another as default instead)
+	if wasDefault && !existing.IsDefault {
+		existing.IsDefault = true
+	}
+
 	if err := s.bankAccounts.Update(existing); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -395,6 +453,15 @@ func (s *Server) deleteBankAccount(w http.ResponseWriter, r *http.Request) {
 	if err := s.bankAccounts.Delete(id); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
+	}
+
+	// If deleted account was default, reassign to first remaining
+	if existing.IsDefault {
+		accounts, err := s.bankAccounts.GetBySupplier(existing.SupplierID)
+		if err == nil && len(accounts) > 0 {
+			accounts[0].IsDefault = true
+			s.bankAccounts.Update(accounts[0])
+		}
 	}
 
 	w.WriteHeader(http.StatusNoContent)

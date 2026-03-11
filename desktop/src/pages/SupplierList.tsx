@@ -206,6 +206,7 @@ export function SupplierList() {
   const [website, setWebsite] = useState('')
   const [invoicePrefix, setInvoicePrefix] = useState('')
   const [isVatPayer, setIsVatPayer] = useState(false)
+  const [isDefault, setIsDefault] = useState(false)
   const [notes, setNotes] = useState('')
 
   const queryClient = useQueryClient()
@@ -318,6 +319,7 @@ export function SupplierList() {
     setWebsite('')
     setInvoicePrefix('')
     setIsVatPayer(false)
+    setIsDefault(false)
     setNotes('')
     setModalOpen(true)
   }
@@ -337,6 +339,7 @@ export function SupplierList() {
     setWebsite(supplier.website)
     setInvoicePrefix(supplier.invoice_prefix)
     setIsVatPayer(supplier.is_vat_payer)
+    setIsDefault(supplier.is_default)
     setNotes(supplier.notes)
     setModalOpen(true)
   }
@@ -396,6 +399,7 @@ export function SupplierList() {
       website: website.trim(),
       invoice_prefix: invoicePrefix.trim(),
       is_vat_payer: isVatPayer,
+      is_default: isDefault,
       notes: notes.trim(),
     })
   }
@@ -466,7 +470,7 @@ export function SupplierList() {
                   <div style={{ flex: 1 }}>
                     <Group gap="xs">
                       <Text size="sm" fw={500}>{s.name}</Text>
-                      {s.is_default && <Badge size="xs" color="blue">{t('supplier.default')}</Badge>}
+                      {s.is_default && supplierCount > 1 && <Badge size="xs" color="blue">{t('supplier.default')}</Badge>}
                       <Badge size="xs" color={s.is_vat_payer ? 'green' : 'gray'} variant="light">
                         {s.is_vat_payer ? t('supplier.yes') : t('supplier.no')}
                       </Badge>
@@ -582,7 +586,7 @@ export function SupplierList() {
                   <Table.Td>
                     <Group gap="xs">
                       <Text size="sm" fw={500}>{s.name}</Text>
-                      {s.is_default && <Badge size="xs" color="blue">{t('supplier.default')}</Badge>}
+                      {s.is_default && supplierCount > 1 && <Badge size="xs" color="blue">{t('supplier.default')}</Badge>}
                     </Group>
                   </Table.Td>
                   <Table.Td fz="sm">{s.ico}</Table.Td>
@@ -681,6 +685,12 @@ export function SupplierList() {
           </SimpleGrid>
           <Textarea label={t('supplier.notes_label')} value={notes}
             onChange={(e) => setNotes(e.currentTarget.value)} minRows={2} />
+          {supplierCount > 1 && editingSupplier && (
+            <Switch label={t('supplier.default')}
+              checked={isDefault}
+              onChange={(e) => setIsDefault(e.currentTarget.checked)}
+              disabled={editingSupplier.is_default} />
+          )}
           <Group justify="end" mt="md">
             <Button variant="default" onClick={closeModal}>{t('common.cancel')}</Button>
             <Button onClick={handleSave} loading={saveMutation.isPending}>
@@ -733,7 +743,8 @@ export function SupplierList() {
             value={baQrType} onChange={(v) => setBaQrType(v || 'spayd')}
             allowDeselect={false} />
           <Switch label={t('bank_account.is_default_label')} checked={baIsDefault}
-            onChange={(e) => setBaIsDefault(e.currentTarget.checked)} />
+            onChange={(e) => setBaIsDefault(e.currentTarget.checked)}
+            disabled={editingBank?.is_default} />
           <Group justify="end" mt="md">
             <Button variant="default" onClick={closeBankModal}>{t('common.cancel')}</Button>
             <Button onClick={handleBankSave} loading={saveBankMutation.isPending}>
