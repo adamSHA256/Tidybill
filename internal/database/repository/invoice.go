@@ -256,7 +256,7 @@ func (r *InvoiceRepository) CountOverdue() (int, error) {
 func (r *InvoiceRepository) MarkOverdue() error {
 	_, err := r.db.Exec(`
 		UPDATE invoices SET status = 'overdue', updated_at = ?
-		WHERE status IN ('created', 'sent') AND due_date < DATE('now')`,
+		WHERE status IN ('created', 'sent', 'partially_paid') AND due_date < DATE('now')`,
 		time.Now())
 	return err
 }
