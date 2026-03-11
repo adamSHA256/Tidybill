@@ -10,9 +10,13 @@ import { ApiHealthGuard } from './components/ApiHealthGuard'
 import { SetupWizard } from './pages/SetupWizard'
 import { Dashboard } from './pages/Dashboard'
 import { InvoiceList } from './pages/InvoiceList'
+import { MobileInvoiceList } from './pages/mobile/InvoiceList'
 import { InvoiceCreate } from './pages/InvoiceCreate'
+import { MobileInvoiceCreate } from './pages/mobile/InvoiceCreate'
 import { InvoiceEdit } from './pages/InvoiceEdit'
+import { MobileInvoiceEdit } from './pages/mobile/InvoiceEdit'
 import { InvoiceDetail } from './pages/InvoiceDetail'
+import { MobileInvoiceDetail } from './pages/mobile/InvoiceDetail'
 import { CustomerList } from './pages/CustomerList'
 import { SupplierList } from './pages/SupplierList'
 import { ItemCatalog } from './pages/ItemCatalog'
@@ -34,6 +38,10 @@ export default function App() {
   const showWizard = !wizardDone && firstRunData?.first_run === true
   const isMobile = useIsMobile()
   const Shell = isMobile ? MobileShell : AppShell
+  const InvoiceListPage = isMobile ? MobileInvoiceList : InvoiceList
+  const InvoiceCreatePage = isMobile ? MobileInvoiceCreate : InvoiceCreate
+  const InvoiceDetailPage = isMobile ? MobileInvoiceDetail : InvoiceDetail
+  const InvoiceEditPage = isMobile ? MobileInvoiceEdit : InvoiceEdit
 
   return (
     <ApiHealthGuard>
@@ -47,10 +55,10 @@ export default function App() {
         <Shell>
           <Routes>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/invoices" element={<InvoiceList />} />
-            <Route path="/invoices/new" element={<InvoiceCreate />} />
-            <Route path="/invoices/:id" element={<InvoiceDetail />} />
-            <Route path="/invoices/:id/edit" element={<InvoiceEdit />} />
+            <Route path="/invoices" element={<InvoiceListPage />} />
+            <Route path="/invoices/new" element={<InvoiceCreatePage />} />
+            <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
+            <Route path="/invoices/:id/edit" element={<InvoiceEditPage />} />
             <Route path="/customers" element={<CustomerList />} />
             <Route path="/suppliers" element={<SupplierList />} />
             <Route path="/items" element={<ItemCatalog />} />
