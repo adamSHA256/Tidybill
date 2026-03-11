@@ -14,6 +14,8 @@ import {
   ActionIcon,
   Loader,
   Center,
+  Box,
+  SimpleGrid,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { IconSearch, IconPlus, IconPencil, IconTrash } from '@tabler/icons-react'
@@ -21,11 +23,13 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, formatMoney, type Item } from '../api/client'
 import { useT } from '../i18n'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 const ADD_VAT_RATE = '__add_vat_rate__'
 const ADD_UNIT = '__add_unit__'
 
 export function ItemCatalog() {
+  const isMobile = useIsMobile()
   const [search, setSearch] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<Item | null>(null)
@@ -168,12 +172,12 @@ export function ItemCatalog() {
 
   return (
     <Stack gap="lg">
-      <Group justify="space-between">
+      <Group justify="space-between" wrap="wrap">
         <div>
           <Title order={2}>{t('item.title')}</Title>
           <Text c="dimmed" size="sm">{t('item.subtitle')}</Text>
         </div>
-        <Group>
+        <Group wrap="wrap">
           <TextInput
             placeholder={t('item.search')}
             leftSection={<IconSearch size={16} />}
@@ -189,8 +193,34 @@ export function ItemCatalog() {
           <Text c="dimmed" size="sm" ta="center" py="xl">
             {search ? t('item.no_match') : t('item.no_items')}
           </Text>
+        ) : isMobile ? (
+          <Stack gap="sm">
+            {(items || []).map((item) => (
+              <Paper key={item.id} p="sm" radius="sm" withBorder>
+                <Group justify="space-between" mb={4}>
+                  <Text size="sm" fw={500}>{item.description}</Text>
+                  <Group gap="xs">
+                    <ActionIcon variant="light" size="sm" color="blue" onClick={() => openEdit(item)}>
+                      <IconPencil size={14} />
+                    </ActionIcon>
+                    <ActionIcon variant="light" size="sm" color="red"
+                      onClick={() => deleteMutation.mutate(item.id)}>
+                      <IconTrash size={14} />
+                    </ActionIcon>
+                  </Group>
+                </Group>
+                <Group gap="xs">
+                  <Text size="xs" c="dimmed">{formatMoney(item.default_price)} / {item.default_unit}</Text>
+                  <Text size="xs" c="dimmed">{item.default_vat_rate}%</Text>
+                  {item.category && <Badge size="xs" variant="light">{item.category}</Badge>}
+                  <Badge size="xs" variant="light" color={item.usage_count > 0 ? 'blue' : 'gray'}>{item.usage_count}x</Badge>
+                </Group>
+              </Paper>
+            ))}
+          </Stack>
         ) : (
-          <Table>
+          <Box style={{ overflowX: 'auto' }}>
+          <Table style={{ minWidth: 600 }}>
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>{t('item.description')}</Table.Th>
@@ -238,6 +268,7 @@ export function ItemCatalog() {
               ))}
             </Table.Tbody>
           </Table>
+          </Box>
         )}
 
         {(items || []).length > 0 && (
@@ -248,11 +279,11 @@ export function ItemCatalog() {
       </Paper>
 
       <Modal opened={modalOpen} onClose={closeModal}
-        title={editingItem ? t('item.edit_title') : t('item.new_title')} size="md">
+        title={editingItem ? t('item.edit_title') : t('item.new_title')} size="md" fullScreen={isMobile}>
         <Stack gap="md">
           <TextInput label={t('item.description_label')} placeholder={t('item.description_placeholder')}
             value={description} onChange={(e) => setDescription(e.currentTarget.value)} required />
-          <Group grow>
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
             <NumberInput label={t('item.default_price')} min={0} value={defaultPrice}
               onChange={(val) => setDefaultPrice(Number(val) || 0)} />
             <Select label={t('item.unit_label')}
@@ -267,8 +298,8 @@ export function ItemCatalog() {
                 if (v === ADD_UNIT) { setNewUnitValue(''); setUnitModalOpen(true); return }
                 setDefaultUnit(v || unitOptions[0] || 'ks')
               }} />
-          </Group>
-          <Group grow>
+          </SimpleGrid>
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
             <Select label={t('item.vat_rate')}
               data={[
                 ...(vatRateOptions.length > 0 ? vatRateOptions : ['0', '12', '21']).map((r) => ({ value: r, label: `${r}%` })),
@@ -282,7 +313,7 @@ export function ItemCatalog() {
             <TextInput label={t('item.category_label')} placeholder={t('item.category_placeholder')}
               value={category} onChange={(e) => setCategory(e.currentTarget.value)}
               description={categoryOptions.length > 0 ? t('item.existing_categories').replace('{categories}', (categories || []).join(', ')) : undefined} />
-          </Group>
+          </SimpleGrid>
           <Group justify="end" mt="md">
             <Button variant="default" onClick={closeModal}>{t('common.cancel')}</Button>
             <Button onClick={handleSave} loading={createMutation.isPending}>
