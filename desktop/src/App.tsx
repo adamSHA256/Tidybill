@@ -23,6 +23,7 @@ import { ItemCatalog } from './pages/ItemCatalog'
 import { Settings } from './pages/Settings'
 import { Templates } from './pages/Templates'
 import { TemplateEditor } from './pages/TemplateEditor'
+import { MobileAbout } from './pages/mobile/About'
 import { api } from './api/client'
 
 export default function App() {
@@ -66,6 +67,7 @@ export default function App() {
             <Route path="/template-editor/:id" element={<TemplateEditor />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/more" element={<MorePage />} />
+            <Route path="/about" element={<MobileAbout />} />
           </Routes>
         </Shell>
       )}

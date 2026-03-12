@@ -804,6 +804,7 @@ export function Settings() {
           </Stack>
         </Paper>
 
+        {!isMobileDevice() && (
         <Paper p="md" radius="md" withBorder>
           <Text fw={500} mb="md">{t('settings.directories')}</Text>
           <Stack gap="md">
@@ -868,6 +869,7 @@ export function Settings() {
             </Button>
           </Stack>
         </Paper>
+        )}
       </SimpleGrid>
 
     </Stack>
