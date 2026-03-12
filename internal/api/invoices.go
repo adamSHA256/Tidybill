@@ -3,6 +3,8 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -606,4 +608,45 @@ func (s *Server) generateInvoicePDF(w http.ResponseWriter, r *http.Request) {
 	s.invoices.Update(inv)
 
 	writeJSON(w, http.StatusOK, map[string]string{"path": pdfPath})
+}
+
+func (s *Server) serveInvoicePDF(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	inv, err := s.invoices.GetByID(id)
+	if err != nil || inv == nil {
+		writeError(w, http.StatusNotFound, "invoice not found")
+		return
+	}
+
+	if inv.PDFPath == "" {
+		writeError(w, http.StatusNotFound, "no PDF generated")
+		return
+	}
+
+	absPath, err := filepath.Abs(inv.PDFPath)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "invalid path")
+		return
+	}
+	absPDFDir, err := filepath.Abs(s.cfg.PDFDir)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "invalid config")
+		return
+	}
+	if !strings.HasPrefix(absPath, absPDFDir+string(os.PathSeparator)) && absPath != absPDFDir {
+		writeError(w, http.StatusForbidden, "access denied")
+		return
+	}
+
+	if _, err := os.Stat(absPath); os.IsNotExist(err) {
+		inv.PDFPath = ""
+		s.invoices.Update(inv)
+		writeError(w, http.StatusNotFound, "PDF file not found")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/pdf")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("inline; filename=\"%s.pdf\"", inv.InvoiceNumber))
+	http.ServeFile(w, r, absPath)
 }
