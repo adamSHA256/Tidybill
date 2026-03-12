@@ -62,6 +62,7 @@ func (s *Server) Router() http.Handler {
 	mux.HandleFunc("PUT /api/invoices/{id}/status", s.updateInvoiceStatus)
 	mux.HandleFunc("PUT /api/invoices/{id}/notes", s.updateInvoiceNotes)
 	mux.HandleFunc("POST /api/invoices/{id}/pdf", s.generateInvoicePDF)
+	mux.HandleFunc("GET /api/invoices/{id}/pdf-file", s.serveInvoicePDF)
 
 	// Customers
 	mux.HandleFunc("GET /api/customers", s.listCustomers)
