@@ -676,7 +676,7 @@ export function SupplierList() {
             <TextInput label={
               <Group gap={4}>
                 <span>{t('supplier.invoice_prefix_label')}</span>
-                <Tooltip label={t('supplier.invoice_prefix_hint')} multiline w={300} withArrow>
+                <Tooltip label={t('supplier.invoice_prefix_hint')} multiline w={300} withArrow events={{ hover: true, focus: true, touch: true }}>
                   <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
                 </Tooltip>
               </Group>

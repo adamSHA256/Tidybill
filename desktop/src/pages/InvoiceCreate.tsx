@@ -57,7 +57,7 @@ export function InvoiceCreate() {
           <TextInput label={
             <Group gap={4}>
               <span>{t('invoice.invoice_number')}</span>
-              <Tooltip label={t('invoice.invoice_number_hint')} multiline w={300} withArrow>
+              <Tooltip label={t('invoice.invoice_number_hint')} multiline w={300} withArrow events={{ hover: true, focus: true, touch: true }}>
                 <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
               </Tooltip>
             </Group>
@@ -67,7 +67,7 @@ export function InvoiceCreate() {
             label={
               <Group gap={4}>
                 <span>{t('invoice.taxable_date')}</span>
-                <Tooltip label={t('invoice.taxable_date_hint')} multiline w={300} withArrow>
+                <Tooltip label={t('invoice.taxable_date_hint')} multiline w={300} withArrow events={{ hover: true, focus: true, touch: true }}>
                   <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
                 </Tooltip>
               </Group>

@@ -15,11 +15,13 @@ import {
   Divider,
   Center,
   Tooltip,
+  SimpleGrid,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useQuery } from '@tanstack/react-query'
 import { api, type Supplier, type BankAccount } from '../api/client'
 import { useT } from '../i18n'
+import { useIsMobile } from '../hooks/useIsMobile'
 import { IconFolderOpen, IconInfoCircle } from '@tabler/icons-react'
 import { CountrySelect } from '../components/CountrySelect'
 
@@ -47,6 +49,7 @@ interface Props {
 
 export function SetupWizard({ onComplete }: Props) {
   const { t, setLang } = useT()
+  const isMobile = useIsMobile()
   const [active, setActive] = useState(0)
   const [saving, setSaving] = useState(false)
 
@@ -182,6 +185,14 @@ export function SetupWizard({ onComplete }: Props) {
 
   const handleBankNext = async () => {
     if (!createdSupplierId) return
+    if (!bankAccountNumber.trim()) {
+      notifications.show({
+        title: t('bank_account.missing_fields_title'),
+        message: t('wizard.account_number_required'),
+        color: 'red',
+      })
+      return
+    }
     setSaving(true)
     try {
       await api.createBankAccount(createdSupplierId, {
@@ -250,6 +261,23 @@ export function SetupWizard({ onComplete }: Props) {
     }
   }
 
+  // On mobile, Defaults is right after Bank (no PDF dir step),
+  // so back needs the same logic as handlePdfDirBack on desktop
+  const handleDefaultsBack = () => {
+    if (isMobile && supplierSkipped) {
+      setActive(1)
+    } else {
+      goBack()
+    }
+  }
+
+  // On mobile, wrap each step in a flex column with min-height to push buttons to the bottom
+  const mobileStepWrapper = isMobile ? {
+    display: 'flex' as const,
+    flexDirection: 'column' as const,
+    minHeight: 'calc(100vh - 200px)',
+  } : undefined
+
   return (
     <ScrollArea h="100vh" type="auto">
       <Container size="sm" py="xl">
@@ -265,51 +293,51 @@ export function SetupWizard({ onComplete }: Props) {
           active={active}
           onStepClick={setActive}
           allowNextStepsSelect={false}
-          size="sm"
+          size={isMobile ? 'xs' : 'sm'}
         >
           {/* Step 0: Language */}
-          <Stepper.Step label={t('wizard.step_language')}>
-            <Paper p="xl" radius="md" withBorder mt="md">
-              <Stack gap="lg">
-                <Text fw={500} size="lg">
-                  Choose language / Vyberte jazyk / Zvoľte jazyk
-                </Text>
-                <SegmentedControl
-                  value={selectedLang}
-                  onChange={handleLangChange}
-                  data={[
-                    { label: 'Čeština', value: 'cs' },
-                    { label: 'Slovenčina', value: 'sk' },
-                    { label: 'English', value: 'en' },
-                  ]}
-                  fullWidth
-                  size="lg"
-                />
-              </Stack>
-            </Paper>
-            <Group justify="flex-end" mt="xl">
-              <Button onClick={handleLangNext}>{t('wizard.next')}</Button>
-            </Group>
+          <Stepper.Step label={isMobile ? undefined : t('wizard.step_language')}>
+            <div style={mobileStepWrapper}>
+              <Paper p={isMobile ? 'md' : 'xl'} radius="md" withBorder mt="md">
+                <Stack gap={isMobile ? 'md' : 'lg'}>
+                  <Text fw={500} size={isMobile ? 'md' : 'lg'}>
+                    Choose language / Vyberte jazyk / Zvoľte jazyk
+                  </Text>
+                  <SegmentedControl
+                    value={selectedLang}
+                    onChange={handleLangChange}
+                    data={[
+                      { label: 'Čeština', value: 'cs' },
+                      { label: 'Slovenčina', value: 'sk' },
+                      { label: 'English', value: 'en' },
+                    ]}
+                    fullWidth
+                    size={isMobile ? 'md' : 'lg'}
+                  />
+                </Stack>
+              </Paper>
+              <Group justify="flex-end" mt="xl" style={isMobile ? { marginTop: 'auto' } : undefined}>
+                <Button onClick={handleLangNext}>{t('wizard.next')}</Button>
+              </Group>
+            </div>
           </Stepper.Step>
 
           {/* Step 1: Supplier */}
           <Stepper.Step label={t('wizard.step_supplier')}>
-            <Paper p="xl" radius="md" withBorder mt="md">
-              <Stack gap="md">
+            <Paper p={isMobile ? 'md' : 'xl'} radius="md" withBorder mt="md">
+              <Stack gap={isMobile ? 'xs' : 'md'}>
                 <TextInput
                   label={t('supplier.name_label')}
                   value={supplierName}
                   onChange={(e) => setSupplierName(e.currentTarget.value)}
                   required
                 />
-                <Group grow>
-                  <TextInput
-                    label={t('supplier.street_label')}
-                    value={supplierStreet}
-                    onChange={(e) => setSupplierStreet(e.currentTarget.value)}
-                  />
-                </Group>
-                <Group grow>
+                <TextInput
+                  label={t('supplier.street_label')}
+                  value={supplierStreet}
+                  onChange={(e) => setSupplierStreet(e.currentTarget.value)}
+                />
+                <SimpleGrid cols={{ base: 1, sm: 3 }}>
                   <TextInput
                     label={t('supplier.city_label')}
                     value={supplierCity}
@@ -319,15 +347,14 @@ export function SetupWizard({ onComplete }: Props) {
                     label={t('supplier.zip_label')}
                     value={supplierZip}
                     onChange={(e) => setSupplierZip(e.currentTarget.value)}
-                    w={120}
                   />
                   <CountrySelect
                     label={t('supplier.country_label')}
                     value={supplierCountry}
                     onChange={(v) => setSupplierCountry(v)}
                   />
-                </Group>
-                <Group grow>
+                </SimpleGrid>
+                <SimpleGrid cols={{ base: 1, sm: 3 }}>
                   <TextInput
                     label={t('supplier.ico_label')}
                     value={supplierIco}
@@ -350,7 +377,7 @@ export function SetupWizard({ onComplete }: Props) {
                       fullWidth
                     />
                   </div>
-                </Group>
+                </SimpleGrid>
                 {supplierCountry.toUpperCase() === 'SK' && (
                   <TextInput
                     label={t('supplier.ic_dph_label')}
@@ -358,7 +385,7 @@ export function SetupWizard({ onComplete }: Props) {
                     onChange={(e) => setSupplierIcDph(e.currentTarget.value)}
                   />
                 )}
-                <Group grow>
+                <SimpleGrid cols={{ base: 1, sm: 2 }}>
                   <TextInput
                     label={t('supplier.phone_label')}
                     value={supplierPhone}
@@ -369,12 +396,12 @@ export function SetupWizard({ onComplete }: Props) {
                     value={supplierEmail}
                     onChange={(e) => setSupplierEmail(e.currentTarget.value)}
                   />
-                </Group>
+                </SimpleGrid>
                 <TextInput
                   label={
                     <Group gap={4}>
                       <span>{t('supplier.invoice_prefix_label')}</span>
-                      <Tooltip label={t('supplier.invoice_prefix_hint')} multiline w={300} withArrow>
+                      <Tooltip label={t('supplier.invoice_prefix_hint')} multiline w={300} withArrow events={{ hover: true, focus: true, touch: true }}>
                         <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
                       </Tooltip>
                     </Group>
@@ -385,7 +412,7 @@ export function SetupWizard({ onComplete }: Props) {
                 />
               </Stack>
             </Paper>
-            <Group justify="space-between" mt="xl">
+            <Group justify="space-between" mt="xl" style={stickyButtons}>
               <Button variant="default" onClick={goBack}>
                 {t('wizard.back')}
               </Button>
@@ -407,7 +434,7 @@ export function SetupWizard({ onComplete }: Props) {
           {/* Step 2: Bank Account (only if supplier was not skipped) */}
           <Stepper.Step label={t('wizard.step_bank')}>
             {showBankStep ? (
-              <Paper p="xl" radius="md" withBorder mt="md">
+              <Paper p={isMobile ? 'md' : 'xl'} radius="md" withBorder mt="md">
                 <Stack gap="md">
                   <TextInput
                     label={t('bank_account.name_label')}
@@ -420,6 +447,7 @@ export function SetupWizard({ onComplete }: Props) {
                     onChange={(e) =>
                       setBankAccountNumber(e.currentTarget.value)
                     }
+                    required
                   />
                   <TextInput
                     label={t('bank_account.iban_label')}
@@ -439,7 +467,7 @@ export function SetupWizard({ onComplete }: Props) {
                     label={
                       <Group gap={4}>
                         <span>{t('bank_account.qr_type_label')}</span>
-                        <Tooltip label={t('bank_account.qr_type_wizard_hint')} multiline w={300} withArrow>
+                        <Tooltip label={t('bank_account.qr_type_wizard_hint')} multiline w={300} withArrow events={{ hover: true, focus: true, touch: true }}>
                           <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
                         </Tooltip>
                       </Group>
@@ -457,13 +485,13 @@ export function SetupWizard({ onComplete }: Props) {
                 </Stack>
               </Paper>
             ) : (
-              <Paper p="xl" radius="md" withBorder mt="md">
+              <Paper p={isMobile ? 'md' : 'xl'} radius="md" withBorder mt="md">
                 <Center>
                   <Text c="dimmed">{t('wizard.skip_supplier_note')}</Text>
                 </Center>
               </Paper>
             )}
-            <Group justify="space-between" mt="xl">
+            <Group justify="space-between" mt="xl" style={stickyButtons}>
               <Button variant="default" onClick={goBack}>
                 {t('wizard.back')}
               </Button>
@@ -487,7 +515,8 @@ export function SetupWizard({ onComplete }: Props) {
             </Group>
           </Stepper.Step>
 
-          {/* Step 3: PDF Directory */}
+          {/* Step 3: PDF Directory (desktop only) */}
+          {!isMobile && (
           <Stepper.Step label={t('wizard.step_pdf_dir')}>
             <Paper p="xl" radius="md" withBorder mt="md">
               <Stack gap="md">
@@ -519,10 +548,11 @@ export function SetupWizard({ onComplete }: Props) {
               <Button onClick={goNext}>{t('wizard.next')}</Button>
             </Group>
           </Stepper.Step>
+          )}
 
-          {/* Step 4: Defaults (due days only) */}
+          {/* Step: Defaults (due days only) */}
           <Stepper.Step label={t('wizard.step_defaults')}>
-            <Paper p="xl" radius="md" withBorder mt="md">
+            <Paper p={isMobile ? 'md' : 'xl'} radius="md" withBorder mt="md">
               <Stack gap="md">
                 <Text fw={500}>{t('wizard.due_days_label')}</Text>
                 <SegmentedControl
@@ -537,17 +567,17 @@ export function SetupWizard({ onComplete }: Props) {
                 />
               </Stack>
             </Paper>
-            <Group justify="space-between" mt="xl">
-              <Button variant="default" onClick={goBack}>
+            <Group justify="space-between" mt="xl" style={stickyButtons}>
+              <Button variant="default" onClick={handleDefaultsBack}>
                 {t('wizard.back')}
               </Button>
               <Button onClick={goNext}>{t('wizard.next')}</Button>
             </Group>
           </Stepper.Step>
 
-          {/* Step 5: Summary */}
+          {/* Step: Summary */}
           <Stepper.Step label={t('wizard.step_summary')}>
-            <Paper p="xl" radius="md" withBorder mt="md">
+            <Paper p={isMobile ? 'md' : 'xl'} radius="md" withBorder mt="md">
               <Stack gap="sm">
                 <SummaryRow
                   label={t('wizard.summary_language')}
@@ -571,11 +601,15 @@ export function SetupWizard({ onComplete }: Props) {
                       : bankIban || bankAccountNumber || bankName
                   }
                 />
-                <Divider />
-                <SummaryRow
-                  label={t('wizard.summary_pdf_dir')}
-                  value={pdfDir || '—'}
-                />
+                {!isMobile && (
+                  <>
+                    <Divider />
+                    <SummaryRow
+                      label={t('wizard.summary_pdf_dir')}
+                      value={pdfDir || '—'}
+                    />
+                  </>
+                )}
                 <Divider />
                 <SummaryRow
                   label={t('wizard.summary_due_days')}
@@ -589,7 +623,7 @@ export function SetupWizard({ onComplete }: Props) {
             <Title order={3} ta="center" mt="lg">
               {t('wizard.happy_invoicing')}
             </Title>
-            <Group justify="space-between" mt="xl">
+            <Group justify="space-between" mt="xl" style={stickyButtons}>
               <Button variant="default" onClick={goBack}>
                 {t('wizard.back')}
               </Button>

@@ -601,7 +601,7 @@ export function InvoiceEdit() {
                 label={
                   <Group gap={4}>
                     <span>{t('invoice.taxable_date')}</span>
-                    <Tooltip label={t('invoice.taxable_date_hint')} multiline w={300} withArrow>
+                    <Tooltip label={t('invoice.taxable_date_hint')} multiline w={300} withArrow events={{ hover: true, focus: true, touch: true }}>
                       <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
                     </Tooltip>
                   </Group>
@@ -859,7 +859,7 @@ export function InvoiceEdit() {
               <Textarea label={
                 <Group gap={4}>
                   <span>{t('customer.notes_label')}</span>
-                  <Tooltip label={t('customer.notes_hint')} multiline w={300} withArrow>
+                  <Tooltip label={t('customer.notes_hint')} multiline w={300} withArrow events={{ hover: true, focus: true, touch: true }}>
                     <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
                   </Tooltip>
                 </Group>
