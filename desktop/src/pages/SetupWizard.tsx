@@ -271,16 +271,21 @@ export function SetupWizard({ onComplete }: Props) {
     }
   }
 
-  // On mobile, wrap each step in a flex column with min-height to push buttons to the bottom
-  const mobileStepWrapper = isMobile ? {
-    display: 'flex' as const,
-    flexDirection: 'column' as const,
-    minHeight: 'calc(100vh - 200px)',
+  // On mobile, fix buttons to the bottom of the viewport
+  const fixedButtons: React.CSSProperties | undefined = isMobile ? {
+    position: 'fixed',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: '12px 16px',
+    background: 'var(--mantine-color-body)',
+    zIndex: 100,
+    borderTop: '1px solid var(--mantine-color-default-border)',
   } : undefined
 
   return (
     <ScrollArea h="100vh" type="auto">
-      <Container size="sm" py="xl">
+      <Container size="sm" py="xl" pb={isMobile ? 80 : undefined}>
         <Stack gap="xl">
         <div style={{ textAlign: 'center' }}>
           <Title order={1}>{t('wizard.title')}</Title>
@@ -296,34 +301,32 @@ export function SetupWizard({ onComplete }: Props) {
           size={isMobile ? 'xs' : 'sm'}
         >
           {/* Step 0: Language */}
-          <Stepper.Step label={isMobile ? undefined : t('wizard.step_language')}>
-            <div style={mobileStepWrapper}>
-              <Paper p={isMobile ? 'md' : 'xl'} radius="md" withBorder mt="md">
-                <Stack gap={isMobile ? 'md' : 'lg'}>
-                  <Text fw={500} size={isMobile ? 'md' : 'lg'}>
-                    Choose language / Vyberte jazyk / Zvoľte jazyk
-                  </Text>
-                  <SegmentedControl
-                    value={selectedLang}
-                    onChange={handleLangChange}
-                    data={[
-                      { label: 'Čeština', value: 'cs' },
-                      { label: 'Slovenčina', value: 'sk' },
-                      { label: 'English', value: 'en' },
-                    ]}
-                    fullWidth
-                    size={isMobile ? 'md' : 'lg'}
-                  />
-                </Stack>
-              </Paper>
-              <Group justify="flex-end" mt="xl" style={isMobile ? { marginTop: 'auto' } : undefined}>
-                <Button onClick={handleLangNext}>{t('wizard.next')}</Button>
-              </Group>
-            </div>
+          <Stepper.Step label={!isMobile || active === 0 ? t('wizard.step_language') : undefined}>
+            <Paper p={isMobile ? 'md' : 'xl'} radius="md" withBorder mt="md">
+              <Stack gap={isMobile ? 'md' : 'lg'}>
+                <Text fw={500} size={isMobile ? 'md' : 'lg'}>
+                  Choose language / Vyberte jazyk / Zvoľte jazyk
+                </Text>
+                <SegmentedControl
+                  value={selectedLang}
+                  onChange={handleLangChange}
+                  data={[
+                    { label: 'Čeština', value: 'cs' },
+                    { label: 'Slovenčina', value: 'sk' },
+                    { label: 'English', value: 'en' },
+                  ]}
+                  fullWidth
+                  size={isMobile ? 'md' : 'lg'}
+                />
+              </Stack>
+            </Paper>
+            <Group justify="flex-end" mt="xl" style={fixedButtons}>
+              <Button onClick={handleLangNext}>{t('wizard.next')}</Button>
+            </Group>
           </Stepper.Step>
 
           {/* Step 1: Supplier */}
-          <Stepper.Step label={t('wizard.step_supplier')}>
+          <Stepper.Step label={!isMobile || active === 1 ? t('wizard.step_supplier') : undefined}>
             <Paper p={isMobile ? 'md' : 'xl'} radius="md" withBorder mt="md">
               <Stack gap={isMobile ? 'xs' : 'md'}>
                 <TextInput
@@ -412,7 +415,7 @@ export function SetupWizard({ onComplete }: Props) {
                 />
               </Stack>
             </Paper>
-            <Group justify="space-between" mt="xl" style={stickyButtons}>
+            <Group justify="space-between" mt="xl" style={fixedButtons}>
               <Button variant="default" onClick={goBack}>
                 {t('wizard.back')}
               </Button>
@@ -432,7 +435,7 @@ export function SetupWizard({ onComplete }: Props) {
           </Stepper.Step>
 
           {/* Step 2: Bank Account (only if supplier was not skipped) */}
-          <Stepper.Step label={t('wizard.step_bank')}>
+          <Stepper.Step label={!isMobile || active === 2 ? t('wizard.step_bank') : undefined}>
             {showBankStep ? (
               <Paper p={isMobile ? 'md' : 'xl'} radius="md" withBorder mt="md">
                 <Stack gap="md">
@@ -491,7 +494,7 @@ export function SetupWizard({ onComplete }: Props) {
                 </Center>
               </Paper>
             )}
-            <Group justify="space-between" mt="xl" style={stickyButtons}>
+            <Group justify="space-between" mt="xl" style={fixedButtons}>
               <Button variant="default" onClick={goBack}>
                 {t('wizard.back')}
               </Button>
@@ -551,7 +554,7 @@ export function SetupWizard({ onComplete }: Props) {
           )}
 
           {/* Step: Defaults (due days only) */}
-          <Stepper.Step label={t('wizard.step_defaults')}>
+          <Stepper.Step label={!isMobile || active === 3 ? t('wizard.step_defaults') : undefined}>
             <Paper p={isMobile ? 'md' : 'xl'} radius="md" withBorder mt="md">
               <Stack gap="md">
                 <Text fw={500}>{t('wizard.due_days_label')}</Text>
@@ -567,7 +570,7 @@ export function SetupWizard({ onComplete }: Props) {
                 />
               </Stack>
             </Paper>
-            <Group justify="space-between" mt="xl" style={stickyButtons}>
+            <Group justify="space-between" mt="xl" style={fixedButtons}>
               <Button variant="default" onClick={handleDefaultsBack}>
                 {t('wizard.back')}
               </Button>
@@ -576,7 +579,7 @@ export function SetupWizard({ onComplete }: Props) {
           </Stepper.Step>
 
           {/* Step: Summary */}
-          <Stepper.Step label={t('wizard.step_summary')}>
+          <Stepper.Step label={!isMobile || active === 4 ? t('wizard.step_summary') : undefined}>
             <Paper p={isMobile ? 'md' : 'xl'} radius="md" withBorder mt="md">
               <Stack gap="sm">
                 <SummaryRow
@@ -623,7 +626,7 @@ export function SetupWizard({ onComplete }: Props) {
             <Title order={3} ta="center" mt="lg">
               {t('wizard.happy_invoicing')}
             </Title>
-            <Group justify="space-between" mt="xl" style={stickyButtons}>
+            <Group justify="space-between" mt="xl" style={fixedButtons}>
               <Button variant="default" onClick={goBack}>
                 {t('wizard.back')}
               </Button>
