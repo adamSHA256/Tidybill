@@ -526,6 +526,7 @@ var messagesEN = map[string]string{
 	// ── Errors (new) ────────────────────────────────────────────────────
 	"error.invalid_option":  "Invalid option",
 	"error.no_bank_accounts":      "No bank accounts",
+	"bank_account.add_new":        "Create new bank account",
 	"error.builtin_cannot_delete": "Built-in type, cannot be deleted",
 
 	// ── PDF Template Names ──────────────────────────────────────────────
