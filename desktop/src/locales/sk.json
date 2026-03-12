@@ -118,6 +118,7 @@
   "invoice.edit_status_warning_title": "Upraviť faktúru?",
   "invoice.continue_editing": "Pokračovať",
   "invoice.generate_pdf": "Generovať PDF",
+  "invoice.regenerate_pdf": "Znovu generovať PDF",
   "invoice.change_status": "Zmeniť stav",
   "invoice.mark_paid": "Označiť ako zaplatenú",
   "invoice.delete": "Zmazať faktúru",
@@ -482,6 +483,7 @@
   "wizard.currency_label": "Predvolená mena",
   "wizard.choose_folder": "Vybrať priečinok",
   "wizard.settings_hint": "Všetko a ešte viac šikovných vecí môžete kedykoľvek zmeniť v Nastaveniach.",
+  "wizard.account_number_required": "Číslo účtu je povinné",
   "wizard.happy_invoicing": "Veselé fakturovanie!",
 
   "about.title": "O TidyBill",
