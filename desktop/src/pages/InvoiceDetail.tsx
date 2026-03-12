@@ -31,7 +31,7 @@ import {
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api, formatMoney, formatDate, openInBrowser, openFolder, type InvoiceStatus } from '../api/client'
+import { api, formatMoney, formatDate, openInvoicePdf, openFolder, type InvoiceStatus } from '../api/client'
 import { useT } from '../i18n'
 
 const statusColors: Record<string, string> = {
@@ -92,7 +92,7 @@ export function InvoiceDetail() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['invoice', id] })
       notifications.show({ title: t('notify.pdf_generated'), message: data.path, color: 'green' })
-      openInBrowser(data.path).catch((err: Error) =>
+      openInvoicePdf(id!, data.path).catch((err: Error) =>
         notifications.show({ title: t('common.error'), message: err.message, color: 'red' }))
     },
     onError: (err: Error) => {
@@ -247,7 +247,7 @@ export function InvoiceDetail() {
               {invoice.pdf_path ? (
                 <Group gap="xs">
                   <Button variant="light" size="compact-xs" onClick={() => {
-                    openInBrowser(invoice.pdf_path).catch((err: Error) =>
+                    openInvoicePdf(id!, invoice.pdf_path).catch((err: Error) =>
                       notifications.show({ title: t('common.error'), message: err.message, color: 'red' }))
                   }}>
                     {t('invoice.open_pdf')}

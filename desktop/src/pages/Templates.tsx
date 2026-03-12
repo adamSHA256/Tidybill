@@ -18,7 +18,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { IconEye, IconStar, IconStarFilled, IconCopy, IconCode, IconTrash, IconLock } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, getApiBase, openInBrowser, type PDFTemplate } from '../api/client'
+import { api, openTemplatePreview, isMobileDevice, type PDFTemplate } from '../api/client'
 import { useT } from '../i18n'
 
 export function Templates() {
@@ -85,10 +85,10 @@ export function Templates() {
   const handleGeneratePreview = async (id: string) => {
     setGeneratingId(id)
     try {
-      await api.generatePreview(id)
+      const data = await api.generatePreview(id)
       queryClient.invalidateQueries({ queryKey: ['templates'] })
       notifications.show({ title: t('notify.preview_generated'), message: t('notify.preview_generated_msg'), color: 'green' })
-      await openInBrowser(`${getApiBase()}/templates/${id}/preview-pdf`)
+      await openTemplatePreview(id, data.path)
     } catch (err) {
       notifications.show({ title: t('common.error'), message: (err as Error).message, color: 'red' })
     } finally {
@@ -102,8 +102,12 @@ export function Templates() {
       const paths = await api.generateAllPreviews()
       queryClient.invalidateQueries({ queryKey: ['templates'] })
       notifications.show({ title: t('notify.all_previews_generated'), message: t('notify.all_previews_msg'), color: 'green' })
-      for (const id of Object.keys(paths)) {
-        await openInBrowser(`${getApiBase()}/templates/${id}/preview-pdf`)
+      if (!isMobileDevice()) {
+        for (const [tid, path] of Object.entries(paths)) {
+          if (!path.startsWith('error:')) {
+            await openTemplatePreview(tid, path)
+          }
+        }
       }
     } catch (err) {
       notifications.show({ title: t('common.error'), message: (err as Error).message, color: 'red' })
@@ -129,13 +133,15 @@ export function Templates() {
           <Title order={2}>{t('template.title')}</Title>
           <Text c="dimmed" size="sm">{t('template.subtitle')}</Text>
         </div>
-        <Button
-          onClick={handleGenerateAll}
-          loading={generatingAll}
-          variant="light"
-        >
-          {t('template.generate_all')}
-        </Button>
+        {!isMobileDevice() && (
+          <Button
+            onClick={handleGenerateAll}
+            loading={generatingAll}
+            variant="light"
+          >
+            {t('template.generate_all')}
+          </Button>
+        )}
       </Group>
 
       <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg">
