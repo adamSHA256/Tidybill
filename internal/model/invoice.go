@@ -48,6 +48,9 @@ type Invoice struct {
 	Items    []InvoiceItem `json:"items,omitempty"`
 	Customer *Customer     `json:"customer,omitempty"`
 	Supplier *Supplier     `json:"supplier,omitempty"`
+
+	// Computed fields (not stored in DB)
+	IsOverdueFlag bool `json:"is_overdue"`
 }
 
 func NewInvoice(supplierID, customerID, bankAccountID string) *Invoice {
@@ -98,9 +101,8 @@ func (i *InvoiceItem) Calculate() {
 }
 
 func (i *Invoice) IsOverdue() bool {
-	if (i.Status == StatusDraft || i.Status == StatusCreated || 
-	   i.Status == StatusCancelled) || !i.DueDate.Before(time.Now()) {
+	if i.Status == StatusPaid || i.Status == StatusCancelled || i.Status == StatusDraft {
 		return false
 	}
-	return true
+	return i.DueDate.Before(time.Now())
 }

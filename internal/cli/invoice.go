@@ -1010,8 +1010,7 @@ func (c *CLI) changeInvoiceStatus(inv *model.Invoice) {
 	fmt.Printf("  2) %s\n", i18n.T("status.created"))
 	fmt.Printf("  3) %s\n", i18n.T("status.sent"))
 	fmt.Printf("  4) %s\n", i18n.T("status.paid"))
-	fmt.Printf("  5) %s\n", i18n.T("status.overdue"))
-	fmt.Printf("  6) %s\n", i18n.T("status.cancelled"))
+	fmt.Printf("  5) %s\n", i18n.T("status.cancelled"))
 	fmt.Println()
 
 	choice := c.prompt(i18n.T("prompt.choice"))
@@ -1027,8 +1026,6 @@ func (c *CLI) changeInvoiceStatus(inv *model.Invoice) {
 	case "4":
 		newStatus = model.StatusPaid
 	case "5":
-		newStatus = model.StatusOverdue
-	case "6":
 		newStatus = model.StatusCancelled
 	default:
 		return

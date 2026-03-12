@@ -36,9 +36,6 @@ func (s *Server) getNextInvoiceNumber(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) listInvoices(w http.ResponseWriter, r *http.Request) {
-	// Auto-mark overdue invoices
-	s.invoices.MarkOverdue()
-
 	status := model.InvoiceStatus(r.URL.Query().Get("status"))
 	customerID := r.URL.Query().Get("customer_id")
 	supplierID := r.URL.Query().Get("supplier_id")
@@ -63,6 +60,7 @@ func (s *Server) listInvoices(w http.ResponseWriter, r *http.Request) {
 		if err == nil && sup != nil {
 			inv.Supplier = sup
 		}
+		inv.IsOverdueFlag = inv.IsOverdue()
 	}
 
 	if invoices == nil {
@@ -98,6 +96,7 @@ func (s *Server) getInvoice(w http.ResponseWriter, r *http.Request) {
 	if err == nil && sup != nil {
 		inv.Supplier = sup
 	}
+	inv.IsOverdueFlag = inv.IsOverdue()
 
 	writeJSON(w, http.StatusOK, inv)
 }
@@ -326,6 +325,7 @@ func (s *Server) createInvoice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	inv.IsOverdueFlag = inv.IsOverdue()
 	writeJSON(w, http.StatusCreated, inv)
 }
 
@@ -447,6 +447,7 @@ func (s *Server) updateInvoice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	existing.IsOverdueFlag = existing.IsOverdue()
 	writeJSON(w, http.StatusOK, existing)
 }
 
@@ -484,6 +485,9 @@ func (s *Server) updateInvoiceStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	inv, _ := s.invoices.GetByID(id)
+	if inv != nil {
+		inv.IsOverdueFlag = inv.IsOverdue()
+	}
 	writeJSON(w, http.StatusOK, inv)
 }
 
@@ -506,6 +510,9 @@ func (s *Server) updateInvoiceNotes(w http.ResponseWriter, r *http.Request) {
 	}
 
 	inv, _ := s.invoices.GetByID(id)
+	if inv != nil {
+		inv.IsOverdueFlag = inv.IsOverdue()
+	}
 	writeJSON(w, http.StatusOK, inv)
 }
 

@@ -87,6 +87,8 @@ func (r *InvoiceRepository) List(status model.InvoiceStatus, customerID string, 
 
 	if status == "unpaid" {
 		query += " AND status NOT IN ('paid', 'cancelled')"
+	} else if status == "overdue" {
+		query += " AND status NOT IN ('paid', 'cancelled', 'draft') AND due_date < DATE('now')"
 	} else if status != "" {
 		query += " AND status = ?"
 		args = append(args, status)
@@ -132,7 +134,9 @@ func (r *InvoiceRepository) ListFiltered(status model.InvoiceStatus, customerID 
 		language, pdf_path, COALESCE(template_id, 'table'), created_at, updated_at FROM invoices WHERE 1=1`
 	var args []interface{}
 
-	if status != "" {
+	if status == "overdue" {
+		query += " AND status NOT IN ('paid', 'cancelled', 'draft') AND due_date < DATE('now')"
+	} else if status != "" {
 		query += " AND status = ?"
 		args = append(args, status)
 	}
@@ -249,16 +253,13 @@ func (r *InvoiceRepository) CountUnpaid() (int, error) {
 
 func (r *InvoiceRepository) CountOverdue() (int, error) {
 	var count int
-	err := r.db.QueryRow(`SELECT COUNT(*) FROM invoices WHERE status NOT IN ('paid', 'cancelled') AND due_date < DATE('now')`).Scan(&count)
+	err := r.db.QueryRow(`SELECT COUNT(*) FROM invoices WHERE status NOT IN ('paid', 'cancelled', 'draft') AND due_date < DATE('now')`).Scan(&count)
 	return count, err
 }
 
 func (r *InvoiceRepository) MarkOverdue() error {
-	_, err := r.db.Exec(`
-		UPDATE invoices SET status = 'overdue', updated_at = ?
-		WHERE status IN ('created', 'sent', 'partially_paid') AND due_date < DATE('now')`,
-		time.Now())
-	return err
+	// No-op: overdue is now a computed flag based on due_date, not a stored status.
+	return nil
 }
 
 func (r *InvoiceRepository) CountByBankAccount(bankAccountID string) (int, error) {

@@ -44,7 +44,7 @@ const statusColors: Record<string, string> = {
   cancelled: 'dimmed',
 }
 
-const allStatuses: InvoiceStatus[] = ['draft', 'created', 'sent', 'paid', 'overdue', 'partially_paid', 'cancelled']
+const allStatuses: InvoiceStatus[] = ['draft', 'created', 'sent', 'paid', 'partially_paid', 'cancelled']
 
 export function InvoiceDetail() {
   const { id } = useParams<{ id: string }>()
