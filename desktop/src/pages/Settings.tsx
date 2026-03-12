@@ -50,8 +50,8 @@ interface DashboardWidgets {
 const defaultWidgets: DashboardWidgets = {
   revenue: true,
   unpaid: true,
-  customers: true,
-  invoices_month: true,
+  customers: !isMobileDevice(),
+  invoices_month: !isMobileDevice(),
   overdue: true,
   recent: true,
   quick_actions: true,
@@ -329,7 +329,7 @@ export function Settings() {
                 <Text size="sm" fw={500} w={100}>Monero (XMR)</Text>
                 <CopyButton value={aboutInfo.monero_address.replace(/^<|>$/g, '')}>
                   {({ copied, copy }) => (
-                    <Tooltip label={copied ? t('about.copied') : t('common.copy')}>
+                    <Tooltip label={copied ? t('about.copied') : t('common.copy')} events={{ hover: true, focus: true, touch: true }}>
                       <ActionIcon variant="subtle" color={copied ? 'teal' : 'gray'} onClick={copy}>
                         {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
                       </ActionIcon>
@@ -342,7 +342,7 @@ export function Settings() {
                 <Text size="sm" fw={500} w={100}>Bitcoin (BTC)</Text>
                 <CopyButton value={aboutInfo.bitcoin_address.replace(/^<|>$/g, '')}>
                   {({ copied, copy }) => (
-                    <Tooltip label={copied ? t('about.copied') : t('common.copy')}>
+                    <Tooltip label={copied ? t('about.copied') : t('common.copy')} events={{ hover: true, focus: true, touch: true }}>
                       <ActionIcon variant="subtle" color={copied ? 'teal' : 'gray'} onClick={copy}>
                         {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
                       </ActionIcon>
@@ -816,7 +816,7 @@ export function Settings() {
                 style={{ flex: 1 }}
               />
               {!isMobileDevice() && (
-                <Tooltip label={t('invoice.open_folder')}>
+                <Tooltip label={t('invoice.open_folder')} events={{ hover: true, focus: true, touch: true }}>
                   <ActionIcon variant="light" size="lg" onClick={() => { if (dirLogos) openInBrowser(dirLogos) }}>
                     <IconFolderOpen size={18} />
                   </ActionIcon>
@@ -832,7 +832,7 @@ export function Settings() {
                 style={{ flex: 1 }}
               />
               {!isMobileDevice() && (
-                <Tooltip label={t('invoice.open_folder')}>
+                <Tooltip label={t('invoice.open_folder')} events={{ hover: true, focus: true, touch: true }}>
                   <ActionIcon variant="light" size="lg" onClick={() => { if (dirPdfs) openInBrowser(dirPdfs) }}>
                     <IconFolderOpen size={18} />
                   </ActionIcon>
@@ -848,7 +848,7 @@ export function Settings() {
                 style={{ flex: 1 }}
               />
               {!isMobileDevice() && (
-                <Tooltip label={t('invoice.open_folder')}>
+                <Tooltip label={t('invoice.open_folder')} events={{ hover: true, focus: true, touch: true }}>
                   <ActionIcon variant="light" size="lg" onClick={() => { if (dirPreviews) openInBrowser(dirPreviews) }}>
                     <IconFolderOpen size={18} />
                   </ActionIcon>

@@ -209,7 +209,7 @@ export function TemplateEditor() {
                 <Group justify="flex-end">
                   <CopyButton value={aiPromptData.prompt}>
                     {({ copied, copy }) => (
-                      <Tooltip label={copied ? t('common.copied') : t('common.copy')}>
+                      <Tooltip label={copied ? t('common.copied') : t('common.copy')} events={{ hover: true, focus: true, touch: true }}>
                         <ActionIcon variant="light" onClick={copy}>
                           {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
                         </ActionIcon>
