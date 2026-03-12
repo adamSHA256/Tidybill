@@ -3,5 +3,9 @@ include ':tauri-android'
 project(':tauri-android').projectDir = new File("/home/smith/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-2.10.2/mobile/android")
 include ':tauri-plugin-dialog'
 project(':tauri-plugin-dialog').projectDir = new File("/home/smith/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-plugin-dialog-2.6.0/android")
+include ':tauri-plugin-opener'
+project(':tauri-plugin-opener').projectDir = new File("/home/smith/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-plugin-opener-2.5.3/android")
+include ':tauri-plugin-sharesheet'
+project(':tauri-plugin-sharesheet').projectDir = new File("/home/smith/Projects/invoice-maker/app_web_dev/desktop/tauri-plugin-sharesheet/android")
 include ':tauri-plugin-shell'
 project(':tauri-plugin-shell').projectDir = new File("/home/smith/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-plugin-shell-2.3.5/android")
