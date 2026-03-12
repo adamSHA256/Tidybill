@@ -16,6 +16,7 @@ import {
   IconSettings,
   IconSun,
   IconMoon,
+  IconInfoCircle,
 } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
@@ -81,6 +82,11 @@ export function MorePage() {
         label={t('nav.settings')}
         leftSection={<IconSettings size={20} />}
         onClick={() => navigate('/settings')}
+      />
+      <NavLink
+        label={t('about.title')}
+        leftSection={<IconInfoCircle size={20} />}
+        onClick={() => navigate('/about')}
       />
     </Stack>
   )
