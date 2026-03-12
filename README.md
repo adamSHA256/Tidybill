@@ -3,7 +3,7 @@
     <img src="desktop/src/assets/tidybill_logo.png" alt="TidyBill" width="280" />
   </a>
   <p><strong>Clean invoices, zero clutter.</strong></p>
-  <p>Local-first invoice manager for freelancers — CLI + Desktop GUI, 3 languages.</p>
+  <p>Local-first invoice manager for freelancers — CLI, Desktop & Android, 3 languages.</p>
   <p>
     <a href="https://github.com/adamSHA256/Tidybill/releases/latest">
       <img src="https://img.shields.io/github/v/release/adamSHA256/Tidybill?label=Download&style=for-the-badge&color=4A9E8E" alt="Download" />
