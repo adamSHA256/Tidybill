@@ -11,7 +11,7 @@ import {
   Paper,
   CopyButton,
 } from '@mantine/core'
-import { IconCopy, IconCheck, IconInfoCircle } from '@tabler/icons-react'
+import { IconCopy, IconCheck } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { api, openInBrowser } from '../../api/client'
 import { useT } from '../../i18n'
