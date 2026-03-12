@@ -117,6 +117,7 @@
   "invoice.edit_status_warning_title": "Edit Invoice?",
   "invoice.continue_editing": "Continue",
   "invoice.generate_pdf": "Generate PDF",
+  "invoice.regenerate_pdf": "Regenerate PDF",
   "invoice.change_status": "Change Status",
   "invoice.mark_paid": "Mark as Paid",
   "invoice.delete": "Delete Invoice",
@@ -481,6 +482,7 @@
   "wizard.currency_label": "Default currency",
   "wizard.choose_folder": "Choose folder",
   "wizard.settings_hint": "Everything and even more smart things you can change anytime in Settings.",
+  "wizard.account_number_required": "Account number is required",
   "wizard.happy_invoicing": "Happy invoicing!",
 
   "about.title": "About TidyBill",

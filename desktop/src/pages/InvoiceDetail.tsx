@@ -188,7 +188,7 @@ export function InvoiceDetail() {
           </Button>
           <Button variant="light" leftSection={<IconFileTypePdf size={16} />}
             onClick={() => pdfMutation.mutate()} loading={pdfMutation.isPending}>
-            {t('invoice.generate_pdf')}
+            {invoice.pdf_path ? t('invoice.regenerate_pdf') : t('invoice.generate_pdf')}
           </Button>
           <Menu shadow="md" width={200}>
             <Menu.Target>
@@ -351,7 +351,7 @@ export function InvoiceDetail() {
         <Group justify="space-between" mb="xs">
           <Group gap={4}>
             <Text fw={500}>{t('invoice.internal_notes')}</Text>
-            <Tooltip label={t('invoice.internal_notes_hint')} multiline w={300} withArrow>
+            <Tooltip label={t('invoice.internal_notes_hint')} multiline w={300} withArrow events={{ hover: true, focus: true, touch: true }}>
               <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
             </Tooltip>
           </Group>
