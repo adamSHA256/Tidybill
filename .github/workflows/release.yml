@@ -219,6 +219,7 @@ jobs:
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.1.12297006
         run: |
+          mkdir -p desktop/src-tauri/gen/android/app/libs
           gomobile bind -v \
             -o desktop/src-tauri/gen/android/app/libs/tidybill.aar \
             -target=android/arm64 -androidapi 24 \
