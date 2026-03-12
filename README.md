@@ -77,7 +77,7 @@
 
 ```
 ╔═════════════════════════════════════════════════════════════╗
-║                     TIDYBILL v0.1.6                          ║
+║                     TIDYBILL v0.2.0                          ║
 ║  Company: Smith & Co. Digital                               ║
 ╠═════════════════════════════════════════════════════════════╣
 ║                                                             ║
@@ -162,7 +162,7 @@
 - **Multiple PDF templates** — classic, modern, minimal with live preview
 - **Duplicate invoice** — quick-copy or edit-before-save
 - **SQLite database** — single-file storage, fast and portable
-- **Cross-platform** — Linux, Windows, and macOS (CLI tested, desktop untested)
+- **Cross-platform** — Linux, Windows, macOS, and Android
 
 ## Tech Stack
 
@@ -212,6 +212,7 @@ Requires: Go, Node.js, pnpm, Rust toolchain, Tauri 2 CLI.
 - [x] Internationalization (CS/SK/EN)
 - [x] Desktop app (Tauri 2 + React GUI with Go sidecar)
 - [x] PDF templates (classic, modern, minimal) + Linux packages
+- [x] Android app (Tauri 2 mobile + Go via gomobile)
 - [ ] Encrypted export/import for device sync
 
 ## Acknowledgements
