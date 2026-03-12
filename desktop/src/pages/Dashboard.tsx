@@ -15,7 +15,7 @@ import {
 import { IconPlus, IconAlertTriangle } from '@tabler/icons-react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { api, formatMoney, type Invoice } from '../api/client'
+import { api, formatMoney, isMobileDevice, type Invoice } from '../api/client'
 import { useT } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
 
@@ -32,8 +32,8 @@ interface DashboardWidgets {
 const defaultWidgets: DashboardWidgets = {
   revenue: true,
   unpaid: true,
-  customers: true,
-  invoices_month: true,
+  customers: !isMobileDevice(),
+  invoices_month: !isMobileDevice(),
   overdue: true,
   recent: true,
   quick_actions: true,
