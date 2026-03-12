@@ -303,7 +303,7 @@ export function Settings() {
           </Stack>
         </Paper>
 
-        {aboutInfo && (
+        {aboutInfo && !isMobileDevice() && (
           <Paper p="md" radius="md" withBorder>
             <Group mb="md" gap="sm">
               <Title order={3}>TidyBill</Title>
