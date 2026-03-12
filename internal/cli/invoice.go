@@ -161,18 +161,23 @@ func (c *CLI) createInvoice() {
 	}
 	invNumber = c.promptDefault(i18n.T("prompt.invoice_number"), invNumber)
 
-	// Select payment method (before bank account — determines if bank info is needed)
-	selectedPaymentType := c.selectPaymentTypeStruct()
-	requiresBankInfo := selectedPaymentType.RequiresBankInfo == nil || *selectedPaymentType.RequiresBankInfo
-
-	// Conditionally select bank account
+	// Select payment method + bank account (looped so user can go back to change payment method)
+	var selectedPaymentType cliPaymentType
 	var bankAcc *model.BankAccount
-	if requiresBankInfo {
-		var bankGoBack bool
-		bankAcc, bankGoBack = c.selectBankAccountForInvoice(supplier.ID)
-		if bankGoBack || bankAcc == nil {
-			return
+	var requiresBankInfo bool
+	for {
+		selectedPaymentType = c.selectPaymentTypeStruct()
+		requiresBankInfo = selectedPaymentType.RequiresBankInfo == nil || *selectedPaymentType.RequiresBankInfo
+		if requiresBankInfo {
+			var goBack bool
+			bankAcc, goBack = c.selectBankAccountForInvoice(supplier.ID)
+			if goBack {
+				continue // back to payment method selection
+			}
+		} else {
+			bankAcc = nil
 		}
+		break
 	}
 
 	bankAccountID := ""
@@ -258,6 +263,11 @@ func (c *CLI) createInvoice() {
 		}
 
 		if choice == "d" || choice == "D" {
+			if len(items) == 0 {
+				c.printError(i18n.T("error.invoice_no_items"))
+				fmt.Println()
+				continue
+			}
 			break
 		}
 
@@ -372,8 +382,25 @@ func (c *CLI) selectSupplierForInvoice() (*model.Supplier, bool) {
 func (c *CLI) selectBankAccountForInvoice(supplierID string) (*model.BankAccount, bool) {
 	accounts, err := c.bankAccs.GetBySupplier(supplierID)
 	if err != nil || len(accounts) == 0 {
-		c.printError(i18n.T("error.no_bank_account"))
-		c.waitEnter()
+		fmt.Printf("\n⚠️  %s\n\n", i18n.T("error.no_bank_account"))
+		fmt.Println("  1)", i18n.T("bank_account.add_new"))
+		fmt.Println("  ", i18n.T("action.back"))
+		choice := c.prompt(i18n.T("prompt.choice"))
+		if choice == "1" {
+			c.addBankAccount(supplierID)
+			// Re-fetch accounts after adding
+			accounts, err = c.bankAccs.GetBySupplier(supplierID)
+			if err != nil || len(accounts) == 0 {
+				return nil, true
+			}
+			// Use the newly created account (likely the only one or the default)
+			for _, a := range accounts {
+				if a.IsDefault {
+					return a, false
+				}
+			}
+			return accounts[0], false
+		}
 		return nil, true
 	}
 

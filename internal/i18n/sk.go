@@ -526,6 +526,7 @@ var messagesSK = map[string]string{
 	// ── Errors (new) ────────────────────────────────────────────────────
 	"error.invalid_option":  "Neplatná voľba",
 	"error.no_bank_accounts":      "Žiadne bankové účty",
+	"bank_account.add_new":        "Vytvoriť nový bankový účet",
 	"error.builtin_cannot_delete": "Vstavaný typ, nie je možné vymazať",
 
 	// ── PDF Template Names ──────────────────────────────────────────────
