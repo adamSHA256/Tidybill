@@ -456,11 +456,29 @@ export interface CreateInvoiceRequest {
   }[]
 }
 
+export function isMobileDevice(): boolean {
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+}
+
+export function getInvoicePdfUrl(id: string): string {
+  return `${getApiBase()}/invoices/${id}/pdf-file`
+}
+
+export function getPreviewPdfUrl(id: string): string {
+  return `${getApiBase()}/templates/${id}/preview-pdf`
+}
+
 export async function openInBrowser(url: string): Promise<void> {
   try {
     if (isTauri()) {
-      const { open } = await import('@tauri-apps/plugin-shell')
-      await open(url)
+      const opener = await import('@tauri-apps/plugin-opener')
+      if (isMobileDevice() || url.startsWith('http://') || url.startsWith('https://')) {
+        // On mobile, openPath doesn't work (no FileProvider support in opener plugin).
+        // Always use openUrl which opens in the system browser.
+        await opener.openUrl(url)
+      } else {
+        await opener.openPath(url)
+      }
     } else {
       window.open(url, '_blank')
     }
@@ -470,18 +488,46 @@ export async function openInBrowser(url: string): Promise<void> {
   }
 }
 
+// Open an invoice PDF - uses HTTP URL on mobile, file path on desktop
+export async function openInvoicePdf(invoiceId: string, filePath: string): Promise<void> {
+  if (isMobileDevice()) {
+    return openInBrowser(getInvoicePdfUrl(invoiceId))
+  }
+  return openInBrowser(filePath)
+}
+
+// Open a template preview PDF - uses HTTP URL on mobile, file path on desktop
+export async function openTemplatePreview(templateId: string, filePath: string): Promise<void> {
+  if (isMobileDevice()) {
+    return openInBrowser(getPreviewPdfUrl(templateId))
+  }
+  return openInBrowser(filePath)
+}
+
 export async function openFolder(filePath: string): Promise<void> {
+  if (isMobileDevice()) return
   try {
     if (isTauri()) {
-      const { open } = await import('@tauri-apps/plugin-shell')
-      const lastSep = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'))
-      const dir = filePath.substring(0, lastSep)
-      await open(dir)
+      const { revealItemInDir } = await import('@tauri-apps/plugin-opener')
+      await revealItemInDir(filePath)
     }
   } catch (err) {
     console.error('openFolder failed:', filePath, err)
     throw new Error(`Failed to open folder for "${filePath}": ${err instanceof Error ? err.message : String(err)}`)
   }
+}
+
+export async function sharePdf(filePath: string, filename: string): Promise<void> {
+  if (isTauri() && isMobileDevice()) {
+    const { invoke } = await import('@tauri-apps/api/core')
+    await invoke('plugin:sharesheet|share_file', {
+      filePath,
+      mimeType: 'application/pdf',
+      title: filename,
+    })
+    return
+  }
+  // Desktop/web fallback - not applicable
 }
 
 export function formatMoney(amount: number, currency = ''): string {

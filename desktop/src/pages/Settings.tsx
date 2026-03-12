@@ -25,7 +25,7 @@ import { notifications } from '@mantine/notifications'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, openInBrowser, type Unit, type PDFTemplate, type VATRate, type CurrencyItem, type PaymentType, type DueDaysOption } from '../api/client'
+import { api, openInBrowser, isMobileDevice, type Unit, type PDFTemplate, type VATRate, type CurrencyItem, type PaymentType, type DueDaysOption } from '../api/client'
 import { applyZoom } from '../utils/zoom'
 import { useT } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
@@ -815,11 +815,13 @@ export function Settings() {
                 onChange={(e) => setDirLogos(e.currentTarget.value)}
                 style={{ flex: 1 }}
               />
-              <Tooltip label={t('invoice.open_folder')}>
-                <ActionIcon variant="light" size="lg" onClick={() => { if (dirLogos) openInBrowser(dirLogos) }}>
-                  <IconFolderOpen size={18} />
-                </ActionIcon>
-              </Tooltip>
+              {!isMobileDevice() && (
+                <Tooltip label={t('invoice.open_folder')}>
+                  <ActionIcon variant="light" size="lg" onClick={() => { if (dirLogos) openInBrowser(dirLogos) }}>
+                    <IconFolderOpen size={18} />
+                  </ActionIcon>
+                </Tooltip>
+              )}
             </Group>
             <Group align="end" gap="xs">
               <TextInput
@@ -829,11 +831,13 @@ export function Settings() {
                 onChange={(e) => setDirPdfs(e.currentTarget.value)}
                 style={{ flex: 1 }}
               />
-              <Tooltip label={t('invoice.open_folder')}>
-                <ActionIcon variant="light" size="lg" onClick={() => { if (dirPdfs) openInBrowser(dirPdfs) }}>
-                  <IconFolderOpen size={18} />
-                </ActionIcon>
-              </Tooltip>
+              {!isMobileDevice() && (
+                <Tooltip label={t('invoice.open_folder')}>
+                  <ActionIcon variant="light" size="lg" onClick={() => { if (dirPdfs) openInBrowser(dirPdfs) }}>
+                    <IconFolderOpen size={18} />
+                  </ActionIcon>
+                </Tooltip>
+              )}
             </Group>
             <Group align="end" gap="xs">
               <TextInput
@@ -843,11 +847,13 @@ export function Settings() {
                 onChange={(e) => setDirPreviews(e.currentTarget.value)}
                 style={{ flex: 1 }}
               />
-              <Tooltip label={t('invoice.open_folder')}>
-                <ActionIcon variant="light" size="lg" onClick={() => { if (dirPreviews) openInBrowser(dirPreviews) }}>
-                  <IconFolderOpen size={18} />
-                </ActionIcon>
-              </Tooltip>
+              {!isMobileDevice() && (
+                <Tooltip label={t('invoice.open_folder')}>
+                  <ActionIcon variant="light" size="lg" onClick={() => { if (dirPreviews) openInBrowser(dirPreviews) }}>
+                    <IconFolderOpen size={18} />
+                  </ActionIcon>
+                </Tooltip>
+              )}
             </Group>
             <Button
               w={200}

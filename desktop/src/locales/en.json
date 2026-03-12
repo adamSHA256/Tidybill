@@ -107,6 +107,7 @@
   "invoice.back_to_list": "Back to invoices",
   "invoice.open_pdf": "Open PDF",
   "invoice.open_folder": "Open folder",
+  "invoice.share": "Share",
   "invoice.edit": "Edit Invoice",
   "invoice.duplicate": "New from This",
   "invoice.duplicate_subtitle": "Pre-filled from invoice {number}. Dates have been reset.",

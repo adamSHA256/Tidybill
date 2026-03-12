@@ -18,7 +18,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { IconArrowLeft, IconDeviceFloppy, IconEye, IconCopy, IconCheck, IconRobot, IconRefresh } from '@tabler/icons-react'
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { api, getApiBase, openInBrowser } from '../api/client'
+import { api, openTemplatePreview } from '../api/client'
 import { useT } from '../i18n'
 
 export function TemplateEditor() {
@@ -78,9 +78,9 @@ export function TemplateEditor() {
         setOriginalSource(yamlSource)
         queryClient.invalidateQueries({ queryKey: ['template-source', id] })
       }
-      await api.generatePreview(id!)
+      const data = await api.generatePreview(id!)
       queryClient.invalidateQueries({ queryKey: ['templates'] })
-      await openInBrowser(`${getApiBase()}/templates/${id}/preview-pdf`)
+      await openTemplatePreview(id!, data.path)
     } catch (err) {
       notifications.show({ title: t('common.error'), message: (err as Error).message, color: 'red' })
     } finally {
