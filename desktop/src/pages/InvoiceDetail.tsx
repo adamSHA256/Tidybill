@@ -128,8 +128,14 @@ export function InvoiceDetail() {
     )
   }
 
-  const isOverdue = invoice.status !== 'paid' && invoice.status !== 'cancelled' &&
-    new Date(invoice.due_date) < new Date()
+  const isOverdue = (() => {
+    if (invoice.status === 'paid' || invoice.status === 'cancelled') return false
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const dueDate = new Date(invoice.due_date)
+    dueDate.setHours(0, 0, 0, 0)
+    return dueDate < today
+  })()
 
   return (
     <Stack gap="lg">
