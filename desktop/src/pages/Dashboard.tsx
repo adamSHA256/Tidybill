@@ -90,7 +90,11 @@ export function Dashboard() {
   const overdueInvoices = (invoices || []).filter(
     (inv: Invoice) => {
       if (inv.status === 'paid' || inv.status === 'cancelled') return false
-      return new Date(inv.due_date) < new Date()
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const dueDate = new Date(inv.due_date)
+      dueDate.setHours(0, 0, 0, 0)
+      return dueDate < today
     }
   )
 
