@@ -8,7 +8,7 @@ require (
 	github.com/ulikunitz/xz v0.5.15
 	golang.org/x/mobile v0.0.0-20260217195705-b56b3793a9c4
 	gopkg.in/yaml.v2 v2.4.0
-	modernc.org/sqlite v1.44.3
+	modernc.org/sqlite v1.46.1
 )
 
 require (
