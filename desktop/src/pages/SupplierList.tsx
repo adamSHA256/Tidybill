@@ -24,13 +24,14 @@ import {
   SimpleGrid,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import { IconPlus, IconUpload, IconTrash, IconPencil, IconBuildingBank, IconInfoCircle } from '@tabler/icons-react'
+import { IconPlus, IconUpload, IconTrash, IconPencil, IconBuildingBank, IconInfoCircle, IconAt } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, type Supplier, type BankAccount } from '../api/client'
 import { CountrySelect } from '../components/CountrySelect'
 import { useT } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
+import { SmtpConfigForm } from '../components/SmtpConfigForm'
 
 function BankAccountsRow({ supplierId, supplierName, onEdit, onDelete, onCreate }: {
   supplierId: string
@@ -177,6 +178,8 @@ export function SupplierList() {
 
   // Bank account state — set of supplier IDs whose bank accounts are expanded
   const [expandedBanks, setExpandedBanks] = useState<Set<string>>(new Set())
+  // SMTP config state — set of supplier IDs whose SMTP section is expanded
+  const [expandedSmtp, setExpandedSmtp] = useState<Set<string>>(new Set())
   const [bankModalOpen, setBankModalOpen] = useState(false)
   const [editingBank, setEditingBank] = useState<BankAccount | null>(null)
   const [bankSupplierId, setBankSupplierId] = useState<string>('')
@@ -450,6 +453,21 @@ export function SupplierList() {
               {t('bank_account.manage')}
             </Button>
           )}
+          {supplierCount > 0 && (
+            <Button
+              variant={expandedSmtp.size > 0 ? 'filled' : 'light'}
+              leftSection={<IconAt size={16} />}
+              onClick={() => {
+                if (expandedSmtp.size > 0) {
+                  setExpandedSmtp(new Set())
+                } else {
+                  setExpandedSmtp(new Set((suppliers || []).map(s => s.id)))
+                }
+              }}
+            >
+              {t('email.smtp_title')}
+            </Button>
+          )}
           <Button leftSection={<IconPlus size={16} />} onClick={openCreate}>{t('supplier.add')}</Button>
         </Group>
       </Group>
@@ -515,6 +533,23 @@ export function SupplierList() {
                       onDelete={(ba) => { setBankDeleteTarget(ba); setBankDeleteOpen(true) }}
                       onCreate={openBankCreate}
                     />
+                  </Box>
+                )}
+                <Box onClick={() => {
+                  setExpandedSmtp(prev => {
+                    const next = new Set(prev)
+                    if (next.has(s.id)) next.delete(s.id); else next.add(s.id)
+                    return next
+                  })
+                }} style={{ cursor: 'pointer' }}>
+                  <Group gap="xs">
+                    <IconAt size={14} />
+                    <Text size="xs" c="dimmed">{t('email.smtp_title')}</Text>
+                  </Group>
+                </Box>
+                {expandedSmtp.has(s.id) && (
+                  <Box mt="xs" p="xs" bg="var(--mantine-color-default-hover)" style={{ borderRadius: 'var(--mantine-radius-sm)' }}>
+                    <SmtpConfigForm supplierId={s.id} supplierName={s.name} supplierEmail={s.email} />
                   </Box>
                 )}
               </Paper>
@@ -599,6 +634,15 @@ export function SupplierList() {
                   </Table.Td>
                   <Table.Td onClick={(e) => e.stopPropagation()}>
                     <Group gap="xs">
+                      <ActionIcon variant="light" size="sm" color="gray" onClick={() => {
+                        setExpandedSmtp(prev => {
+                          const next = new Set(prev)
+                          if (next.has(s.id)) next.delete(s.id); else next.add(s.id)
+                          return next
+                        })
+                      }}>
+                        <IconAt size={14} />
+                      </ActionIcon>
                       <ActionIcon variant="light" size="sm" color="blue" onClick={() => openEdit(s)}>
                         <IconPencil size={14} />
                       </ActionIcon>
@@ -617,6 +661,16 @@ export function SupplierList() {
                     onDelete={(ba) => { setBankDeleteTarget(ba); setBankDeleteOpen(true) }}
                     onCreate={openBankCreate}
                   />
+                )}
+                {expandedSmtp.has(s.id) && (
+                  <Table.Tr key={`${s.id}-smtp`}>
+                    <Table.Td colSpan={7} p={0}>
+                      <Box px="lg" py="md" bg="var(--mantine-color-default-hover)">
+                        <SmtpConfigForm supplierId={s.id} supplierName={s.name} supplierEmail={s.email} />
+                      </Box>
+                      <Divider />
+                    </Table.Td>
+                  </Table.Tr>
                 )}
                 </>
               ))}
