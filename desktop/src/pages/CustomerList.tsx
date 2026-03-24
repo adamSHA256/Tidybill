@@ -12,6 +12,7 @@ import {
   Textarea,
   Modal,
   Divider,
+  SegmentedControl,
   ActionIcon,
   Loader,
   Center,
@@ -25,6 +26,7 @@ import { api, type Customer } from '../api/client'
 import { CountrySelect } from '../components/CountrySelect'
 import { useT } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
+import { PlaceholderChips } from '../components/PlaceholderChips'
 
 const avatarColors = ['blue', 'green', 'yellow', 'violet', 'orange', 'teal', 'red', 'pink']
 
@@ -49,6 +51,9 @@ export function CustomerList() {
   const [phone, setPhone] = useState('')
   const [defaultDueDays, setDefaultDueDays] = useState<number>(0)
   const [notes, setNotes] = useState('')
+  const [emailCustomTemplate, setEmailCustomTemplate] = useState(false)
+  const [emailSubjectTemplate, setEmailSubjectTemplate] = useState('')
+  const [emailBodyTemplate, setEmailBodyTemplate] = useState('')
 
   const queryClient = useQueryClient()
   const { t } = useT()
@@ -56,6 +61,11 @@ export function CustomerList() {
   const { data: customers, isLoading } = useQuery({
     queryKey: ['customers'],
     queryFn: () => api.getCustomers(),
+  })
+
+  const { data: settings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: api.getSettings,
   })
 
   const createMutation = useMutation({
@@ -102,6 +112,9 @@ export function CustomerList() {
     setPhone('')
     setDefaultDueDays(0)
     setNotes('')
+    setEmailCustomTemplate(false)
+    setEmailSubjectTemplate('')
+    setEmailBodyTemplate('')
     setModalOpen(true)
   }
 
@@ -119,6 +132,9 @@ export function CustomerList() {
     setPhone(customer.phone)
     setDefaultDueDays(customer.default_due_days || 0)
     setNotes(customer.notes)
+    setEmailCustomTemplate(customer.email_custom_template)
+    setEmailSubjectTemplate(customer.email_subject_template)
+    setEmailBodyTemplate(customer.email_body_template)
     setModalOpen(true)
   }
 
@@ -145,6 +161,9 @@ export function CustomerList() {
       phone: phone.trim(),
       default_due_days: defaultDueDays,
       notes: notes.trim(),
+      email_custom_template: emailCustomTemplate,
+      email_subject_template: emailSubjectTemplate,
+      email_body_template: emailBodyTemplate,
     })
   }
 
@@ -293,6 +312,58 @@ export function CustomerList() {
             </Group>
           } value={notes}
             onChange={(e) => setNotes(e.currentTarget.value)} minRows={2} />
+
+          <Divider my="sm" />
+          <Group gap={4}>
+            <Text fw={500} size="sm">{t('email.customer_template_title')}</Text>
+            <Tooltip label={t('email.customer_template_hint')} multiline w={300} withArrow>
+              <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+            </Tooltip>
+          </Group>
+
+          <SegmentedControl
+            value={emailCustomTemplate ? 'custom' : 'global'}
+            onChange={(v) => {
+              const isCustom = v === 'custom'
+              setEmailCustomTemplate(isCustom)
+              if (isCustom && settings) {
+                if (!emailSubjectTemplate) {
+                  setEmailSubjectTemplate(settings['email.default_subject'] || 'Faktura ((number))')
+                }
+                if (!emailBodyTemplate) {
+                  setEmailBodyTemplate(settings['email.default_body'] || 'Dobrý den,\n\nv příloze zasílám fakturu č. ((number)) na částku ((total)).\nSplatnost: ((due_date)).\n\nS pozdravem\n((supplier))')
+                }
+              }
+            }}
+            data={[
+              { label: t('email.customer_use_global'), value: 'global' },
+              { label: t('email.customer_use_custom'), value: 'custom' },
+            ]}
+            fullWidth
+            size="xs"
+            orientation="vertical"
+          />
+
+          {emailCustomTemplate && (
+            <Stack gap="xs" mt="xs">
+              <TextInput
+                label={t('email.customer_subject')}
+                value={emailSubjectTemplate}
+                onChange={(e) => setEmailSubjectTemplate(e.currentTarget.value)}
+                placeholder="Faktura ((number))"
+              />
+              <PlaceholderChips onInsert={(p) => setEmailSubjectTemplate(prev => prev + p)} />
+              <Textarea
+                label={t('email.customer_body')}
+                value={emailBodyTemplate}
+                onChange={(e) => setEmailBodyTemplate(e.currentTarget.value)}
+                minRows={4}
+                autosize
+              />
+              <PlaceholderChips onInsert={(p) => setEmailBodyTemplate(prev => prev + p)} />
+            </Stack>
+          )}
+
           <Group justify="end" mt="md">
             <Button variant="default" onClick={closeModal}>{t('common.cancel')}</Button>
             <Button onClick={handleSave} loading={createMutation.isPending}>

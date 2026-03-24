@@ -26,6 +26,7 @@ import {
   IconInfoCircle,
   IconDots,
   IconShare,
+  IconMail,
 } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -33,6 +34,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, formatMoney, formatDate, openInvoicePdf, sharePdf, type InvoiceStatus } from '../../api/client'
 import { useT } from '../../i18n'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { SendEmailModal } from '../../components/SendEmailModal'
+import { EmailSetupModal } from '../../components/EmailSetupModal'
 
 const statusColors: Record<string, string> = {
   draft: 'gray',
@@ -56,12 +59,39 @@ export function MobileInvoiceDetail() {
   const [notesOpen, setNotesOpen] = useState(false)
   const [internalNotes, setInternalNotes] = useState('')
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [sendEmailOpen, setSendEmailOpen] = useState(false)
+  const [emailSetupOpen, setEmailSetupOpen] = useState(false)
 
   const { data: invoice, isLoading } = useQuery({
     queryKey: ['invoice', id],
     queryFn: () => api.getInvoice(id!),
     enabled: !!id,
   })
+
+  const { data: smtpConfig } = useQuery({
+    queryKey: ['smtp-config', invoice?.supplier_id],
+    queryFn: () => api.getSmtpConfig(invoice!.supplier_id),
+    enabled: !!invoice?.supplier_id,
+  })
+
+  const handleSendEmail = () => {
+    if (!invoice) return
+    if (!invoice.pdf_path) {
+      notifications.show({ title: t('email.no_pdf'), message: t('email.no_pdf'), color: 'orange' })
+      return
+    }
+    if (!invoice.customer?.email) {
+      notifications.show({ title: t('email.no_customer_email'), message: t('email.no_customer_email'), color: 'orange' })
+      return
+    }
+    // Check SMTP config
+    const hasSmtp = smtpConfig && 'id' in smtpConfig
+    if (!hasSmtp) {
+      setEmailSetupOpen(true)
+      return
+    }
+    setSendEmailOpen(true)
+  }
 
   const statusMutation = useMutation({
     mutationFn: (status: string) => api.updateInvoiceStatus(id!, status),
@@ -316,19 +346,44 @@ export function MobileInvoiceDetail() {
           zIndex: 99,
         }}
       >
-        <Group justify="space-between">
+        <Group justify="space-between" gap="xs">
           {invoice.status !== 'paid' ? (
             <Button
               color="green"
+              size="compact-sm"
               leftSection={<IconCheck size={16} />}
               onClick={() => statusMutation.mutate('paid')}
               loading={statusMutation.isPending}
               style={{ flex: 1 }}
             >
-              {t('invoice.mark_paid')}
+              {t('invoice.mark_paid_short')}
             </Button>
           ) : (
             <div style={{ flex: 1 }} />
+          )}
+
+          {invoice.email_sent_at ? (
+            <Button
+              variant="light"
+              color="green"
+              size="compact-sm"
+              leftSection={<IconMail size={16} />}
+              onClick={handleSendEmail}
+              style={{ flex: 1 }}
+            >
+              {t('email.sent_short')} {formatDate(invoice.email_sent_at)}
+            </Button>
+          ) : (
+            <Button
+              variant="light"
+              color="blue"
+              size="compact-sm"
+              leftSection={<IconMail size={16} />}
+              onClick={handleSendEmail}
+              style={{ flex: 1 }}
+            >
+              {t('email.send_short')}
+            </Button>
           )}
 
           <Menu shadow="md" width={220} position="top-end">
@@ -376,6 +431,12 @@ export function MobileInvoiceDetail() {
                 disabled={pdfMutation.isPending}
               >
                 {invoice.pdf_path ? t('invoice.regenerate_pdf') : t('invoice.generate_pdf')}
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconMail size={16} />}
+                onClick={handleSendEmail}
+              >
+                {t('email.send_from_app')}
               </Menu.Item>
 
               <Menu.Divider />
@@ -433,6 +494,18 @@ export function MobileInvoiceDetail() {
           </Group>
         </Stack>
       </Modal>
+
+      {/* Email modals */}
+      <SendEmailModal
+        invoiceId={invoice.id}
+        opened={sendEmailOpen}
+        onClose={() => setSendEmailOpen(false)}
+      />
+      <EmailSetupModal
+        opened={emailSetupOpen}
+        onClose={() => setEmailSetupOpen(false)}
+        supplierId={invoice.supplier_id}
+      />
     </>
   )
 }

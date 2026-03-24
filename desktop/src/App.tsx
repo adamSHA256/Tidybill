@@ -21,6 +21,7 @@ import { CustomerList } from './pages/CustomerList'
 import { SupplierList } from './pages/SupplierList'
 import { ItemCatalog } from './pages/ItemCatalog'
 import { Settings } from './pages/Settings'
+import { Automatizace } from './pages/Automatizace'
 import { Templates } from './pages/Templates'
 import { TemplateEditor } from './pages/TemplateEditor'
 import { About } from './pages/About'
@@ -68,6 +69,7 @@ export default function App() {
             <Route path="/templates" element={<Templates />} />
             <Route path="/template-editor/:id" element={<TemplateEditor />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/automatizace" element={<Automatizace />} />
             <Route path="/more" element={<MorePage />} />
             <Route path="/about" element={<AboutPage />} />
           </Routes>

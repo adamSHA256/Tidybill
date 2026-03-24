@@ -38,6 +38,7 @@ type Invoice struct {
 	Total          float64       `json:"total"`
 	Notes          string        `json:"notes"`
 	InternalNotes  string        `json:"internal_notes"`
+	EmailSentAt    *time.Time    `json:"email_sent_at"`
 	Language       string        `json:"language"`
 	PDFPath        string        `json:"pdf_path"`
 	TemplateID     string        `json:"template_id"`

@@ -39,14 +39,30 @@ export async function checkHealth(): Promise<boolean> {
   }
 }
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
+async function request<T>(path: string, options?: RequestInit & { timeout?: number }): Promise<T> {
+  const { timeout, ...fetchOptions } = options || {}
+
+  let controller: AbortController | undefined
+  let timer: ReturnType<typeof setTimeout> | undefined
+  if (timeout) {
+    controller = new AbortController()
+    timer = setTimeout(() => controller!.abort(), timeout)
+  }
+
   const response = await fetch(`${getApiBase()}${path}`, {
     headers: {
       'Content-Type': 'application/json',
-      ...options?.headers,
+      ...fetchOptions?.headers,
     },
-    ...options,
+    ...fetchOptions,
+    ...(controller ? { signal: controller.signal } : {}),
+  }).catch((err) => {
+    if (timer) clearTimeout(timer)
+    if (err.name === 'AbortError') throw new Error('TIMEOUT')
+    throw err
   })
+
+  if (timer) clearTimeout(timer)
 
   if (!response.ok) {
     const error = await response.text()
@@ -94,6 +110,10 @@ export const api = {
   generatePDF: (id: string) =>
     request<{ path: string }>(`/invoices/${id}/pdf`, { method: 'POST' }),
 
+  // Email
+  getEmailPreview: (invoiceId: string) => request<EmailPreview>(`/invoices/${invoiceId}/email-preview`),
+  sendInvoiceEmail: (invoiceId: string, data: SendEmailRequest) => request<SendEmailResponse>(`/invoices/${invoiceId}/send-email`, { method: 'POST', body: JSON.stringify(data), timeout: 25000 }),
+
   // Customers
   getCustomers: (q?: string) => {
     const qs = q ? `?q=${encodeURIComponent(q)}` : ''
@@ -132,6 +152,13 @@ export const api = {
   getLogoUrl: (supplierId: string) => `${getApiBase()}/suppliers/${supplierId}/logo`,
   deleteLogo: (supplierId: string) =>
     request<void>(`/suppliers/${supplierId}/logo`, { method: 'DELETE' }),
+
+  // SMTP Config
+  getSmtpConfig: (supplierId: string) => request<SmtpConfig | { configured: false }>(`/suppliers/${supplierId}/smtp`),
+  upsertSmtpConfig: (supplierId: string, data: SmtpConfigInput) => request<SmtpConfig>(`/suppliers/${supplierId}/smtp`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteSmtpConfig: (supplierId: string) => request<void>(`/suppliers/${supplierId}/smtp`, { method: 'DELETE' }),
+  testSmtpConnection: (supplierId: string, data: SmtpConfigInput) => request<{ status: string }>(`/suppliers/${supplierId}/smtp/test`, { method: 'POST', body: JSON.stringify(data), timeout: 20000 }),
+  copySmtpConfig: (toSupplierId: string, fromSupplierId: string) => request<SmtpConfig>(`/suppliers/${toSupplierId}/smtp/copy/${fromSupplierId}`, { method: 'POST' }),
 
   // Bank accounts
   getBankAccounts: (supplierId: string) =>
@@ -241,6 +268,7 @@ export interface Invoice {
   language: string
   pdf_path: string
   template_id: string
+  email_sent_at: string | null
   created_at: string
   updated_at: string
   items?: InvoiceItem[]
@@ -281,6 +309,9 @@ export interface Customer {
   default_vat_rate: number
   default_due_days: number
   notes: string
+  email_custom_template: boolean
+  email_subject_template: string
+  email_body_template: string
   created_at: string
   updated_at: string
 }
@@ -418,6 +449,9 @@ export interface AppSettings {
   default_pdf_dir?: string
   default_logo_dir?: string
   default_preview_dir?: string
+  'email.default_subject'?: string
+  'email.default_body'?: string
+  'email.copy_subject'?: string
 }
 
 export interface Unit {
@@ -445,6 +479,54 @@ export interface DueDaysOption {
 
 export interface CurrencyItem {
   code: string
+}
+
+export interface SmtpConfig {
+  id: string
+  supplier_id: string
+  host: string
+  port: number
+  username: string
+  has_password: boolean
+  from_name: string
+  from_email: string
+  use_starttls: boolean
+  enabled: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface SmtpConfigInput {
+  host: string
+  port: number
+  username: string
+  password?: string
+  from_name: string
+  from_email: string
+  use_starttls: boolean
+  enabled: boolean
+}
+
+export interface EmailPreview {
+  to: string
+  subject: string
+  body: string
+  pdf_filename: string
+  has_smtp: boolean
+  already_sent_at: string | null
+}
+
+export interface SendEmailRequest {
+  to: string
+  subject: string
+  body: string
+  send_copy?: boolean
+}
+
+export interface SendEmailResponse {
+  ok: boolean
+  email_sent_at: string
+  status: string
 }
 
 export interface CreateInvoiceRequest {

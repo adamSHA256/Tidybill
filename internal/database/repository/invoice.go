@@ -32,12 +32,13 @@ func (r *InvoiceRepository) Create(inv *model.Invoice) error {
 	_, err := r.db.Exec(`
 		INSERT INTO invoices (id, invoice_number, supplier_id, customer_id, bank_account_id, status,
 			issue_date, due_date, paid_date, taxable_date, payment_method, variable_symbol, currency,
-			exchange_rate, subtotal, vat_total, total, notes, internal_notes, language, pdf_path, template_id, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			exchange_rate, subtotal, vat_total, total, notes, internal_notes, email_sent_at,
+			language, pdf_path, template_id, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		inv.ID, inv.InvoiceNumber, inv.SupplierID, inv.CustomerID, inv.BankAccountID, inv.Status,
 		inv.IssueDate, inv.DueDate, inv.PaidDate, inv.TaxableDate, inv.PaymentMethod, inv.VariableSymbol,
 		inv.Currency, inv.ExchangeRate, inv.Subtotal, inv.VATTotal, inv.Total, inv.Notes, inv.InternalNotes,
-		inv.Language, inv.PDFPath, inv.TemplateID, inv.CreatedAt, inv.UpdatedAt)
+		inv.EmailSentAt, inv.Language, inv.PDFPath, inv.TemplateID, inv.CreatedAt, inv.UpdatedAt)
 	return err
 }
 
@@ -47,33 +48,37 @@ func (r *InvoiceRepository) Update(inv *model.Invoice) error {
 		UPDATE invoices SET invoice_number=?, customer_id=?, bank_account_id=?, status=?,
 			issue_date=?, due_date=?, paid_date=?, taxable_date=?, payment_method=?, variable_symbol=?,
 			currency=?, exchange_rate=?, subtotal=?, vat_total=?, total=?, notes=?, internal_notes=?,
-			language=?, pdf_path=?, template_id=?, updated_at=?
+			email_sent_at=?, language=?, pdf_path=?, template_id=?, updated_at=?
 		WHERE id=?`,
 		inv.InvoiceNumber, inv.CustomerID, inv.BankAccountID, inv.Status, inv.IssueDate, inv.DueDate,
 		inv.PaidDate, inv.TaxableDate, inv.PaymentMethod, inv.VariableSymbol, inv.Currency, inv.ExchangeRate,
-		inv.Subtotal, inv.VATTotal, inv.Total, inv.Notes, inv.InternalNotes, inv.Language, inv.PDFPath,
-		inv.TemplateID, inv.UpdatedAt, inv.ID)
+		inv.Subtotal, inv.VATTotal, inv.Total, inv.Notes, inv.InternalNotes, inv.EmailSentAt, inv.Language,
+		inv.PDFPath, inv.TemplateID, inv.UpdatedAt, inv.ID)
 	return err
 }
 
 func (r *InvoiceRepository) GetByID(id string) (*model.Invoice, error) {
 	inv := &model.Invoice{}
 	var paidDate sql.NullTime
+	var emailSentAt sql.NullTime
 	err := r.db.QueryRow(`
 		SELECT id, invoice_number, supplier_id, customer_id, bank_account_id, status,
 			issue_date, due_date, paid_date, taxable_date, payment_method, variable_symbol,
 			currency, exchange_rate, subtotal, vat_total, total, notes, internal_notes,
-			language, pdf_path, COALESCE(template_id, 'table'), created_at, updated_at
+			email_sent_at, language, pdf_path, COALESCE(template_id, 'table'), created_at, updated_at
 		FROM invoices WHERE id = ?`, id).Scan(
 		&inv.ID, &inv.InvoiceNumber, &inv.SupplierID, &inv.CustomerID, &inv.BankAccountID, &inv.Status,
 		&inv.IssueDate, &inv.DueDate, &paidDate, &inv.TaxableDate, &inv.PaymentMethod, &inv.VariableSymbol,
 		&inv.Currency, &inv.ExchangeRate, &inv.Subtotal, &inv.VATTotal, &inv.Total, &inv.Notes, &inv.InternalNotes,
-		&inv.Language, &inv.PDFPath, &inv.TemplateID, &inv.CreatedAt, &inv.UpdatedAt)
+		&emailSentAt, &inv.Language, &inv.PDFPath, &inv.TemplateID, &inv.CreatedAt, &inv.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
 	if paidDate.Valid {
 		inv.PaidDate = &paidDate.Time
+	}
+	if emailSentAt.Valid {
+		inv.EmailSentAt = &emailSentAt.Time
 	}
 	return inv, err
 }
@@ -82,7 +87,7 @@ func (r *InvoiceRepository) List(status model.InvoiceStatus, customerID string, 
 	query := `SELECT id, invoice_number, supplier_id, customer_id, bank_account_id, status,
 		issue_date, due_date, paid_date, taxable_date, payment_method, variable_symbol,
 		currency, exchange_rate, subtotal, vat_total, total, notes, internal_notes,
-		language, pdf_path, COALESCE(template_id, 'table'), created_at, updated_at FROM invoices WHERE 1=1`
+		email_sent_at, language, pdf_path, COALESCE(template_id, 'table'), created_at, updated_at FROM invoices WHERE 1=1`
 	var args []interface{}
 
 	if status == "unpaid" {
@@ -113,14 +118,19 @@ func (r *InvoiceRepository) List(status model.InvoiceStatus, customerID string, 
 	for rows.Next() {
 		inv := &model.Invoice{}
 		var paidDate sql.NullTime
+		var emailSentAt sql.NullTime
 		if err := rows.Scan(&inv.ID, &inv.InvoiceNumber, &inv.SupplierID, &inv.CustomerID, &inv.BankAccountID,
 			&inv.Status, &inv.IssueDate, &inv.DueDate, &paidDate, &inv.TaxableDate, &inv.PaymentMethod,
 			&inv.VariableSymbol, &inv.Currency, &inv.ExchangeRate, &inv.Subtotal, &inv.VATTotal, &inv.Total,
-			&inv.Notes, &inv.InternalNotes, &inv.Language, &inv.PDFPath, &inv.TemplateID, &inv.CreatedAt, &inv.UpdatedAt); err != nil {
+			&inv.Notes, &inv.InternalNotes, &emailSentAt, &inv.Language, &inv.PDFPath, &inv.TemplateID,
+			&inv.CreatedAt, &inv.UpdatedAt); err != nil {
 			return nil, err
 		}
 		if paidDate.Valid {
 			inv.PaidDate = &paidDate.Time
+		}
+		if emailSentAt.Valid {
+			inv.EmailSentAt = &emailSentAt.Time
 		}
 		invoices = append(invoices, inv)
 	}
@@ -131,7 +141,7 @@ func (r *InvoiceRepository) ListFiltered(status model.InvoiceStatus, customerID 
 	query := `SELECT id, invoice_number, supplier_id, customer_id, bank_account_id, status,
 		issue_date, due_date, paid_date, taxable_date, payment_method, variable_symbol,
 		currency, exchange_rate, subtotal, vat_total, total, notes, internal_notes,
-		language, pdf_path, COALESCE(template_id, 'table'), created_at, updated_at FROM invoices WHERE 1=1`
+		email_sent_at, language, pdf_path, COALESCE(template_id, 'table'), created_at, updated_at FROM invoices WHERE 1=1`
 	var args []interface{}
 
 	if status == "overdue" {
@@ -164,14 +174,19 @@ func (r *InvoiceRepository) ListFiltered(status model.InvoiceStatus, customerID 
 	for rows.Next() {
 		inv := &model.Invoice{}
 		var paidDate sql.NullTime
+		var emailSentAt sql.NullTime
 		if err := rows.Scan(&inv.ID, &inv.InvoiceNumber, &inv.SupplierID, &inv.CustomerID, &inv.BankAccountID,
 			&inv.Status, &inv.IssueDate, &inv.DueDate, &paidDate, &inv.TaxableDate, &inv.PaymentMethod,
 			&inv.VariableSymbol, &inv.Currency, &inv.ExchangeRate, &inv.Subtotal, &inv.VATTotal, &inv.Total,
-			&inv.Notes, &inv.InternalNotes, &inv.Language, &inv.PDFPath, &inv.TemplateID, &inv.CreatedAt, &inv.UpdatedAt); err != nil {
+			&inv.Notes, &inv.InternalNotes, &emailSentAt, &inv.Language, &inv.PDFPath, &inv.TemplateID,
+			&inv.CreatedAt, &inv.UpdatedAt); err != nil {
 			return nil, err
 		}
 		if paidDate.Valid {
 			inv.PaidDate = &paidDate.Time
+		}
+		if emailSentAt.Valid {
+			inv.EmailSentAt = &emailSentAt.Time
 		}
 		invoices = append(invoices, inv)
 	}
@@ -183,7 +198,7 @@ func (r *InvoiceRepository) ListUnpaid() ([]*model.Invoice, error) {
 		SELECT id, invoice_number, supplier_id, customer_id, bank_account_id, status,
 			issue_date, due_date, paid_date, taxable_date, payment_method, variable_symbol,
 			currency, exchange_rate, subtotal, vat_total, total, notes, internal_notes,
-			language, pdf_path, COALESCE(template_id, 'table'), created_at, updated_at
+			email_sent_at, language, pdf_path, COALESCE(template_id, 'table'), created_at, updated_at
 		FROM invoices WHERE status NOT IN ('paid', 'cancelled')
 		ORDER BY due_date ASC`)
 	if err != nil {
@@ -195,14 +210,19 @@ func (r *InvoiceRepository) ListUnpaid() ([]*model.Invoice, error) {
 	for rows.Next() {
 		inv := &model.Invoice{}
 		var paidDate sql.NullTime
+		var emailSentAt sql.NullTime
 		if err := rows.Scan(&inv.ID, &inv.InvoiceNumber, &inv.SupplierID, &inv.CustomerID, &inv.BankAccountID,
 			&inv.Status, &inv.IssueDate, &inv.DueDate, &paidDate, &inv.TaxableDate, &inv.PaymentMethod,
 			&inv.VariableSymbol, &inv.Currency, &inv.ExchangeRate, &inv.Subtotal, &inv.VATTotal, &inv.Total,
-			&inv.Notes, &inv.InternalNotes, &inv.Language, &inv.PDFPath, &inv.TemplateID, &inv.CreatedAt, &inv.UpdatedAt); err != nil {
+			&inv.Notes, &inv.InternalNotes, &emailSentAt, &inv.Language, &inv.PDFPath, &inv.TemplateID,
+			&inv.CreatedAt, &inv.UpdatedAt); err != nil {
 			return nil, err
 		}
 		if paidDate.Valid {
 			inv.PaidDate = &paidDate.Time
+		}
+		if emailSentAt.Valid {
+			inv.EmailSentAt = &emailSentAt.Time
 		}
 		invoices = append(invoices, inv)
 	}
@@ -216,6 +236,11 @@ func (r *InvoiceRepository) UpdateStatus(id string, status model.InvoiceStatus) 
 
 func (r *InvoiceRepository) UpdateInternalNotes(id string, notes string) error {
 	_, err := r.db.Exec("UPDATE invoices SET internal_notes = ?, updated_at = ? WHERE id = ?", notes, time.Now(), id)
+	return err
+}
+
+func (r *InvoiceRepository) SetEmailSentAt(id string) error {
+	_, err := r.db.Exec("UPDATE invoices SET email_sent_at = ? WHERE id = ?", time.Now(), id)
 	return err
 }
 

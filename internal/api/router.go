@@ -7,6 +7,7 @@ import (
 
 	"github.com/adamSHA256/tidybill/internal/config"
 	"github.com/adamSHA256/tidybill/internal/database/repository"
+	"github.com/adamSHA256/tidybill/internal/email"
 	"github.com/adamSHA256/tidybill/internal/service"
 	"github.com/adamSHA256/tidybill/internal/update"
 )
@@ -21,30 +22,39 @@ type Server struct {
 	items        *repository.ItemRepository
 	custItems    *repository.CustomerItemRepository
 	templates    *repository.PDFTemplateRepository
+	smtpConfigs  *repository.SmtpConfigRepository
 	pdf          *service.PDFService
+	emailService *email.Service
 	cfg          *config.Config
 	updater      *update.Checker
 }
 
 func NewServer(db *sql.DB, cfg *config.Config) *Server {
+	smtpConfigs := repository.NewSmtpConfigRepository(db)
+	invoices := repository.NewInvoiceRepository(db)
+	customers := repository.NewCustomerRepository(db)
+	suppliers := repository.NewSupplierRepository(db)
 	settings := repository.NewSettingsRepository(db)
 	updater := update.NewChecker(settings)
 	updater.StartAutoCheck()
 
-	return &Server{
-		invoices:     repository.NewInvoiceRepository(db),
+	s := &Server{
+		invoices:     invoices,
 		invoiceItems: repository.NewInvoiceItemRepository(db),
-		customers:    repository.NewCustomerRepository(db),
-		suppliers:    repository.NewSupplierRepository(db),
+		customers:    customers,
+		suppliers:    suppliers,
 		bankAccounts: repository.NewBankAccountRepository(db),
 		settings:     settings,
 		items:        repository.NewItemRepository(db),
 		custItems:    repository.NewCustomerItemRepository(db),
 		templates:    repository.NewPDFTemplateRepository(db),
+		smtpConfigs:  smtpConfigs,
 		pdf:          service.NewPDFService(cfg.PDFDir, cfg.PreviewDir),
+		emailService: email.NewService(smtpConfigs, invoices, customers, suppliers, settings),
 		cfg:          cfg,
 		updater:      updater,
 	}
+	return s
 }
 
 func (s *Server) Router() http.Handler {
@@ -94,6 +104,17 @@ func (s *Server) Router() http.Handler {
 	mux.HandleFunc("POST /api/suppliers/{id}/bank-accounts", s.createBankAccount)
 	mux.HandleFunc("PUT /api/bank-accounts/{id}", s.updateBankAccount)
 	mux.HandleFunc("DELETE /api/bank-accounts/{id}", s.deleteBankAccount)
+
+	// SMTP config (nested under suppliers) — specific routes first
+	mux.HandleFunc("POST /api/suppliers/{id}/smtp/test", s.testSmtpConnection)
+	mux.HandleFunc("POST /api/suppliers/{id}/smtp/copy/{fromId}", s.copySmtpConfig)
+	mux.HandleFunc("GET /api/suppliers/{id}/smtp", s.getSmtpConfig)
+	mux.HandleFunc("PUT /api/suppliers/{id}/smtp", s.upsertSmtpConfig)
+	mux.HandleFunc("DELETE /api/suppliers/{id}/smtp", s.deleteSmtpConfig)
+
+	// Email sending
+	mux.HandleFunc("GET /api/invoices/{id}/email-preview", s.getEmailPreview)
+	mux.HandleFunc("POST /api/invoices/{id}/send-email", s.sendInvoiceEmail)
 
 	// Items catalog
 	mux.HandleFunc("GET /api/items", s.listItems)

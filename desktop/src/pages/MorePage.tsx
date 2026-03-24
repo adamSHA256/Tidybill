@@ -17,6 +17,7 @@ import {
   IconSun,
   IconMoon,
   IconInfoCircle,
+  IconMail,
 } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
@@ -78,6 +79,11 @@ export function MorePage() {
 
       <Divider />
 
+      <NavLink
+        label={t('nav.automatizace')}
+        leftSection={<IconMail size={20} />}
+        onClick={() => navigate('/automatizace')}
+      />
       <NavLink
         label={t('nav.settings')}
         leftSection={<IconSettings size={20} />}

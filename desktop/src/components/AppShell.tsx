@@ -21,6 +21,7 @@ import {
   IconPackage,
   IconPlus,
   IconInfoCircle,
+  IconMail,
 } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
@@ -56,6 +57,7 @@ const navKeys = [
 const toolKeys = [
   { key: 'nav.templates', icon: IconTemplate, path: '/templates' },
   { key: 'nav.items', icon: IconPackage, path: '/items' },
+  { key: 'nav.automatizace', icon: IconMail, path: '/automatizace' },
 ]
 
 export function AppShell({ children }: { children: ReactNode }) {
