@@ -267,7 +267,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download Android APK
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: android-apk
           path: android-apk
@@ -396,7 +396,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download all CLI artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: cli-*
           merge-multiple: true
