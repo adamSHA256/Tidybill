@@ -20,6 +20,7 @@ import {
   IconTemplate,
   IconPackage,
   IconPlus,
+  IconInfoCircle,
 } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
@@ -139,6 +140,12 @@ export function AppShell({ children }: { children: ReactNode }) {
             leftSection={<IconSettings size={18} />}
             active={location.pathname === '/settings'}
             onClick={() => navigate('/settings')}
+          />
+          <NavLink
+            label={t('about.title')}
+            leftSection={<IconInfoCircle size={18} />}
+            active={location.pathname === '/about'}
+            onClick={() => navigate('/about')}
           />
         </MantineAppShell.Section>
       </MantineAppShell.Navbar>

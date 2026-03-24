@@ -16,6 +16,7 @@ import {
   Center,
   Tooltip,
   SimpleGrid,
+  Checkbox,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useQuery } from '@tanstack/react-query'
@@ -85,6 +86,9 @@ export function SetupWizard({ onComplete }: Props) {
 
   // Step 5: Defaults (due days only)
   const [dueDays, setDueDays] = useState('14')
+
+  // Update check preference
+  const [checkUpdates, setCheckUpdates] = useState(true)
 
   // Load OS locale to pre-select language radio (but don't change i18n)
   const { data: localeData } = useQuery({
@@ -227,6 +231,7 @@ export function SetupWizard({ onComplete }: Props) {
       await api.updateSettings({
         default_due_days: dueDays,
         ...(pdfDir ? { dir_pdfs: pdfDir } : {}),
+        check_updates: checkUpdates ? 'true' : 'false',
       })
       onComplete()
     } catch (err) {
@@ -620,6 +625,20 @@ export function SetupWizard({ onComplete }: Props) {
                 />
               </Stack>
             </Paper>
+            <Tooltip
+              label={t('update.check_tooltip')}
+              multiline
+              w={350}
+              withArrow
+              events={{ hover: true, focus: true, touch: true }}
+            >
+              <Checkbox
+                mt="lg"
+                checked={checkUpdates}
+                onChange={(e) => setCheckUpdates(e.currentTarget.checked)}
+                label={t('update.check_label')}
+              />
+            </Tooltip>
             <Text c="dimmed" size="sm" ta="center" mt="md">
               {t('wizard.settings_hint')}
             </Text>

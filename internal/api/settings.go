@@ -33,6 +33,7 @@ func (s *Server) getSettings(w http.ResponseWriter, r *http.Request) {
 	customCountries, _ := s.settings.Get("custom.countries")
 	invoiceDefaultSort, _ := s.settings.Get("invoice.default_sort") // TODO: also expose in CLI settings menu
 	uiScale, _ := s.settings.Get("ui.scale")
+	checkUpdates, _ := s.settings.Get("check_updates")
 
 	writeJSON(w, http.StatusOK, map[string]string{
 		"language":             lang,
@@ -47,6 +48,7 @@ func (s *Server) getSettings(w http.ResponseWriter, r *http.Request) {
 		"custom_countries":     customCountries,
 		"invoice_default_sort": invoiceDefaultSort,
 		"ui_scale":             uiScale,
+		"check_updates":        checkUpdates,
 		"default_pdf_dir":      s.cfg.PDFDir,
 		"default_logo_dir":     s.cfg.LogoDir,
 		"default_preview_dir":  s.cfg.PreviewDir,
@@ -66,6 +68,7 @@ type UpdateSettingsRequest struct {
 	CustomCountries    *string `json:"custom_countries"`
 	InvoiceDefaultSort *string `json:"invoice_default_sort"` // TODO: also expose in CLI settings menu
 	UIScale            *string `json:"ui_scale"`
+	CheckUpdates       *string `json:"check_updates"`
 }
 
 func (s *Server) updateSettings(w http.ResponseWriter, r *http.Request) {
@@ -98,6 +101,7 @@ func (s *Server) updateSettings(w http.ResponseWriter, r *http.Request) {
 		"custom.countries":      req.CustomCountries,
 		"invoice.default_sort":  req.InvoiceDefaultSort,
 		"ui.scale":              req.UIScale,
+		"check_updates":         req.CheckUpdates,
 	}
 	for key, val := range simpleSettings {
 		if val == nil {

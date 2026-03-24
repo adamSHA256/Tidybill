@@ -14,13 +14,10 @@ import {
   Button,
   Pill,
   SegmentedControl,
-  Anchor,
   ActionIcon,
-  Code,
-  CopyButton,
   Tooltip,
 } from '@mantine/core'
-import { IconCopy, IconCheck, IconFolderOpen } from '@tabler/icons-react'
+import { IconFolderOpen } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
@@ -80,11 +77,6 @@ export function Settings() {
   const { data: templates } = useQuery({
     queryKey: ['templates'],
     queryFn: api.getTemplates,
-  })
-
-  const { data: aboutInfo } = useQuery({
-    queryKey: ['about'],
-    queryFn: api.getAbout,
   })
 
   const [dirLogos, setDirLogos] = useState('')
@@ -255,7 +247,7 @@ export function Settings() {
         <Text c="dimmed" size="sm">{t('settings.subtitle')}</Text>
       </div>
 
-      {/* Row 1: General + About */}
+      {/* Row 1: General */}
       <SimpleGrid cols={{ base: 1, md: 2 }}>
         <Paper p="md" radius="md" withBorder>
           <Text fw={500} mb="md">{t('settings.general')}</Text>
@@ -303,57 +295,6 @@ export function Settings() {
           </Stack>
         </Paper>
 
-        {aboutInfo && !isMobileDevice() && (
-          <Paper p="md" radius="md" withBorder>
-            <Group mb="md" gap="sm">
-              <Title order={3}>TidyBill</Title>
-              <Badge variant="light" color="blue" size="lg">v{aboutInfo.version}</Badge>
-            </Group>
-            <Text size="sm" mb="xs">{t('about.description')}</Text>
-            <Text size="sm" c="dimmed" mb="lg">{t('about.opensource')}</Text>
-
-            <Text fw={500} size="sm" mb={4}>{t('about.issues_title')}</Text>
-            <Anchor
-              size="sm"
-              mb="lg"
-              onClick={(e) => { e.preventDefault(); openInBrowser(aboutInfo.github_issues_url) }}
-              style={{ cursor: 'pointer' }}
-            >
-              {t('about.issues_link')}
-            </Anchor>
-
-            <Text fw={500} size="sm" mt="md" mb={4}>{t('about.support_title')}</Text>
-            <Text size="sm" c="dimmed" mb="sm">{t('about.support_desc')}</Text>
-            <Stack gap="xs">
-              <Group gap="xs">
-                <Text size="sm" fw={500} w={100}>Monero (XMR)</Text>
-                <CopyButton value={aboutInfo.monero_address.replace(/^<|>$/g, '')}>
-                  {({ copied, copy }) => (
-                    <Tooltip label={copied ? t('about.copied') : t('common.copy')} events={{ hover: true, focus: true, touch: true }}>
-                      <ActionIcon variant="subtle" color={copied ? 'teal' : 'gray'} onClick={copy}>
-                        {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
-                      </ActionIcon>
-                    </Tooltip>
-                  )}
-                </CopyButton>
-                <Code>{aboutInfo.monero_address}</Code>
-              </Group>
-              <Group gap="xs">
-                <Text size="sm" fw={500} w={100}>Bitcoin (BTC)</Text>
-                <CopyButton value={aboutInfo.bitcoin_address.replace(/^<|>$/g, '')}>
-                  {({ copied, copy }) => (
-                    <Tooltip label={copied ? t('about.copied') : t('common.copy')} events={{ hover: true, focus: true, touch: true }}>
-                      <ActionIcon variant="subtle" color={copied ? 'teal' : 'gray'} onClick={copy}>
-                        {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
-                      </ActionIcon>
-                    </Tooltip>
-                  )}
-                </CopyButton>
-                <Code>{aboutInfo.bitcoin_address}</Code>
-              </Group>
-            </Stack>
-          </Paper>
-        )}
       </SimpleGrid>
 
       {/* Row 2: Dashboard — switches in 2-column grid */}

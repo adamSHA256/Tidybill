@@ -19,10 +19,10 @@ import {
 import { notifications } from '@mantine/notifications'
 import { IconCopy, IconCheck, IconDownload, IconRefresh } from '@tabler/icons-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { api, openInBrowser } from '../../api/client'
-import { useT } from '../../i18n'
+import { api, openInBrowser } from '../api/client'
+import { useT } from '../i18n'
 
-export function MobileAbout() {
+export function About() {
   const { t } = useT()
   const queryClient = useQueryClient()
   const [checking, setChecking] = useState(false)
@@ -80,9 +80,9 @@ export function MobileAbout() {
   if (!aboutInfo) return null
 
   return (
-    <Stack gap="md">
+    <Stack gap="lg">
       <Group gap="sm">
-        <Title order={3}>TidyBill</Title>
+        <Title order={2}>TidyBill</Title>
         <Badge variant="light" color="blue" size="lg">v{aboutInfo.version}</Badge>
       </Group>
 
@@ -115,7 +115,7 @@ export function MobileAbout() {
         <Tooltip
           label={t('update.check_tooltip')}
           multiline
-          w={300}
+          w={350}
           withArrow
           events={{ hover: true, focus: true, touch: true }}
         >
@@ -129,11 +129,13 @@ export function MobileAbout() {
         </Tooltip>
       </Paper>
 
+      {/* About */}
       <Paper p="md" radius="md" withBorder>
         <Text size="sm" mb="xs">{t('about.description')}</Text>
         <Text size="sm" c="dimmed">{t('about.opensource')}</Text>
       </Paper>
 
+      {/* Issues */}
       <Paper p="md" radius="md" withBorder>
         <Text fw={500} size="sm" mb={4}>{t('about.issues_title')}</Text>
         <Anchor
@@ -145,6 +147,7 @@ export function MobileAbout() {
         </Anchor>
       </Paper>
 
+      {/* Support */}
       <Paper p="md" radius="md" withBorder>
         <Text fw={500} size="sm" mb={4}>{t('about.support_title')}</Text>
         <Text size="sm" c="dimmed" mb="sm">{t('about.support_desc')}</Text>
@@ -160,7 +163,7 @@ export function MobileAbout() {
                 </Tooltip>
               )}
             </CopyButton>
-            <Code style={{ wordBreak: 'break-all', fontSize: 10 }}>{aboutInfo.monero_address}</Code>
+            <Code>{aboutInfo.monero_address}</Code>
           </Group>
           <Group gap="xs">
             <Text size="sm" fw={500} w={100}>Bitcoin (BTC)</Text>
@@ -173,7 +176,7 @@ export function MobileAbout() {
                 </Tooltip>
               )}
             </CopyButton>
-            <Code style={{ wordBreak: 'break-all', fontSize: 10 }}>{aboutInfo.bitcoin_address}</Code>
+            <Code>{aboutInfo.bitcoin_address}</Code>
           </Group>
         </Stack>
       </Paper>

@@ -8,6 +8,7 @@ import (
 	"github.com/adamSHA256/tidybill/internal/config"
 	"github.com/adamSHA256/tidybill/internal/database/repository"
 	"github.com/adamSHA256/tidybill/internal/service"
+	"github.com/adamSHA256/tidybill/internal/update"
 )
 
 type Server struct {
@@ -22,21 +23,27 @@ type Server struct {
 	templates    *repository.PDFTemplateRepository
 	pdf          *service.PDFService
 	cfg          *config.Config
+	updater      *update.Checker
 }
 
 func NewServer(db *sql.DB, cfg *config.Config) *Server {
+	settings := repository.NewSettingsRepository(db)
+	updater := update.NewChecker(settings)
+	updater.StartAutoCheck()
+
 	return &Server{
 		invoices:     repository.NewInvoiceRepository(db),
 		invoiceItems: repository.NewInvoiceItemRepository(db),
 		customers:    repository.NewCustomerRepository(db),
 		suppliers:    repository.NewSupplierRepository(db),
 		bankAccounts: repository.NewBankAccountRepository(db),
-		settings:     repository.NewSettingsRepository(db),
+		settings:     settings,
 		items:        repository.NewItemRepository(db),
 		custItems:    repository.NewCustomerItemRepository(db),
 		templates:    repository.NewPDFTemplateRepository(db),
 		pdf:          service.NewPDFService(cfg.PDFDir, cfg.PreviewDir),
 		cfg:          cfg,
+		updater:      updater,
 	}
 }
 
@@ -115,6 +122,8 @@ func (s *Server) Router() http.Handler {
 	mux.HandleFunc("GET /api/system/first-run", s.getFirstRun)
 	mux.HandleFunc("GET /api/system/locale", s.getLocale)
 	mux.HandleFunc("GET /api/system/about", s.getAbout)
+	mux.HandleFunc("GET /api/system/update-check", s.getUpdateCheck)
+	mux.HandleFunc("POST /api/system/update-check", s.postUpdateCheck)
 
 	// Settings
 	mux.HandleFunc("GET /api/settings", s.getSettings)

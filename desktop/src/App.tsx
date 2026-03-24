@@ -23,6 +23,7 @@ import { ItemCatalog } from './pages/ItemCatalog'
 import { Settings } from './pages/Settings'
 import { Templates } from './pages/Templates'
 import { TemplateEditor } from './pages/TemplateEditor'
+import { About } from './pages/About'
 import { MobileAbout } from './pages/mobile/About'
 import { api } from './api/client'
 
@@ -43,6 +44,7 @@ export default function App() {
   const InvoiceCreatePage = isMobile ? MobileInvoiceCreate : InvoiceCreate
   const InvoiceDetailPage = isMobile ? MobileInvoiceDetail : InvoiceDetail
   const InvoiceEditPage = isMobile ? MobileInvoiceEdit : InvoiceEdit
+  const AboutPage = isMobile ? MobileAbout : About
 
   return (
     <ApiHealthGuard>
@@ -67,7 +69,7 @@ export default function App() {
             <Route path="/template-editor/:id" element={<TemplateEditor />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/more" element={<MorePage />} />
-            <Route path="/about" element={<MobileAbout />} />
+            <Route path="/about" element={<AboutPage />} />
           </Routes>
         </Shell>
       )}

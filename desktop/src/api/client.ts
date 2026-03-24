@@ -63,6 +63,8 @@ export const api = {
   getFirstRun: () => request<{ first_run: boolean }>('/system/first-run'),
   getLocale: () => request<{ detected_lang: string }>('/system/locale'),
   getAbout: () => request<AboutInfo>('/system/about'),
+  getUpdateCheck: () => request<UpdateCheckResult>('/system/update-check'),
+  triggerUpdateCheck: () => request<UpdateCheckResult>('/system/update-check', { method: 'POST' }),
 
   // Dashboard
   getDashboardStats: () => request<DashboardStats>('/dashboard/stats'),
@@ -389,6 +391,16 @@ export interface CustomerItem {
   item_default_vat: number
 }
 
+export interface UpdateCheckResult {
+  available: boolean
+  current_version: string
+  latest_version: string
+  release_url: string
+  release_notes: string
+  published_at: string
+  checked_at: string
+}
+
 export interface AppSettings {
   language: string
   dir_logos?: string
@@ -402,6 +414,7 @@ export interface AppSettings {
   custom_countries?: string
   invoice_default_sort?: string // TODO: also expose in CLI settings menu
   ui_scale?: string
+  check_updates?: string
   default_pdf_dir?: string
   default_logo_dir?: string
   default_preview_dir?: string
