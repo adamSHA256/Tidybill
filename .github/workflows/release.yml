@@ -48,7 +48,7 @@ jobs:
         run: go build -ldflags="-s -w -X github.com/adamSHA256/tidybill/internal/config.Version=${{ github.ref_name }}" -o tidybill-${{ matrix.suffix }} ./cmd/tidybill/
 
       - name: Upload CLI artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cli-${{ matrix.suffix }}
           path: tidybill-${{ matrix.suffix }}
@@ -256,7 +256,7 @@ jobs:
           rm /tmp/release.keystore
 
       - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: android-apk
           path: desktop/src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk
