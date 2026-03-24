@@ -1,6 +1,8 @@
+#[cfg(mobile)]
+use tauri::Manager;
 use tauri::{
     plugin::{Builder, TauriPlugin},
-    Manager, Runtime,
+    Runtime,
 };
 
 #[cfg(desktop)]

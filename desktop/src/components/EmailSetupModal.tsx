@@ -9,7 +9,7 @@ interface Props {
   supplierId: string
 }
 
-export function EmailSetupModal({ opened, onClose, supplierId: _supplierId }: Props) {
+export function EmailSetupModal({ opened, onClose }: Props) {
   const { t } = useT()
   const isMobile = useIsMobile()
   const navigate = useNavigate()
