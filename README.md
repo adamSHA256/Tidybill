@@ -77,7 +77,7 @@
 
 ```
 ╔═════════════════════════════════════════════════════════════╗
-║                     TIDYBILL v0.2.0                          ║
+║                     TIDYBILL v0.3.0                          ║
 ║  Company: Smith & Co. Digital                               ║
 ╠═════════════════════════════════════════════════════════════╣
 ║                                                             ║
@@ -153,6 +153,7 @@
 
 - **Full CLI + Desktop GUI** — terminal for power users, Tauri-based desktop app for everyone else
 - **PDF generation** — professional invoices with QR payment codes (SPAYD, EPC/GiroCode, Pay by Square)
+- **Send invoices by email** — SMTP integration with customizable templates per customer, placeholder variables, and send-copy option
 - **Multi-language** — Czech, Slovak, and English (UI + PDF output)
 - **Items catalog** — reusable items with smart suggestions and customer price history
 - **Multi-supplier** — manage multiple companies from one installation
@@ -161,6 +162,7 @@
 - **Smart numbering** — automatic invoice numbers with configurable prefix
 - **Multiple PDF templates** — classic, modern, minimal with live preview
 - **Duplicate invoice** — quick-copy or edit-before-save
+- **Update notifications** — opt-in automatic check for new versions, privacy-friendly (never connects without your permission)
 - **SQLite database** — single-file storage, fast and portable
 - **Cross-platform** — Linux, Windows, macOS, and Android
 
@@ -213,6 +215,8 @@ Requires: Go, Node.js, pnpm, Rust toolchain, Tauri 2 CLI.
 - [x] Desktop app (Tauri 2 + React GUI with Go sidecar)
 - [x] PDF templates (classic, modern, minimal) + Linux packages
 - [x] Android app (Tauri 2 mobile + Go via gomobile)
+- [x] Send invoices by email (SMTP, templates, automation)
+- [x] Update notifications (opt-in, privacy-friendly)
 - [ ] Encrypted export/import for device sync
 
 ## Acknowledgements
