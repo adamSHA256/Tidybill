@@ -4,6 +4,7 @@ use tauri::{
 };
 
 #[cfg(desktop)]
+#[allow(dead_code)]
 mod desktop;
 #[cfg(mobile)]
 mod mobile;
