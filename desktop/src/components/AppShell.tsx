@@ -22,6 +22,7 @@ import {
   IconPlus,
   IconInfoCircle,
   IconMail,
+  IconDatabaseExport,
 } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
@@ -58,6 +59,7 @@ const toolKeys = [
   { key: 'nav.templates', icon: IconTemplate, path: '/templates' },
   { key: 'nav.items', icon: IconPackage, path: '/items' },
   { key: 'nav.automatizace', icon: IconMail, path: '/automatizace' },
+  { key: 'nav.sync', icon: IconDatabaseExport, path: '/sync' },
 ]
 
 export function AppShell({ children }: { children: ReactNode }) {
