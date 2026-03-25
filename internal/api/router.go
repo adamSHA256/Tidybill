@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/adamSHA256/tidybill/internal/backup"
 	"github.com/adamSHA256/tidybill/internal/config"
 	"github.com/adamSHA256/tidybill/internal/database/repository"
 	"github.com/adamSHA256/tidybill/internal/email"
@@ -27,32 +28,44 @@ type Server struct {
 	emailService *email.Service
 	cfg          *config.Config
 	updater      *update.Checker
+	backupExport *backup.ExportService
+	backupImport *backup.ImportService
 }
 
 func NewServer(db *sql.DB, cfg *config.Config) *Server {
 	smtpConfigs := repository.NewSmtpConfigRepository(db)
 	invoices := repository.NewInvoiceRepository(db)
+	invoiceItems := repository.NewInvoiceItemRepository(db)
 	customers := repository.NewCustomerRepository(db)
 	suppliers := repository.NewSupplierRepository(db)
+	bankAccounts := repository.NewBankAccountRepository(db)
 	settings := repository.NewSettingsRepository(db)
+	items := repository.NewItemRepository(db)
+	custItems := repository.NewCustomerItemRepository(db)
+	templates := repository.NewPDFTemplateRepository(db)
 	updater := update.NewChecker(settings)
 	updater.StartAutoCheck()
 
 	s := &Server{
 		invoices:     invoices,
-		invoiceItems: repository.NewInvoiceItemRepository(db),
+		invoiceItems: invoiceItems,
 		customers:    customers,
 		suppliers:    suppliers,
-		bankAccounts: repository.NewBankAccountRepository(db),
+		bankAccounts: bankAccounts,
 		settings:     settings,
-		items:        repository.NewItemRepository(db),
-		custItems:    repository.NewCustomerItemRepository(db),
-		templates:    repository.NewPDFTemplateRepository(db),
+		items:        items,
+		custItems:    custItems,
+		templates:    templates,
 		smtpConfigs:  smtpConfigs,
 		pdf:          service.NewPDFService(cfg.PDFDir, cfg.PreviewDir),
 		emailService: email.NewService(smtpConfigs, invoices, customers, suppliers, settings),
 		cfg:          cfg,
 		updater:      updater,
+		backupExport: backup.NewExportService(
+			db, suppliers, bankAccounts, customers, invoices,
+			invoiceItems, items, custItems, templates, smtpConfigs, settings,
+		),
+		backupImport: backup.NewImportService(db),
 	}
 	return s
 }
@@ -169,6 +182,12 @@ func (s *Server) Router() http.Handler {
 	// Currencies
 	mux.HandleFunc("GET /api/currencies", s.getCurrencies)
 	mux.HandleFunc("PUT /api/currencies", s.updateCurrencies)
+
+	// Backup export/import
+	mux.HandleFunc("POST /api/backup/export", s.handleExport)
+	mux.HandleFunc("POST /api/backup/export-file", s.handleExportToFile)
+	mux.HandleFunc("POST /api/backup/import", s.handleImport)
+	mux.HandleFunc("POST /api/backup/import/preview", s.handleImportPreview)
 
 	return corsMiddleware(mux)
 }
