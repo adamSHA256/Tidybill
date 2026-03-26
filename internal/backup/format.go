@@ -143,6 +143,7 @@ const (
 // ImportOptions configures import behavior.
 type ImportOptions struct {
 	Mode                  string `json:"mode"`
+	PreviewMode           string `json:"preview_mode,omitempty"`   // which mode to simulate during preview
 	InvoiceNumberConflict string `json:"invoice_number_conflict"` // "skip", "auto_suffix"
 	Passphrase            string `json:"passphrase,omitempty"`
 }

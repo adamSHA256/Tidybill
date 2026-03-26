@@ -624,7 +624,7 @@
   "backup.filter_exclude_settings_hint": "Language settings, currencies, units, VAT rates, and other app preferences.",
   "backup.import_mode_merge_desc": "Compares records by modification date. The newer version is kept, older ones are skipped.",
   "backup.import_mode_replace_desc": "Deletes all current data and replaces it with data from the file. Use for restoring from backup.",
-  "backup.import_mode_force_desc": "Overwrites all existing records with data from the file without comparison.",
+  "backup.import_mode_force_desc": "Overwrites all existing records with data from the file without comparison. SMTP passwords will be cleared.",
   "nav.sync": "Data Sync",
 
   "backup.encrypt": "Encrypt backup",
@@ -639,5 +639,18 @@
   "backup.mnemonic_warning": "Write down these words in a safe place. Without them, the encrypted backup cannot be restored.",
   "backup.passphrase_too_short": "Passphrase must be at least 8 characters",
   "backup.passphrase_needs_special": "Passphrase must contain at least one special character (space, dot, comma...)",
-  "backup.passphrase_rules": "Minimum 8 characters, at least one special character"
+  "backup.passphrase_rules": "Minimum 8 characters, at least one special character",
+
+  "backup.import_smtp_warning": "SMTP passwords were cleared. Please re-enter them in supplier settings.",
+  "backup.table_suppliers": "Suppliers",
+  "backup.table_bank_accounts": "Bank Accounts",
+  "backup.table_customers": "Customers",
+  "backup.table_invoices": "Invoices",
+  "backup.table_invoice_items": "Invoice Items",
+  "backup.table_items": "Item Catalog",
+  "backup.table_customer_items": "Customer Items",
+  "backup.table_pdf_templates": "PDF Templates",
+  "backup.table_settings": "Settings",
+  "backup.table_vat_rates": "VAT Rates",
+  "backup.table_smtp_configs": "SMTP Settings"
 }

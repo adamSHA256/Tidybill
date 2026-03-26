@@ -26,8 +26,19 @@ export function Automatizace() {
       if (settings['email.default_subject']) setEmailSubject(settings['email.default_subject'])
       if (settings['email.default_body']) setEmailBody(settings['email.default_body'])
       if (settings['email.copy_subject']) setCopySubject(settings['email.copy_subject'])
+
+      // Persist defaults to DB if they don't exist yet (so they appear in exports)
+      const missing: Record<string, string> = {}
+      if (!settings['email.default_subject']) missing['email.default_subject'] = 'Faktura ((number))'
+      if (!settings['email.default_body']) missing['email.default_body'] = 'Dobrý den,\n\nv příloze zasílám fakturu č. ((number)) na částku ((total)).\nSplatnost: ((due_date)).\n\nS pozdravem\n((supplier))'
+      if (!settings['email.copy_subject']) missing['email.copy_subject'] = 'TidyBill - ((subject))'
+      if (Object.keys(missing).length > 0) {
+        api.updateSettings(missing).then(() => {
+          queryClient.invalidateQueries({ queryKey: ['settings'] })
+        })
+      }
     }
-  }, [settings])
+  }, [settings]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const saveMutation = useMutation({
     mutationFn: () => api.updateSettings({ 'email.default_subject': emailSubject, 'email.default_body': emailBody, 'email.copy_subject': copySubject }),

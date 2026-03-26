@@ -625,7 +625,7 @@
   "backup.filter_exclude_settings_hint": "Jazykové nastavenia, meny, jednotky, sadzby DPH a ďalšie predvoľby aplikácie.",
   "backup.import_mode_merge_desc": "Porovná záznamy podľa dátumu zmeny. Novšia verzia sa zachová, staršia sa preskočí.",
   "backup.import_mode_replace_desc": "Vymaže všetky aktuálne dáta a nahradí ich dátami zo súboru. Použite na obnovu zo zálohy.",
-  "backup.import_mode_force_desc": "Prepíše všetky existujúce záznamy dátami zo súboru bez porovnania.",
+  "backup.import_mode_force_desc": "Prepíše všetky existujúce záznamy dátami zo súboru bez porovnania. SMTP heslá budú vymazané.",
   "nav.sync": "Synchronizácia dát",
 
   "backup.encrypt": "Šifrovať zálohu",
@@ -640,5 +640,18 @@
   "backup.mnemonic_warning": "Zapíšte si tieto slová na bezpečné miesto. Bez nich nebude možné šifrovanú zálohu obnoviť.",
   "backup.passphrase_too_short": "Heslo musí mať aspoň 8 znakov",
   "backup.passphrase_needs_special": "Heslo musí obsahovať aspoň jeden špeciálny znak (medzera, bodka, čiarka...)",
-  "backup.passphrase_rules": "Minimálne 8 znakov, aspoň jeden špeciálny znak"
+  "backup.passphrase_rules": "Minimálne 8 znakov, aspoň jeden špeciálny znak",
+
+  "backup.import_smtp_warning": "SMTP heslá boli vymazané. Zadajte ich znova v nastaveniach dodávateľov.",
+  "backup.table_suppliers": "Dodávatelia",
+  "backup.table_bank_accounts": "Bankové účty",
+  "backup.table_customers": "Odberatelia",
+  "backup.table_invoices": "Faktúry",
+  "backup.table_invoice_items": "Položky faktúr",
+  "backup.table_items": "Katalóg položiek",
+  "backup.table_customer_items": "Zákaznícke položky",
+  "backup.table_pdf_templates": "PDF šablóny",
+  "backup.table_settings": "Nastavenia",
+  "backup.table_vat_rates": "Sadzby DPH",
+  "backup.table_smtp_configs": "SMTP nastavenia"
 }

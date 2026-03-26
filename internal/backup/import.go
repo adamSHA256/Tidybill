@@ -69,7 +69,7 @@ func (s *ImportService) Import(reader io.Reader, opts ImportOptions) (*ImportRep
 	// 3. Execute based on mode
 	switch opts.Mode {
 	case ImportModePreview:
-		report, err = s.preview(&file, report)
+		report, err = s.preview(&file, report, opts)
 	case ImportModeFullReplace:
 		report, err = s.fullReplace(&file, report, opts)
 	case ImportModeSmartMerge:
@@ -251,7 +251,7 @@ func (s *ImportService) forceImport(file *ExportFile, report *ImportReport, opts
 // Preview (dry run)
 // ---------------------------------------------------------------------------
 
-func (s *ImportService) preview(file *ExportFile, report *ImportReport) (*ImportReport, error) {
+func (s *ImportService) preview(file *ExportFile, report *ImportReport, opts ImportOptions) (*ImportReport, error) {
 	// Use a read-only analysis: begin a transaction, do the counting, then rollback.
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -259,21 +259,65 @@ func (s *ImportService) preview(file *ExportFile, report *ImportReport) (*Import
 	}
 	defer tx.Rollback() //nolint:errcheck // always rollback for preview
 
-	report.Details["vat_rates"] = previewByID(tx, "vat_rates", idsFromVatRates(file.VatRates))
-	report.Details["settings"] = previewSettings(tx, file.Settings)
-	report.Details["suppliers"] = previewByIDWithTimestamp(tx, "suppliers", idsAndTimestamps(file.Suppliers))
-	report.Details["bank_accounts"] = previewByID(tx, "bank_accounts", idsFromBankAccounts(file.BankAccounts))
-	report.Details["customers"] = previewByIDWithTimestamp(tx, "customers", idsAndTimestampsCustomers(file.Customers))
-	report.Details["pdf_templates"] = previewByID(tx, "pdf_templates", idsFromPDFTemplates(file.PDFTemplates))
-	report.Details["items"] = previewByIDWithTimestamp(tx, "items", idsAndTimestampsItems(file.Items))
-	report.Details["smtp_configs"] = previewByIDWithTimestamp(tx, "smtp_configs", idsAndTimestampsSmtp(file.SmtpConfigs))
-	report.Details["customer_items"] = previewByID(tx, "customer_items", idsFromCustomerItems(file.CustomerItems))
+	simMode := opts.PreviewMode
+	if simMode == "" || simMode == "merge" {
+		simMode = ImportModeSmartMerge
+	} else if simMode == "replace" {
+		simMode = ImportModeFullReplace
+	}
+	// "force" stays as-is
 
-	invSummary, conflicts := previewInvoices(tx, file.Invoices)
-	report.Details["invoices"] = invSummary
-	report.Conflicts = append(report.Conflicts, conflicts...)
+	switch simMode {
+	case ImportModeForce:
+		// Force: all existing records will be updated, new ones inserted
+		report.Details["vat_rates"] = previewForceByID(tx, "vat_rates", idsFromVatRates(file.VatRates))
+		report.Details["settings"] = previewSettings(tx, file.Settings) // settings always key-merge
+		report.Details["suppliers"] = previewForceByID(tx, "suppliers", idsFromSuppliers(file.Suppliers))
+		report.Details["bank_accounts"] = previewForceByID(tx, "bank_accounts", idsFromBankAccounts(file.BankAccounts))
+		report.Details["customers"] = previewForceByID(tx, "customers", idsFromCustomers(file.Customers))
+		report.Details["pdf_templates"] = previewForceByID(tx, "pdf_templates", idsFromPDFTemplates(file.PDFTemplates))
+		report.Details["items"] = previewForceByID(tx, "items", idsFromItems(file.Items))
+		report.Details["smtp_configs"] = previewForceByID(tx, "smtp_configs", idsFromSmtpConfigs(file.SmtpConfigs))
+		report.Details["customer_items"] = previewForceByID(tx, "customer_items", idsFromCustomerItems(file.CustomerItems))
 
-	report.Details["invoice_items"] = previewByID(tx, "invoice_items", idsFromInvoiceItems(file.InvoiceItems))
+		invSummary, conflicts := previewForceInvoices(tx, file.Invoices)
+		report.Details["invoices"] = invSummary
+		report.Conflicts = append(report.Conflicts, conflicts...)
+
+		report.Details["invoice_items"] = previewForceByID(tx, "invoice_items", idsFromInvoiceItems(file.InvoiceItems))
+
+	case ImportModeFullReplace:
+		// Full replace: everything will be inserted (since all local data is deleted first)
+		report.Details["vat_rates"] = TableSummary{Insert: len(file.VatRates)}
+		report.Details["settings"] = TableSummary{Insert: len(file.Settings)}
+		report.Details["suppliers"] = TableSummary{Insert: len(file.Suppliers)}
+		report.Details["bank_accounts"] = TableSummary{Insert: len(file.BankAccounts)}
+		report.Details["customers"] = TableSummary{Insert: len(file.Customers)}
+		report.Details["pdf_templates"] = TableSummary{Insert: len(file.PDFTemplates)}
+		report.Details["items"] = TableSummary{Insert: len(file.Items)}
+		report.Details["smtp_configs"] = TableSummary{Insert: len(file.SmtpConfigs)}
+		report.Details["customer_items"] = TableSummary{Insert: len(file.CustomerItems)}
+		report.Details["invoices"] = TableSummary{Insert: len(file.Invoices)}
+		report.Details["invoice_items"] = TableSummary{Insert: len(file.InvoiceItems)}
+
+	default:
+		// Smart merge (default preview behavior)
+		report.Details["vat_rates"] = previewByID(tx, "vat_rates", idsFromVatRates(file.VatRates))
+		report.Details["settings"] = previewSettings(tx, file.Settings)
+		report.Details["suppliers"] = previewByIDWithTimestamp(tx, "suppliers", idsAndTimestamps(file.Suppliers))
+		report.Details["bank_accounts"] = previewByID(tx, "bank_accounts", idsFromBankAccounts(file.BankAccounts))
+		report.Details["customers"] = previewByIDWithTimestamp(tx, "customers", idsAndTimestampsCustomers(file.Customers))
+		report.Details["pdf_templates"] = previewByID(tx, "pdf_templates", idsFromPDFTemplates(file.PDFTemplates))
+		report.Details["items"] = previewByIDWithTimestamp(tx, "items", idsAndTimestampsItems(file.Items))
+		report.Details["smtp_configs"] = previewByIDWithTimestamp(tx, "smtp_configs", idsAndTimestampsSmtp(file.SmtpConfigs))
+		report.Details["customer_items"] = previewByID(tx, "customer_items", idsFromCustomerItems(file.CustomerItems))
+
+		invSummary, conflicts := previewInvoices(tx, file.Invoices)
+		report.Details["invoices"] = invSummary
+		report.Conflicts = append(report.Conflicts, conflicts...)
+
+		report.Details["invoice_items"] = previewByID(tx, "invoice_items", idsFromInvoiceItems(file.InvoiceItems))
+	}
 
 	report.FinishedAt = time.Now()
 	report.Summary = summarize(report.Details, len(report.Conflicts), len(report.Warnings))
@@ -1278,6 +1322,45 @@ func previewInvoices(tx *sql.Tx, invoices []InvoiceExport) (TableSummary, []Impo
 	return ts, conflicts
 }
 
+// previewForceByID simulates force import: existing records = update, new = insert.
+func previewForceByID(tx *sql.Tx, table string, ids []string) TableSummary {
+	var ts TableSummary
+	for _, id := range ids {
+		if existsByID(tx, table, id) {
+			ts.Update++
+		} else {
+			ts.Insert++
+		}
+	}
+	return ts
+}
+
+// previewForceInvoices simulates force import for invoices.
+func previewForceInvoices(tx *sql.Tx, invoices []InvoiceExport) (TableSummary, []ImportConflict) {
+	var ts TableSummary
+	var conflicts []ImportConflict
+	for _, inv := range invoices {
+		if existsByID(tx, "invoices", inv.ID) {
+			ts.Update++
+		} else {
+			collision := checkInvoiceNumberCollision(tx, inv.ID, inv.SupplierID, inv.InvoiceNumber)
+			if collision {
+				conflicts = append(conflicts, ImportConflict{
+					Table:       "invoices",
+					ID:          inv.ID,
+					Type:        "invoice_number_collision",
+					Description: fmt.Sprintf("Invoice number %s already exists for supplier %s (different invoice ID)", inv.InvoiceNumber, inv.SupplierID),
+					Resolution:  "skip",
+				})
+				ts.Skip++
+			} else {
+				ts.Insert++
+			}
+		}
+	}
+	return ts, conflicts
+}
+
 // ID extraction helpers for preview
 func idsFromVatRates(rates []VatRateExport) []string {
 	ids := make([]string, len(rates))
@@ -1287,10 +1370,26 @@ func idsFromVatRates(rates []VatRateExport) []string {
 	return ids
 }
 
+func idsFromSuppliers(suppliers []model.Supplier) []string {
+	ids := make([]string, len(suppliers))
+	for i, s := range suppliers {
+		ids[i] = s.ID
+	}
+	return ids
+}
+
 func idsFromBankAccounts(accounts []model.BankAccount) []string {
 	ids := make([]string, len(accounts))
 	for i, a := range accounts {
 		ids[i] = a.ID
+	}
+	return ids
+}
+
+func idsFromCustomers(customers []model.Customer) []string {
+	ids := make([]string, len(customers))
+	for i, c := range customers {
+		ids[i] = c.ID
 	}
 	return ids
 }
@@ -1307,6 +1406,22 @@ func idsFromCustomerItems(items []CustomerItemExport) []string {
 	ids := make([]string, len(items))
 	for i, ci := range items {
 		ids[i] = ci.ID
+	}
+	return ids
+}
+
+func idsFromItems(items []model.Item) []string {
+	ids := make([]string, len(items))
+	for i, item := range items {
+		ids[i] = item.ID
+	}
+	return ids
+}
+
+func idsFromSmtpConfigs(configs []SmtpConfigExport) []string {
+	ids := make([]string, len(configs))
+	for i, c := range configs {
+		ids[i] = c.ID
 	}
 	return ids
 }

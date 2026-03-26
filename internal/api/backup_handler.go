@@ -157,9 +157,12 @@ func (s *Server) handleImportPreview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	previewMode := r.FormValue("mode")
+
 	opts := backup.ImportOptions{
-		Mode:       backup.ImportModePreview,
-		Passphrase: passphrase,
+		Mode:        backup.ImportModePreview,
+		PreviewMode: previewMode,
+		Passphrase:  passphrase,
 	}
 
 	report, err := s.backupImport.Import(bytes.NewReader(fileData), opts)

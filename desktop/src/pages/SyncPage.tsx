@@ -103,8 +103,14 @@ export function SyncPage() {
     if (isTauri() && !isMobileDevice()) {
       try {
         const { save } = await import('@tauri-apps/plugin-dialog')
+        const { downloadDir } = await import('@tauri-apps/api/path')
+        let defaultPath = filename
+        try {
+          const dlDir = await downloadDir()
+          defaultPath = `${dlDir}/${filename}`
+        } catch { /* fallback to just filename */ }
         const filePath = await save({
-          defaultPath: filename,
+          defaultPath,
           filters: [{ name: 'TidyBill Backup', extensions: ['tidybill'] }],
         })
         if (!filePath) return // user cancelled
@@ -207,7 +213,7 @@ export function SyncPage() {
 
     setPreviewLoading(true)
     try {
-      const report = await api.previewImport(file)
+      const report = await api.previewImport(file, undefined, importMode)
       setPreviewReport(report)
       setPreviewModalOpen(true)
     } catch (err: unknown) {
@@ -222,7 +228,7 @@ export function SyncPage() {
     if (!selectedFileRef.current) return
     setPreviewLoading(true)
     try {
-      const report = await api.previewImport(selectedFileRef.current, importPassphrase)
+      const report = await api.previewImport(selectedFileRef.current, importPassphrase, importMode)
       setPreviewReport(report)
       setPreviewModalOpen(true)
     } catch (err: unknown) {
@@ -251,6 +257,20 @@ export function SyncPage() {
     }
   }
 
+  const tableLabels: Record<string, string> = {
+    suppliers: t('backup.table_suppliers'),
+    bank_accounts: t('backup.table_bank_accounts'),
+    customers: t('backup.table_customers'),
+    invoices: t('backup.table_invoices'),
+    invoice_items: t('backup.table_invoice_items'),
+    items: t('backup.table_items'),
+    customer_items: t('backup.table_customer_items'),
+    pdf_templates: t('backup.table_pdf_templates'),
+    settings: t('backup.table_settings'),
+    vat_rates: t('backup.table_vat_rates'),
+    smtp_configs: t('backup.table_smtp_configs'),
+  }
+
   const renderReportTable = (report: ImportReport) => {
     const tableNames = report.details ? Object.keys(report.details) : []
     return (
@@ -268,7 +288,7 @@ export function SyncPage() {
             const row = report.details[name]
             return (
               <Table.Tr key={name}>
-                <Table.Td>{name}</Table.Td>
+                <Table.Td>{tableLabels[name] || name}</Table.Td>
                 <Table.Td ta="right">{row.insert}</Table.Td>
                 <Table.Td ta="right">{row.update}</Table.Td>
                 <Table.Td ta="right">{row.skip}</Table.Td>
@@ -539,6 +559,11 @@ export function SyncPage() {
                   {importResult.warnings.map((w, i) => (
                     <Text key={i} size="sm">{typeof w === 'string' ? w : w.description}</Text>
                   ))}
+                </Alert>
+              )}
+              {(importMode === 'force' || importMode === 'replace') && importResult.details?.smtp_configs && (importResult.details.smtp_configs.insert > 0 || importResult.details.smtp_configs.update > 0) && (
+                <Alert icon={<IconAlertCircle size={16} />} color="orange">
+                  <Text size="sm">{t('backup.import_smtp_warning')}</Text>
                 </Alert>
               )}
             </>

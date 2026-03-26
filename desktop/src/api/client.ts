@@ -276,10 +276,11 @@ export const api = {
     return response.json()
   },
 
-  previewImport: async (file: File, passphrase?: string): Promise<ImportReport> => {
+  previewImport: async (file: File, passphrase?: string, mode?: string): Promise<ImportReport> => {
     const formData = new FormData()
     formData.append('file', file)
     if (passphrase) formData.append('passphrase', passphrase)
+    if (mode) formData.append('mode', mode)
     const response = await fetch(`${getApiBase()}/backup/import/preview`, {
       method: 'POST',
       body: formData,

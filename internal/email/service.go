@@ -301,7 +301,7 @@ func EncryptPassword(plaintext string) (string, error) {
 // DecryptPassword decrypts a stored password.
 func DecryptPassword(encrypted string) (string, error) {
 	if encrypted == "" {
-		return "", fmt.Errorf("no password stored")
+		return "", fmt.Errorf("SMTP password not configured. After importing data, you need to re-enter the SMTP password in the supplier settings.")
 	}
 	data, err := base64.StdEncoding.DecodeString(encrypted)
 	if err != nil {
