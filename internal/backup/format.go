@@ -144,6 +144,7 @@ const (
 type ImportOptions struct {
 	Mode                  string `json:"mode"`
 	InvoiceNumberConflict string `json:"invoice_number_conflict"` // "skip", "auto_suffix"
+	Passphrase            string `json:"passphrase,omitempty"`
 }
 
 // ImportReport is returned after import completes (or after preview).

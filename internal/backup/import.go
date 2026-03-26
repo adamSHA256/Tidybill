@@ -1,8 +1,10 @@
 package backup
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -21,10 +23,31 @@ func NewImportService(db *sql.DB) *ImportService {
 }
 
 // Import reads a .tidybill file and imports data according to the given options.
+// If the file is encrypted, opts.Passphrase must be set. If the file is encrypted
+// and no passphrase is provided, an error is returned.
 func (s *ImportService) Import(reader io.Reader, opts ImportOptions) (*ImportReport, error) {
+	// Read all data so we can check for encryption.
+	rawData, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, fmt.Errorf("reading backup file: %w", err)
+	}
+
+	// Check if the file is encrypted and decrypt if needed.
+	jsonData := rawData
+	if IsEncrypted(rawData) {
+		if opts.Passphrase == "" {
+			return nil, errors.New("file is encrypted, passphrase required")
+		}
+		decrypted, err := DecryptExport(rawData, opts.Passphrase)
+		if err != nil {
+			return nil, fmt.Errorf("decryption failed: %w", err)
+		}
+		jsonData = decrypted
+	}
+
 	// 1. Decode JSON
 	var file ExportFile
-	if err := json.NewDecoder(reader).Decode(&file); err != nil {
+	if err := json.NewDecoder(bytes.NewReader(jsonData)).Decode(&file); err != nil {
 		return nil, fmt.Errorf("invalid backup file: %w", err)
 	}
 
@@ -44,7 +67,6 @@ func (s *ImportService) Import(reader io.Reader, opts ImportOptions) (*ImportRep
 	}
 
 	// 3. Execute based on mode
-	var err error
 	switch opts.Mode {
 	case ImportModePreview:
 		report, err = s.preview(&file, report)

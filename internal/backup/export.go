@@ -191,6 +191,16 @@ func (s *ExportService) ExportJSON(filters *ExportFilters) ([]byte, error) {
 	return json.MarshalIndent(file, "", "  ")
 }
 
+// ExportEncryptedJSON returns the export as an encrypted binary blob.
+// The passphrase is used to derive the encryption key via Argon2id.
+func (s *ExportService) ExportEncryptedJSON(filters *ExportFilters, passphrase string) ([]byte, error) {
+	jsonData, err := s.ExportJSON(filters)
+	if err != nil {
+		return nil, err
+	}
+	return EncryptExport(jsonData, passphrase)
+}
+
 func (s *ExportService) getSchemaVersion() int {
 	var count int
 	_ = s.db.QueryRow("SELECT COUNT(*) FROM schema_migrations").Scan(&count)
