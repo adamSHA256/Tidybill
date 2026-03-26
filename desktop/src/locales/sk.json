@@ -626,5 +626,14 @@
   "backup.import_mode_merge_desc": "Porovná záznamy podľa dátumu zmeny. Novšia verzia sa zachová, staršia sa preskočí.",
   "backup.import_mode_replace_desc": "Vymaže všetky aktuálne dáta a nahradí ich dátami zo súboru. Použite na obnovu zo zálohy.",
   "backup.import_mode_force_desc": "Prepíše všetky existujúce záznamy dátami zo súboru bez porovnania.",
-  "nav.sync": "Synchronizácia dát"
+  "nav.sync": "Synchronizácia dát",
+
+  "backup.encrypt": "Šifrovať zálohu",
+  "backup.passphrase": "Heslo pre šifrovanie",
+  "backup.passphrase_confirm": "Potvrdenie hesla",
+  "backup.passphrase_mismatch": "Heslá sa nezhodujú",
+  "backup.encrypt_warning": "Ak heslo zabudnete, dáta nebudú obnoviteľné.",
+  "backup.import_passphrase": "Heslo pre dešifrovanie",
+  "backup.import_decrypt_preview": "Dešifrovať a zobraziť náhľad",
+  "backup.file_encrypted": "Súbor je šifrovaný"
 }

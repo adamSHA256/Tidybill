@@ -17,6 +17,7 @@ import {
   Loader,
   Center,
   Tooltip,
+  PasswordInput,
 } from '@mantine/core'
 import { DateInput } from '@mantine/dates'
 import { notifications } from '@mantine/notifications'
@@ -38,6 +39,9 @@ export function SyncPage() {
   const [filterDateFrom, setFilterDateFrom] = useState<Date | null>(null)
   const [filterDateTo, setFilterDateTo] = useState<Date | null>(null)
   const [filterExcludeSettings, setFilterExcludeSettings] = useState(false)
+  const [encryptExport, setEncryptExport] = useState(false)
+  const [exportPassphrase, setExportPassphrase] = useState('')
+  const [exportPassphraseConfirm, setExportPassphraseConfirm] = useState('')
 
   // Import state
   const [importMode, setImportMode] = useState('merge')
@@ -47,6 +51,8 @@ export function SyncPage() {
   const [previewReport, setPreviewReport] = useState<ImportReport | null>(null)
   const [importResult, setImportResult] = useState<ImportReport | null>(null)
   const [resultModalOpen, setResultModalOpen] = useState(false)
+  const [importPassphrase, setImportPassphrase] = useState('')
+  const [fileEncrypted, setFileEncrypted] = useState(false)
   const selectedFileRef = useRef<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -74,13 +80,18 @@ export function SyncPage() {
   }
 
   const handleExportAll = async () => {
+    if (encryptExport && exportPassphrase !== exportPassphraseConfirm) {
+      notifications.show({ title: t('common.error'), message: t('backup.passphrase_mismatch'), color: 'red' })
+      return
+    }
     setExporting(true)
     try {
+      const passphrase = encryptExport ? exportPassphrase : undefined
       if (isTauri() && isMobileDevice()) {
-        const result = await api.exportBackupToFile()
+        const result = await api.exportBackupToFile(undefined, passphrase)
         await shareFile(result.path, result.filename)
       } else {
-        const blob = await api.exportBackup()
+        const blob = await api.exportBackup(undefined, passphrase)
         triggerDownload(blob, `tidybill-backup-${new Date().toISOString().split('T')[0]}.tidybill`)
       }
       notifications.show({ title: t('backup.export_success'), message: '', color: 'green' })
@@ -93,6 +104,10 @@ export function SyncPage() {
   }
 
   const handleExportFiltered = async () => {
+    if (encryptExport && exportPassphrase !== exportPassphraseConfirm) {
+      notifications.show({ title: t('common.error'), message: t('backup.passphrase_mismatch'), color: 'red' })
+      return
+    }
     setExporting(true)
     setFilterModalOpen(false)
     try {
@@ -105,11 +120,12 @@ export function SyncPage() {
       if (filterDateTo) filters.date_to = formatDateStr(filterDateTo)
       if (filterExcludeSettings) filters.exclude_settings = true
 
+      const passphrase = encryptExport ? exportPassphrase : undefined
       if (isTauri() && isMobileDevice()) {
-        const result = await api.exportBackupToFile(filters)
+        const result = await api.exportBackupToFile(filters, passphrase)
         await shareFile(result.path, result.filename)
       } else {
-        const blob = await api.exportBackup(filters)
+        const blob = await api.exportBackup(filters, passphrase)
         triggerDownload(blob, `tidybill-backup-${new Date().toISOString().split('T')[0]}.tidybill`)
       }
       notifications.show({ title: t('backup.export_success'), message: '', color: 'green' })
@@ -127,10 +143,37 @@ export function SyncPage() {
     // Reset the input so the same file can be re-selected
     e.target.value = ''
 
+    // Check if encrypted by reading first 6 bytes
+    const header = await file.slice(0, 6).arrayBuffer()
+    const magic = new TextDecoder().decode(new Uint8Array(header).slice(0, 5))
+    const isEncrypted = magic === 'TBILL'
+    setFileEncrypted(isEncrypted)
     selectedFileRef.current = file
+
+    if (isEncrypted) {
+      // Don't auto-preview — need passphrase first
+      setImportPassphrase('')
+      return
+    }
+
     setPreviewLoading(true)
     try {
       const report = await api.previewImport(file)
+      setPreviewReport(report)
+      setPreviewModalOpen(true)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
+      notifications.show({ title: t('common.error'), message, color: 'red' })
+    } finally {
+      setPreviewLoading(false)
+    }
+  }
+
+  const handlePreviewEncrypted = async () => {
+    if (!selectedFileRef.current) return
+    setPreviewLoading(true)
+    try {
+      const report = await api.previewImport(selectedFileRef.current, importPassphrase)
       setPreviewReport(report)
       setPreviewModalOpen(true)
     } catch (err: unknown) {
@@ -146,7 +189,8 @@ export function SyncPage() {
     setImporting(true)
     setPreviewModalOpen(false)
     try {
-      const result = await api.importBackup(selectedFileRef.current, importMode)
+      const passphrase = fileEncrypted ? importPassphrase : undefined
+      const result = await api.importBackup(selectedFileRef.current, importMode, passphrase)
       setImportResult(result)
       setResultModalOpen(true)
       notifications.show({ title: t('backup.import_success'), message: '', color: 'green' })
@@ -220,6 +264,27 @@ export function SyncPage() {
               {t('backup.export_filtered')}
             </Button>
           </Group>
+          <Switch
+            label={t('backup.encrypt')}
+            checked={encryptExport}
+            onChange={(e) => setEncryptExport(e.currentTarget.checked)}
+          />
+          {encryptExport && (
+            <Stack gap="xs">
+              <PasswordInput
+                label={t('backup.passphrase')}
+                value={exportPassphrase}
+                onChange={(e) => setExportPassphrase(e.currentTarget.value)}
+              />
+              <PasswordInput
+                label={t('backup.passphrase_confirm')}
+                value={exportPassphraseConfirm}
+                onChange={(e) => setExportPassphraseConfirm(e.currentTarget.value)}
+                error={exportPassphrase !== exportPassphraseConfirm && exportPassphraseConfirm ? t('backup.passphrase_mismatch') : undefined}
+              />
+              <Text c="dimmed" size="xs">{t('backup.encrypt_warning')}</Text>
+            </Stack>
+          )}
         </Stack>
       </Paper>
 
@@ -253,6 +318,21 @@ export function SyncPage() {
           >
             {t('backup.import_select')}
           </Button>
+          {fileEncrypted && selectedFileRef.current && (
+            <Stack gap="xs">
+              <Alert icon={<IconAlertCircle size={16} />} color="blue">
+                {t('backup.file_encrypted')}
+              </Alert>
+              <PasswordInput
+                label={t('backup.import_passphrase')}
+                value={importPassphrase}
+                onChange={(e) => setImportPassphrase(e.currentTarget.value)}
+              />
+              <Button onClick={handlePreviewEncrypted} disabled={!importPassphrase} loading={previewLoading}>
+                {t('backup.import_decrypt_preview')}
+              </Button>
+            </Stack>
+          )}
         </Stack>
       </Paper>
 

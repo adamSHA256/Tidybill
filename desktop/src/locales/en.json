@@ -625,5 +625,14 @@
   "backup.import_mode_merge_desc": "Compares records by modification date. The newer version is kept, older ones are skipped.",
   "backup.import_mode_replace_desc": "Deletes all current data and replaces it with data from the file. Use for restoring from backup.",
   "backup.import_mode_force_desc": "Overwrites all existing records with data from the file without comparison.",
-  "nav.sync": "Data Sync"
+  "nav.sync": "Data Sync",
+
+  "backup.encrypt": "Encrypt backup",
+  "backup.passphrase": "Encryption passphrase",
+  "backup.passphrase_confirm": "Confirm passphrase",
+  "backup.passphrase_mismatch": "Passphrases don't match",
+  "backup.encrypt_warning": "If you forget the passphrase, the data cannot be recovered.",
+  "backup.import_passphrase": "Decryption passphrase",
+  "backup.import_decrypt_preview": "Decrypt and preview",
+  "backup.file_encrypted": "File is encrypted"
 }

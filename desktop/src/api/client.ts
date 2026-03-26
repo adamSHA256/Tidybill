@@ -244,27 +244,28 @@ export const api = {
     request<DueDaysOption[]>('/due-days', { method: 'PUT', body: JSON.stringify(options) }),
 
   // Backup
-  exportBackup: async (filters?: ExportFilters): Promise<Blob> => {
+  exportBackup: async (filters?: ExportFilters, passphrase?: string): Promise<Blob> => {
     const response = await fetch(`${getApiBase()}/backup/export`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: filters ? JSON.stringify(filters) : '{}',
+      body: JSON.stringify({ ...filters, passphrase }),
     })
     if (!response.ok) throw new Error(await response.text())
     return response.blob()
   },
 
-  exportBackupToFile: async (filters?: ExportFilters): Promise<{path: string, filename: string}> => {
+  exportBackupToFile: async (filters?: ExportFilters, passphrase?: string): Promise<{path: string, filename: string}> => {
     return request<{path: string, filename: string}>('/backup/export-file', {
       method: 'POST',
-      body: filters ? JSON.stringify(filters) : '{}',
+      body: JSON.stringify({ ...filters, passphrase }),
     })
   },
 
-  importBackup: async (file: File, mode: string = 'merge'): Promise<ImportReport> => {
+  importBackup: async (file: File, mode: string = 'merge', passphrase?: string): Promise<ImportReport> => {
     const formData = new FormData()
     formData.append('file', file)
     formData.append('mode', mode)
+    if (passphrase) formData.append('passphrase', passphrase)
     const response = await fetch(`${getApiBase()}/backup/import`, {
       method: 'POST',
       body: formData,
@@ -273,9 +274,10 @@ export const api = {
     return response.json()
   },
 
-  previewImport: async (file: File): Promise<ImportReport> => {
+  previewImport: async (file: File, passphrase?: string): Promise<ImportReport> => {
     const formData = new FormData()
     formData.append('file', file)
+    if (passphrase) formData.append('passphrase', passphrase)
     const response = await fetch(`${getApiBase()}/backup/import/preview`, {
       method: 'POST',
       body: formData,
