@@ -25,3 +25,11 @@ func (r *SettingsRepository) Set(key, value string) error {
 		key, value, value)
 	return err
 }
+
+// SetDefault sets a key only if it doesn't already exist in the database
+func (r *SettingsRepository) SetDefault(key, value string) error {
+	_, err := r.db.Exec(
+		"INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)",
+		key, value)
+	return err
+}

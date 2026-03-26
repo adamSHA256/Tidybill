@@ -46,6 +46,11 @@ func initDB() (*config.Config, *database.DB, *repository.SettingsRepository) {
 		i18n.SetLang(i18n.Lang(lang))
 	}
 
+	// Persist email template defaults if not already set
+	settings.SetDefault("email.default_subject", "Faktura ((number))")
+	settings.SetDefault("email.default_body", "Dobrý den,\n\nv příloze zasílám fakturu č. ((number)) na částku ((total)).\nSplatnost: ((due_date)).\n\nS pozdravem\n((supplier))")
+	settings.SetDefault("email.copy_subject", "TidyBill - ((subject))")
+
 	return cfg, db, settings
 }
 

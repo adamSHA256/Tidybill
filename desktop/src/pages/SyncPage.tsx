@@ -98,7 +98,8 @@ export function SyncPage() {
     }
   }
 
-  const triggerDownload = async (blob: Blob, filename: string) => {
+  // Returns the actual saved path/filename, or null if cancelled
+  const triggerDownload = async (blob: Blob, filename: string): Promise<string | null> => {
     // On desktop Tauri, show native file save dialog
     if (isTauri() && !isMobileDevice()) {
       try {
@@ -113,12 +114,12 @@ export function SyncPage() {
           defaultPath,
           filters: [{ name: 'TidyBill Backup', extensions: ['tidybill'] }],
         })
-        if (!filePath) return // user cancelled
+        if (!filePath) return null // user cancelled
 
         const { writeFile } = await import('@tauri-apps/plugin-fs')
         const arrayBuffer = await blob.arrayBuffer()
         await writeFile(filePath, new Uint8Array(arrayBuffer))
-        return
+        return filePath
       } catch (err) {
         console.error('Native save dialog failed, falling back to download:', err)
       }
@@ -130,6 +131,7 @@ export function SyncPage() {
     a.download = filename
     a.click()
     URL.revokeObjectURL(url)
+    return filename
   }
 
   const handleExportAll = async () => {
@@ -144,11 +146,15 @@ export function SyncPage() {
       if (isTauri() && isMobileDevice()) {
         const result = await api.exportBackupToFile(undefined, passphrase)
         await shareFile(result.path, result.filename)
+        notifications.show({ title: t('backup.export_success'), message: '', color: 'green' })
       } else {
         const blob = await api.exportBackup(undefined, passphrase)
-        await triggerDownload(blob, filename)
+        const savedPath = await triggerDownload(blob, filename)
+        if (!savedPath) return // user cancelled
+        // Show the actual saved path (may differ from default filename)
+        const savedName = savedPath.includes('/') ? savedPath.split('/').pop() : savedPath
+        notifications.show({ title: t('backup.export_success'), message: savedName || '', color: 'green' })
       }
-      notifications.show({ title: t('backup.export_success'), message: filename, color: 'green' })
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
       notifications.show({ title: t('common.error'), message, color: 'red' })
@@ -179,11 +185,14 @@ export function SyncPage() {
       if (isTauri() && isMobileDevice()) {
         const result = await api.exportBackupToFile(filters, passphrase)
         await shareFile(result.path, result.filename)
+        notifications.show({ title: t('backup.export_success'), message: '', color: 'green' })
       } else {
         const blob = await api.exportBackup(filters, passphrase)
-        await triggerDownload(blob, filename)
+        const savedPath = await triggerDownload(blob, filename)
+        if (!savedPath) return
+        const savedName = savedPath.includes('/') ? savedPath.split('/').pop() : savedPath
+        notifications.show({ title: t('backup.export_success'), message: savedName || '', color: 'green' })
       }
-      notifications.show({ title: t('backup.export_success'), message: filename, color: 'green' })
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
       notifications.show({ title: t('common.error'), message, color: 'red' })
