@@ -635,5 +635,10 @@
   "backup.encrypt_warning": "Ak heslo zabudnete, dáta nebudú obnoviteľné.",
   "backup.import_passphrase": "Heslo pre dešifrovanie",
   "backup.import_decrypt_preview": "Dešifrovať a zobraziť náhľad",
-  "backup.file_encrypted": "Súbor je šifrovaný"
+  "backup.file_encrypted": "Súbor je šifrovaný",
+  "backup.generate_mnemonic": "Vygenerovať bezpečné heslo",
+  "backup.mnemonic_warning": "Zapíšte si tieto slová na bezpečné miesto. Bez nich nebude možné šifrovanú zálohu obnoviť.",
+  "backup.passphrase_too_short": "Heslo musí mať aspoň 8 znakov",
+  "backup.passphrase_needs_special": "Heslo musí obsahovať aspoň jeden špeciálny znak (medzera, bodka, čiarka...)",
+  "backup.passphrase_rules": "Minimálne 8 znakov, aspoň jeden špeciálny znak"
 }

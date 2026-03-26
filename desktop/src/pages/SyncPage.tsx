@@ -21,7 +21,7 @@ import {
 } from '@mantine/core'
 import { DateInput } from '@mantine/dates'
 import { notifications } from '@mantine/notifications'
-import { IconDownload, IconUpload, IconCloudOff, IconAlertCircle, IconInfoCircle } from '@tabler/icons-react'
+import { IconDownload, IconUpload, IconCloudOff, IconAlertCircle, IconInfoCircle, IconKey } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { api, isTauri, isMobileDevice, shareFile, type ExportFilters, type ImportReport } from '../api/client'
 import { useT } from '../i18n'
@@ -42,6 +42,8 @@ export function SyncPage() {
   const [encryptExport, setEncryptExport] = useState(false)
   const [exportPassphrase, setExportPassphrase] = useState('')
   const [exportPassphraseConfirm, setExportPassphraseConfirm] = useState('')
+  const [generatedMnemonic, setGeneratedMnemonic] = useState<string | null>(null)
+  const [generatingMnemonic, setGeneratingMnemonic] = useState(false)
 
   // Import state
   const [importMode, setImportMode] = useState('merge')
@@ -70,7 +72,52 @@ export function SyncPage() {
     return d.toISOString().split('T')[0]
   }
 
-  const triggerDownload = (blob: Blob, filename: string) => {
+  const validatePassphrase = (pass: string): string | null => {
+    if (pass.length < 8) return t('backup.passphrase_too_short')
+    if (!/[^a-zA-Z0-9]/.test(pass)) return t('backup.passphrase_needs_special')
+    return null
+  }
+
+  const passphraseValid = !encryptExport || (
+    !validatePassphrase(exportPassphrase) &&
+    exportPassphrase === exportPassphraseConfirm
+  )
+
+  const handleGenerateMnemonic = async () => {
+    setGeneratingMnemonic(true)
+    try {
+      const { mnemonic } = await api.generateMnemonic()
+      setExportPassphrase(mnemonic)
+      setExportPassphraseConfirm(mnemonic)
+      setGeneratedMnemonic(mnemonic)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
+      notifications.show({ title: t('common.error'), message, color: 'red' })
+    } finally {
+      setGeneratingMnemonic(false)
+    }
+  }
+
+  const triggerDownload = async (blob: Blob, filename: string) => {
+    // On desktop Tauri, show native file save dialog
+    if (isTauri() && !isMobileDevice()) {
+      try {
+        const { save } = await import('@tauri-apps/plugin-dialog')
+        const filePath = await save({
+          defaultPath: filename,
+          filters: [{ name: 'TidyBill Backup', extensions: ['tidybill'] }],
+        })
+        if (!filePath) return // user cancelled
+
+        const { writeFile } = await import('@tauri-apps/plugin-fs')
+        const arrayBuffer = await blob.arrayBuffer()
+        await writeFile(filePath, new Uint8Array(arrayBuffer))
+        return
+      } catch (err) {
+        console.error('Native save dialog failed, falling back to download:', err)
+      }
+    }
+    // Fallback: browser-style download
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -87,14 +134,15 @@ export function SyncPage() {
     setExporting(true)
     try {
       const passphrase = encryptExport ? exportPassphrase : undefined
+      const filename = `tidybill-backup-${new Date().toISOString().split('T')[0]}.tidybill`
       if (isTauri() && isMobileDevice()) {
         const result = await api.exportBackupToFile(undefined, passphrase)
         await shareFile(result.path, result.filename)
       } else {
         const blob = await api.exportBackup(undefined, passphrase)
-        triggerDownload(blob, `tidybill-backup-${new Date().toISOString().split('T')[0]}.tidybill`)
+        await triggerDownload(blob, filename)
       }
-      notifications.show({ title: t('backup.export_success'), message: '', color: 'green' })
+      notifications.show({ title: t('backup.export_success'), message: filename, color: 'green' })
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
       notifications.show({ title: t('common.error'), message, color: 'red' })
@@ -121,14 +169,15 @@ export function SyncPage() {
       if (filterExcludeSettings) filters.exclude_settings = true
 
       const passphrase = encryptExport ? exportPassphrase : undefined
+      const filename = `tidybill-backup-${new Date().toISOString().split('T')[0]}.tidybill`
       if (isTauri() && isMobileDevice()) {
         const result = await api.exportBackupToFile(filters, passphrase)
         await shareFile(result.path, result.filename)
       } else {
         const blob = await api.exportBackup(filters, passphrase)
-        triggerDownload(blob, `tidybill-backup-${new Date().toISOString().split('T')[0]}.tidybill`)
+        await triggerDownload(blob, filename)
       }
-      notifications.show({ title: t('backup.export_success'), message: '', color: 'green' })
+      notifications.show({ title: t('backup.export_success'), message: filename, color: 'green' })
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
       notifications.show({ title: t('common.error'), message, color: 'red' })
@@ -253,13 +302,14 @@ export function SyncPage() {
               leftSection={<IconDownload size={16} />}
               onClick={handleExportAll}
               loading={exporting}
+              disabled={!passphraseValid}
             >
               {t('backup.export_all')}
             </Button>
             <Button
               variant="light"
               onClick={() => setFilterModalOpen(true)}
-              disabled={exporting}
+              disabled={exporting || !passphraseValid}
             >
               {t('backup.export_filtered')}
             </Button>
@@ -267,21 +317,53 @@ export function SyncPage() {
           <Switch
             label={t('backup.encrypt')}
             checked={encryptExport}
-            onChange={(e) => setEncryptExport(e.currentTarget.checked)}
+            onChange={(e) => {
+              setEncryptExport(e.currentTarget.checked)
+              if (!e.currentTarget.checked) {
+                setGeneratedMnemonic(null)
+              }
+            }}
           />
           {encryptExport && (
             <Stack gap="xs">
-              <PasswordInput
-                label={t('backup.passphrase')}
-                value={exportPassphrase}
-                onChange={(e) => setExportPassphrase(e.currentTarget.value)}
-              />
+              <Group align="end">
+                <PasswordInput
+                  label={t('backup.passphrase')}
+                  description={t('backup.passphrase_rules')}
+                  value={exportPassphrase}
+                  onChange={(e) => {
+                    setExportPassphrase(e.currentTarget.value)
+                    setGeneratedMnemonic(null)
+                  }}
+                  error={exportPassphrase ? validatePassphrase(exportPassphrase) : undefined}
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  variant="light"
+                  size="sm"
+                  leftSection={<IconKey size={16} />}
+                  onClick={handleGenerateMnemonic}
+                  loading={generatingMnemonic}
+                >
+                  {t('backup.generate_mnemonic')}
+                </Button>
+              </Group>
               <PasswordInput
                 label={t('backup.passphrase_confirm')}
                 value={exportPassphraseConfirm}
                 onChange={(e) => setExportPassphraseConfirm(e.currentTarget.value)}
                 error={exportPassphrase !== exportPassphraseConfirm && exportPassphraseConfirm ? t('backup.passphrase_mismatch') : undefined}
               />
+              {generatedMnemonic && (
+                <Alert icon={<IconAlertCircle size={16} />} color="yellow">
+                  <Text size="sm" fw={500} mb="xs">{t('backup.mnemonic_warning')}</Text>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px 16px' }}>
+                    {generatedMnemonic.split(' ').map((word, i) => (
+                      <Text key={i} size="sm" ff="monospace">{i + 1}. {word}</Text>
+                    ))}
+                  </div>
+                </Alert>
+              )}
               <Text c="dimmed" size="xs">{t('backup.encrypt_warning')}</Text>
             </Stack>
           )}

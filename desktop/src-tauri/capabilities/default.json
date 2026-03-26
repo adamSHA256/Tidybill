@@ -50,6 +50,17 @@
     },
     "shell:allow-open",
     "dialog:allow-open",
+    "dialog:allow-save",
+    {
+      "identifier": "fs:allow-write-file",
+      "allow": [
+        { "path": "$HOME/**" },
+        { "path": "$DESKTOP/**" },
+        { "path": "$DOCUMENT/**" },
+        { "path": "$DOWNLOAD/**" },
+        { "path": "/tmp/**" }
+      ]
+    },
     {
       "identifier": "opener:allow-open-path",
       "allow": [

@@ -634,5 +634,10 @@
   "backup.encrypt_warning": "If you forget the passphrase, the data cannot be recovered.",
   "backup.import_passphrase": "Decryption passphrase",
   "backup.import_decrypt_preview": "Decrypt and preview",
-  "backup.file_encrypted": "File is encrypted"
+  "backup.file_encrypted": "File is encrypted",
+  "backup.generate_mnemonic": "Generate secure passphrase",
+  "backup.mnemonic_warning": "Write down these words in a safe place. Without them, the encrypted backup cannot be restored.",
+  "backup.passphrase_too_short": "Passphrase must be at least 8 characters",
+  "backup.passphrase_needs_special": "Passphrase must contain at least one special character (space, dot, comma...)",
+  "backup.passphrase_rules": "Minimum 8 characters, at least one special character"
 }

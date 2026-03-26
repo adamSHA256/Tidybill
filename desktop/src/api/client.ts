@@ -244,6 +244,8 @@ export const api = {
     request<DueDaysOption[]>('/due-days', { method: 'PUT', body: JSON.stringify(options) }),
 
   // Backup
+  generateMnemonic: () => request<{mnemonic: string}>('/backup/generate-mnemonic'),
+
   exportBackup: async (filters?: ExportFilters, passphrase?: string): Promise<Blob> => {
     const response = await fetch(`${getApiBase()}/backup/export`, {
       method: 'POST',
