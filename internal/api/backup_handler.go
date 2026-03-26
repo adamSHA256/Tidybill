@@ -171,6 +171,17 @@ func (s *Server) handleImportPreview(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, report)
 }
 
+// GET /api/backup/generate-mnemonic
+// Returns a 12-word BIP-39 mnemonic that can be used as a strong passphrase.
+func (s *Server) handleGenerateMnemonic(w http.ResponseWriter, r *http.Request) {
+	mnemonic, err := backup.GenerateRecoveryMnemonic()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"mnemonic": mnemonic})
+}
+
 // POST /api/backup/export-file
 // Saves export to a file in the exports directory and returns its path.
 // Used by mobile clients that cannot download blobs directly.

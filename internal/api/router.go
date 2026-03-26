@@ -188,6 +188,7 @@ func (s *Server) Router() http.Handler {
 	mux.HandleFunc("POST /api/backup/export-file", s.handleExportToFile)
 	mux.HandleFunc("POST /api/backup/import", s.handleImport)
 	mux.HandleFunc("POST /api/backup/import/preview", s.handleImportPreview)
+	mux.HandleFunc("GET /api/backup/generate-mnemonic", s.handleGenerateMnemonic)
 
 	return corsMiddleware(mux)
 }
