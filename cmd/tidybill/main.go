@@ -49,7 +49,7 @@ func initDB() (*config.Config, *database.DB, *repository.SettingsRepository) {
 	return cfg, db, settings
 }
 
-func handleExport(exportPath string) {
+func handleExport(exportPath string, passphrase string) {
 	_, db, settings := initDB()
 	defer db.Close()
 
@@ -69,7 +69,14 @@ func handleExport(exportPath string) {
 		settings,
 	)
 
-	data, err := svc.ExportJSON(nil)
+	var data []byte
+	var err error
+	if passphrase != "" {
+		fmt.Println("  Encrypting export...")
+		data, err = svc.ExportEncryptedJSON(nil, passphrase)
+	} else {
+		data, err = svc.ExportJSON(nil)
+	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "  Error: %v\n", err)
 		os.Exit(1)
@@ -100,7 +107,7 @@ func handleExport(exportPath string) {
 	}
 }
 
-func handleImport(importPath string, mode string, preview bool) {
+func handleImport(importPath string, mode string, preview bool, passphrase string) {
 	_, db, _ := initDB()
 	defer db.Close()
 
@@ -116,6 +123,7 @@ func handleImport(importPath string, mode string, preview bool) {
 	svc := backup.NewImportService(db.DB)
 
 	opts := backup.ImportOptions{
+		Passphrase:            passphrase,
 		InvoiceNumberConflict: "skip",
 	}
 
@@ -231,17 +239,18 @@ func main() {
 	importFile := flag.String("import", "", "Import data from a .tidybill file")
 	importMode := flag.String("mode", "merge", "Import mode: merge, replace, force")
 	importPreview := flag.Bool("preview", false, "Preview import without making changes")
+	passphrase := flag.String("passphrase", "", "Passphrase for encrypted export/import")
 	flag.Parse()
 
 	// Handle export
 	if *exportFile != "" {
-		handleExport(*exportFile)
+		handleExport(*exportFile, *passphrase)
 		os.Exit(0)
 	}
 
 	// Handle import
 	if *importFile != "" {
-		handleImport(*importFile, *importMode, *importPreview)
+		handleImport(*importFile, *importMode, *importPreview, *passphrase)
 		os.Exit(0)
 	}
 

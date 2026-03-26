@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -130,10 +131,36 @@ func (c *CLI) doExport(path string, filters *backup.ExportFilters) {
 		c.templates, smtpConfigs, c.settings,
 	)
 
+	// Ask about encryption.
+	fmt.Println()
+	var passphrase string
+	if c.confirm("Encrypt? (y/n)") {
+		for {
+			pass1 := c.prompt("Passphrase: ")
+			if len(pass1) < 8 {
+				c.printError("Passphrase must be at least 8 characters")
+				continue
+			}
+			pass2 := c.prompt("Confirm passphrase: ")
+			if pass1 != pass2 {
+				c.printError("Passphrases do not match")
+				continue
+			}
+			passphrase = pass1
+			break
+		}
+	}
+
 	fmt.Println()
 	fmt.Println(i18n.T("sync.exporting"))
 
-	data, err := svc.ExportJSON(filters)
+	var data []byte
+	var err error
+	if passphrase != "" {
+		data, err = svc.ExportEncryptedJSON(filters, passphrase)
+	} else {
+		data, err = svc.ExportJSON(filters)
+	}
 	if err != nil {
 		c.printError(err.Error())
 		c.waitEnter()
@@ -146,12 +173,23 @@ func (c *CLI) doExport(path string, filters *backup.ExportFilters) {
 		return
 	}
 
-	// Parse back to get entity counts for summary.
+	// For encrypted exports, show summary from ExportJSON (re-export unencrypted for counts).
+	// For unencrypted exports, parse back to get entity counts.
 	var file backup.ExportFile
-	_ = json.Unmarshal(data, &file)
+	if passphrase != "" {
+		plainData, plainErr := svc.ExportJSON(filters)
+		if plainErr == nil {
+			_ = json.Unmarshal(plainData, &file)
+		}
+	} else {
+		_ = json.Unmarshal(data, &file)
+	}
 
 	fmt.Println()
 	c.printSuccess(i18n.Tf("sync.export_done", path))
+	if passphrase != "" {
+		fmt.Println("  (encrypted)")
+	}
 	fmt.Println()
 	fmt.Printf("  %-20s %d\n", i18n.T("sync.count_suppliers"), len(file.Suppliers))
 	fmt.Printf("  %-20s %d\n", i18n.T("sync.count_customers"), len(file.Customers))
@@ -181,19 +219,40 @@ func (c *CLI) syncImport(mode string) {
 		return
 	}
 
-	// Open and peek at metadata.
-	f, err := os.Open(path)
+	// Read the entire file to check for encryption.
+	rawData, err := os.ReadFile(path)
 	if err != nil {
 		c.printError(err.Error())
 		c.waitEnter()
 		return
 	}
-	defer f.Close()
+
+	// Detect encryption and prompt for passphrase if needed.
+	var passphrase string
+	var jsonData []byte
+	if backup.IsEncrypted(rawData) {
+		fmt.Println()
+		fmt.Println("  File is encrypted")
+		passphrase = c.prompt("Passphrase: ")
+		if passphrase == "" {
+			c.printError("Passphrase is required for encrypted files")
+			c.waitEnter()
+			return
+		}
+		decrypted, decErr := backup.DecryptExport(rawData, passphrase)
+		if decErr != nil {
+			c.printError(decErr.Error())
+			c.waitEnter()
+			return
+		}
+		jsonData = decrypted
+	} else {
+		jsonData = rawData
+	}
 
 	// Decode just enough to show metadata.
 	var file backup.ExportFile
-	decoder := json.NewDecoder(f)
-	if err := decoder.Decode(&file); err != nil {
+	if err := json.Unmarshal(jsonData, &file); err != nil {
 		c.printError(i18n.Tf("sync.invalid_file", err))
 		c.waitEnter()
 		return
@@ -230,26 +289,18 @@ func (c *CLI) syncImport(mode string) {
 		}
 	}
 
-	// Re-open file for import (decoder already consumed the reader).
-	f.Close()
-	f2, err := os.Open(path)
-	if err != nil {
-		c.printError(err.Error())
-		c.waitEnter()
-		return
-	}
-	defer f2.Close()
-
 	svc := backup.NewImportService(c.db.DB)
 	opts := backup.ImportOptions{
 		Mode:                  mode,
+		Passphrase:            passphrase,
 		InvoiceNumberConflict: "skip",
 	}
 
 	fmt.Println()
 	fmt.Println(i18n.T("sync.importing"))
 
-	report, err := svc.Import(f2, opts)
+	// Import from the raw data (Import will handle decryption via passphrase if set).
+	report, err := svc.Import(bytes.NewReader(rawData), opts)
 	if err != nil {
 		c.printError(err.Error())
 		c.waitEnter()
