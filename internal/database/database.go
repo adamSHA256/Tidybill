@@ -25,6 +25,11 @@ func New(dbPath string) (*DB, error) {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
+	// SQLite does not support concurrent writes. Limit to a single connection
+	// so that BeginTx-based snapshot isolation (used by backup export) works
+	// correctly -- all queries run on the same connection that holds the lock.
+	sqlDB.SetMaxOpenConns(1)
+
 	db := &DB{DB: sqlDB}
 
 	if err := db.migrate(); err != nil {

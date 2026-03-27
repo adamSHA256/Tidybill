@@ -2,6 +2,8 @@ package backup
 
 import (
 	"bytes"
+	"encoding/binary"
+	"errors"
 	"testing"
 )
 
@@ -78,10 +80,30 @@ func TestEncryptEmptyPassphrase(t *testing.T) {
 	}
 }
 
+func TestEncryptShortPassphrase(t *testing.T) {
+	_, err := EncryptExport([]byte(`{}`), "short")
+	if err == nil {
+		t.Fatal("expected error with short passphrase")
+	}
+	if err.Error() != "passphrase must be at least 8 characters" {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestDecryptEmptyPassphrase(t *testing.T) {
 	_, err := DecryptExport([]byte("TBILL\x01"+string(make([]byte, 100))), "")
 	if err == nil {
 		t.Fatal("expected error with empty passphrase")
+	}
+}
+
+func TestDecryptShortPassphrase(t *testing.T) {
+	_, err := DecryptExport([]byte("TBILL\x01"+string(make([]byte, 100))), "short")
+	if err == nil {
+		t.Fatal("expected error with short passphrase")
+	}
+	if err.Error() != "passphrase must be at least 8 characters" {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
@@ -211,5 +233,37 @@ func TestMnemonicCanBeUsedAsPassphrase(t *testing.T) {
 
 	if !bytes.Equal(original, decrypted) {
 		t.Fatal("round-trip with mnemonic as passphrase failed")
+	}
+}
+
+func TestHighMemoryDetection(t *testing.T) {
+	data := []byte(`{"test": true}`)
+	encrypted, err := EncryptExport(data, "testpassword!")
+	if err != nil {
+		t.Fatalf("EncryptExport: %v", err)
+	}
+
+	// Modify the memory param in the header to something huge (512 MiB = 524288 KiB).
+	// Memory is at offset: magic(6) + salt(16) + time(4) = 26, 4 bytes, little-endian.
+	binary.LittleEndian.PutUint32(encrypted[26:30], 524288) // 512 MiB
+
+	// Attempt to decrypt -- should return HighMemoryError.
+	_, err = DecryptExport(encrypted, "testpassword!")
+	if err == nil {
+		t.Fatal("expected HighMemoryError, got nil")
+	}
+
+	var highMemErr *HighMemoryError
+	if !errors.As(err, &highMemErr) {
+		t.Fatalf("expected *HighMemoryError, got %T: %v", err, err)
+	}
+
+	if highMemErr.RequestedMiB != 512 {
+		t.Fatalf("expected RequestedMiB=512, got %d", highMemErr.RequestedMiB)
+	}
+
+	// Should also match the sentinel via errors.Is.
+	if !errors.Is(err, ErrHighMemory) {
+		t.Fatal("expected error to match ErrHighMemory sentinel")
 	}
 }

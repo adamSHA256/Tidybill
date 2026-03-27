@@ -73,8 +73,8 @@ func IsEncrypted(data []byte) bool {
 // Returns the encrypted binary blob in .tidybill format:
 // magic(6) + salt(16) + time(4,LE) + memory(4,LE) + threads(1) + nonce(24) + ciphertext+tag
 func EncryptExport(jsonData []byte, passphrase string) ([]byte, error) {
-	if len(passphrase) == 0 {
-		return nil, errors.New("passphrase must not be empty")
+	if len(passphrase) < 8 {
+		return nil, fmt.Errorf("passphrase must be at least 8 characters")
 	}
 
 	params := defaultParams()
@@ -126,8 +126,8 @@ func EncryptExport(jsonData []byte, passphrase string) ([]byte, error) {
 // Returns ErrHighMemory (as *HighMemoryError) if the file's memory parameter exceeds
 // a safe threshold for the current device.
 func DecryptExport(encData []byte, passphrase string) ([]byte, error) {
-	if len(passphrase) == 0 {
-		return nil, errors.New("passphrase must not be empty")
+	if len(passphrase) < 8 {
+		return nil, fmt.Errorf("passphrase must be at least 8 characters")
 	}
 
 	// Validate minimum size: header + at least 1 byte ciphertext + 16-byte tag.
