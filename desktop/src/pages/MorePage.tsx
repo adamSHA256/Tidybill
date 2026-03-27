@@ -18,6 +18,7 @@ import {
   IconMoon,
   IconInfoCircle,
   IconMail,
+  IconDatabaseExport,
 } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
@@ -83,6 +84,11 @@ export function MorePage() {
         label={t('nav.automatizace')}
         leftSection={<IconMail size={20} />}
         onClick={() => navigate('/automatizace')}
+      />
+      <NavLink
+        label={t('nav.sync')}
+        leftSection={<IconDatabaseExport size={20} />}
+        onClick={() => navigate('/sync')}
       />
       <NavLink
         label={t('nav.settings')}

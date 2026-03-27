@@ -1,6 +1,6 @@
 let resolvedApiBase: string | null = null
 
-function isTauri(): boolean {
+export function isTauri(): boolean {
   return '__TAURI_INTERNALS__' in window
 }
 
@@ -242,6 +242,52 @@ export const api = {
   getDueDaysOptions: () => request<DueDaysOption[]>('/due-days'),
   updateDueDaysOptions: (options: DueDaysOption[]) =>
     request<DueDaysOption[]>('/due-days', { method: 'PUT', body: JSON.stringify(options) }),
+
+  // Backup
+  generateMnemonic: () => request<{mnemonic: string}>('/backup/generate-mnemonic'),
+
+  exportBackup: async (filters?: ExportFilters, passphrase?: string): Promise<Blob> => {
+    const response = await fetch(`${getApiBase()}/backup/export`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...filters, passphrase }),
+    })
+    if (!response.ok) throw new Error(await response.text())
+    return response.blob()
+  },
+
+  exportBackupToFile: async (filters?: ExportFilters, passphrase?: string): Promise<{path: string, filename: string}> => {
+    return request<{path: string, filename: string}>('/backup/export-file', {
+      method: 'POST',
+      body: JSON.stringify({ ...filters, passphrase }),
+    })
+  },
+
+  importBackup: async (file: File, mode: string = 'merge', passphrase?: string): Promise<ImportReport> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('mode', mode)
+    if (passphrase) formData.append('passphrase', passphrase)
+    const response = await fetch(`${getApiBase()}/backup/import`, {
+      method: 'POST',
+      body: formData,
+    })
+    if (!response.ok) throw new Error(await response.text())
+    return response.json()
+  },
+
+  previewImport: async (file: File, passphrase?: string, mode?: string): Promise<ImportReport> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    if (passphrase) formData.append('passphrase', passphrase)
+    if (mode) formData.append('mode', mode)
+    const response = await fetch(`${getApiBase()}/backup/import/preview`, {
+      method: 'POST',
+      body: formData,
+    })
+    if (!response.ok) throw new Error(await response.text())
+    return response.json()
+  },
 }
 
 // Types matching Go models exactly
@@ -529,6 +575,47 @@ export interface SendEmailResponse {
   status: string
 }
 
+export interface ExportFilters {
+  supplier_ids?: string[]
+  skip_paid_older_than_years?: number
+  date_from?: string
+  date_to?: string
+  exclude_settings?: boolean
+}
+
+export interface ImportReport {
+  mode: string
+  started_at: string
+  finished_at: string
+  summary: {
+    to_insert: number
+    to_update: number
+    to_skip: number
+    conflicts: number
+    warnings: number
+  }
+  details: Record<string, {
+    insert: number
+    update: number
+    skip: number
+    conflicts: number
+  }>
+  conflicts: Array<{
+    table: string
+    id: string
+    type: string
+    description: string
+    resolution: string
+  }>
+  warnings: Array<{
+    table: string
+    id: string
+    type: string
+    description: string
+    resolution: string
+  }>
+}
+
 export interface CreateInvoiceRequest {
   customer_id: string
   supplier_id: string
@@ -623,6 +710,18 @@ export async function sharePdf(filePath: string, filename: string): Promise<void
     return
   }
   // Desktop/web fallback - not applicable
+}
+
+export async function shareFile(filePath: string, filename: string, mimeType = 'application/octet-stream'): Promise<void> {
+  if (isTauri() && isMobileDevice()) {
+    const { invoke } = await import('@tauri-apps/api/core')
+    await invoke('plugin:sharesheet|share_file', {
+      filePath,
+      mimeType,
+      title: filename,
+    })
+    return
+  }
 }
 
 export function formatMoney(amount: number, currency = ''): string {

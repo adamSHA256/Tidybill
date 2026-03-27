@@ -34,6 +34,9 @@ func (s *Server) getSettings(w http.ResponseWriter, r *http.Request) {
 	invoiceDefaultSort, _ := s.settings.Get("invoice.default_sort") // TODO: also expose in CLI settings menu
 	uiScale, _ := s.settings.Get("ui.scale")
 	checkUpdates, _ := s.settings.Get("check_updates")
+	emailDefaultSubject, _ := s.settings.Get("email.default_subject")
+	emailDefaultBody, _ := s.settings.Get("email.default_body")
+	emailCopySubject, _ := s.settings.Get("email.copy_subject")
 
 	writeJSON(w, http.StatusOK, map[string]string{
 		"language":             lang,
@@ -52,6 +55,9 @@ func (s *Server) getSettings(w http.ResponseWriter, r *http.Request) {
 		"default_pdf_dir":      s.cfg.PDFDir,
 		"default_logo_dir":     s.cfg.LogoDir,
 		"default_preview_dir":  s.cfg.PreviewDir,
+		"email.default_subject": emailDefaultSubject,
+		"email.default_body":    emailDefaultBody,
+		"email.copy_subject":    emailCopySubject,
 	})
 }
 
@@ -66,9 +72,12 @@ type UpdateSettingsRequest struct {
 	DashboardWidgets   *string `json:"dashboard_widgets"`
 	CustomCurrencies   *string `json:"custom_currencies"`
 	CustomCountries    *string `json:"custom_countries"`
-	InvoiceDefaultSort *string `json:"invoice_default_sort"` // TODO: also expose in CLI settings menu
+	InvoiceDefaultSort *string `json:"invoice_default_sort"`
 	UIScale            *string `json:"ui_scale"`
 	CheckUpdates       *string `json:"check_updates"`
+	EmailDefaultSubject *string `json:"email.default_subject"`
+	EmailDefaultBody    *string `json:"email.default_body"`
+	EmailCopySubject    *string `json:"email.copy_subject"`
 }
 
 func (s *Server) updateSettings(w http.ResponseWriter, r *http.Request) {
@@ -99,9 +108,12 @@ func (s *Server) updateSettings(w http.ResponseWriter, r *http.Request) {
 		"dashboard.widgets":   req.DashboardWidgets,
 		"custom.currencies":     req.CustomCurrencies,
 		"custom.countries":      req.CustomCountries,
-		"invoice.default_sort":  req.InvoiceDefaultSort,
+		"invoice.default_sort":   req.InvoiceDefaultSort,
 		"ui.scale":              req.UIScale,
 		"check_updates":         req.CheckUpdates,
+		"email.default_subject": req.EmailDefaultSubject,
+		"email.default_body":    req.EmailDefaultBody,
+		"email.copy_subject":    req.EmailCopySubject,
 	}
 	for key, val := range simpleSettings {
 		if val == nil {

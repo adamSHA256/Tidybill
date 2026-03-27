@@ -25,8 +25,11 @@ impl<R: Runtime> Sharesheet<R> {
         mime_type: String,
         title: Option<String>,
     ) -> crate::Result<()> {
+        // The Kotlin plugin returns JSObject() which serializes as `{}`.
+        // Rust cannot deserialize `{}` as `()` (unit), so we deserialize
+        // into serde_json::Value and discard the result.
         self.0
-            .run_mobile_plugin(
+            .run_mobile_plugin::<serde_json::Value>(
                 "shareFile",
                 serde_json::json!({
                     "filePath": file_path,
@@ -34,6 +37,7 @@ impl<R: Runtime> Sharesheet<R> {
                     "title": title.unwrap_or_default(),
                 }),
             )
+            .map(|_| ())
             .map_err(Into::into)
     }
 }

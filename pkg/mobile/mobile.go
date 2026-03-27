@@ -58,6 +58,11 @@ func StartServer(dataDir string) (int, error) {
 		}
 	}
 
+	// Persist email template defaults if not already set
+	settingsRepo.SetDefault("email.default_subject", "Faktura ((number))")
+	settingsRepo.SetDefault("email.default_body", "Dobrý den,\n\nv příloze zasílám fakturu č. ((number)) na částku ((total)).\nSplatnost: ((due_date)).\n\nS pozdravem\n((supplier))")
+	settingsRepo.SetDefault("email.copy_subject", "TidyBill - ((subject))")
+
 	srv := api.NewServer(db.DB, cfg)
 
 	listener, err := net.Listen("tcp", "127.0.0.1:18080")
