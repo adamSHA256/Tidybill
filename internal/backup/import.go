@@ -882,8 +882,12 @@ func mergeInvoices(tx *sql.Tx, invoices []InvoiceExport, conflictMode string, in
 					Resolution:  conflictMode,
 				})
 				if conflictMode == "auto_suffix" {
-					inv.InvoiceNumber = inv.InvoiceNumber + "-imp"
-					inv.VariableSymbol = inv.VariableSymbol + "9"
+					originalNumber := inv.InvoiceNumber
+					candidate := originalNumber + "-imp"
+					for i := 2; checkInvoiceNumberCollision(tx, inv.ID, inv.SupplierID, candidate); i++ {
+						candidate = originalNumber + fmt.Sprintf("-imp-%d", i)
+					}
+					inv.InvoiceNumber = candidate
 				} else {
 					ts.Skip++
 					continue
@@ -1184,8 +1188,12 @@ func forceInvoices(tx *sql.Tx, invoices []InvoiceExport, conflictMode string) (T
 					Resolution:  conflictMode,
 				})
 				if conflictMode == "auto_suffix" {
-					inv.InvoiceNumber = inv.InvoiceNumber + "-imp"
-					inv.VariableSymbol = inv.VariableSymbol + "9"
+					originalNumber := inv.InvoiceNumber
+					candidate := originalNumber + "-imp"
+					for i := 2; checkInvoiceNumberCollision(tx, inv.ID, inv.SupplierID, candidate); i++ {
+						candidate = originalNumber + fmt.Sprintf("-imp-%d", i)
+					}
+					inv.InvoiceNumber = candidate
 				} else {
 					ts.Skip++
 					continue

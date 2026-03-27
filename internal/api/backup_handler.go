@@ -37,6 +37,10 @@ func (s *Server) handleExport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if passphrase != "" {
+		if len(passphrase) < 8 {
+			writeError(w, http.StatusBadRequest, "passphrase must be at least 8 characters")
+			return
+		}
 		data, err := s.backupExport.ExportEncryptedJSON(filters, passphrase)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())
@@ -99,6 +103,10 @@ func (s *Server) handleImport(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "file is encrypted, passphrase required")
 		return
 	}
+	if passphrase != "" && len(passphrase) < 8 {
+		writeError(w, http.StatusBadRequest, "passphrase must be at least 8 characters")
+		return
+	}
 
 	mode := r.FormValue("mode")
 	switch mode {
@@ -108,6 +116,9 @@ func (s *Server) handleImport(w http.ResponseWriter, r *http.Request) {
 		mode = "full_replace"
 	case "force":
 		// already correct
+	default:
+		writeError(w, http.StatusBadRequest, "invalid import mode, use: merge, replace, or force")
+		return
 	}
 
 	opts := backup.ImportOptions{
@@ -200,6 +211,11 @@ func (s *Server) handleExportToFile(w http.ResponseWriter, r *http.Request) {
 			f := req.ExportFilters
 			filters = &f
 		}
+	}
+
+	if passphrase != "" && len(passphrase) < 8 {
+		writeError(w, http.StatusBadRequest, "passphrase must be at least 8 characters")
+		return
 	}
 
 	var data []byte
