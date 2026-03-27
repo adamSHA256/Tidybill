@@ -80,7 +80,7 @@ jobs:
             tauri-args: "--target aarch64-apple-darwin"
             ext: ""
 
-          - os: macos-latest
+          - os: macos-13
             rust-target: x86_64-apple-darwin
             goos: darwin
             goarch: amd64
