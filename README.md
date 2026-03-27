@@ -77,7 +77,7 @@
 
 ```
 ╔═════════════════════════════════════════════════════════════╗
-║                     TIDYBILL v0.3.0                          ║
+║                     TIDYBILL v0.4.0                          ║
 ║  Company: Smith & Co. Digital                               ║
 ╠═════════════════════════════════════════════════════════════╣
 ║                                                             ║
@@ -162,6 +162,7 @@
 - **Smart numbering** — automatic invoice numbers with configurable prefix
 - **Multiple PDF templates** — classic, modern, minimal with live preview
 - **Duplicate invoice** — quick-copy or edit-before-save
+- **Encrypted backup & restore** — export/import your full database as a `.tidybill` file with optional encryption (XChaCha20-Poly1305 + Argon2id), BIP-39 recovery mnemonics, and 4 import modes (smart merge, replace, force, preview)
 - **Update notifications** — opt-in automatic check for new versions, privacy-friendly (never connects without your permission)
 - **SQLite database** — single-file storage, fast and portable
 - **Cross-platform** — Linux, Windows, macOS, and Android
@@ -217,7 +218,7 @@ Requires: Go, Node.js, pnpm, Rust toolchain, Tauri 2 CLI.
 - [x] Android app (Tauri 2 mobile + Go via gomobile)
 - [x] Send invoices by email (SMTP, templates, automation)
 - [x] Update notifications (opt-in, privacy-friendly)
-- [ ] Encrypted export/import for device sync
+- [x] Encrypted export/import for device sync
 
 ## Acknowledgements
 

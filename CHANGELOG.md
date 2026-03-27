@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.4.0
+
+### New
+- Encrypted backup & restore — export your full database as a single `.tidybill` file with optional XChaCha20-Poly1305 encryption (Argon2id key derivation, BIP-39 recovery mnemonics)
+- Four import modes — smart merge (keeps newer records), full replace, force overwrite, and preview (dry-run)
+- Sync page in desktop app with export filters (by supplier, date range, skip old paid invoices), encryption toggle, and detailed import preview
+- CLI sync menu — interactive export/import with encryption support
+- Android share sheet integration for exporting backup files
+- BIP-39 mnemonic generator for creating strong, recoverable passphrases
+- Email template defaults now configurable via API (`email.default_subject`, `email.default_body`, `email.copy_subject`)
+
+### Fixed
+- Save dialog now shows the actual saved path instead of the default filename
+- Android sharesheet plugin deserialization error
+- Import preview now simulates the correct mode (force/replace/merge) for accurate results
+- SMTP password not-configured error now explains the post-import reconfiguration step
+- Backend passphrase validation enforces minimum 8 characters (previously only checked in UI)
+- Import mode parameter is now strictly validated — invalid values return 400 instead of silently defaulting
+- Invoice number collision suffix is now unique (appends counter to avoid creating new conflicts)
+
+### Changed
+- Email template defaults moved from frontend to Go backend (persisted on startup)
+- Export uses read-only transaction with single-connection isolation for consistent snapshots
+
 ## v0.3.0
 
 ### New
