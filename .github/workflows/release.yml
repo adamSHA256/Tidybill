@@ -80,11 +80,11 @@ jobs:
             tauri-args: "--target aarch64-apple-darwin"
             ext: ""
 
-          - os: macos-13
+          - os: macos-latest
             rust-target: x86_64-apple-darwin
             goos: darwin
             goarch: amd64
-            tauri-args: "--target x86_64-apple-darwin"
+            tauri-args: "--target x86_64-apple-darwin --bundles app"
             ext: ""
 
     runs-on: ${{ matrix.os }}
