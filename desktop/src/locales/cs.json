@@ -363,7 +363,8 @@
   "bank_account.qr_type_hint": "QR kód na faktuře pro snadnou platbu může být vypnut zde nebo pro celou šablonu v \"Nástroje → Šablony PDF\"",
   "bank_account.qr_type_wizard_hint": "QR kód na faktuře pro snadnou platbu, může být nastaven či kdykoliv změněn později",
   "bank_account.missing_fields_title": "Chybějící údaje",
-  "bank_account.missing_fields_msg": "Název nebo číslo účtu je povinné",
+  "bank_account.missing_fields_msg": "Číslo účtu nebo IBAN je povinné",
+  "bank_account.account_or_iban_hint": "Číslo účtu nebo IBAN je povinné",
   "bank_account.delete_title": "Smazat bankovní účet",
   "bank_account.delete_confirm": "Opravdu chcete smazat bankovní účet <strong>{name}</strong>?",
   "bank_account.section_title": "Bankovní účty",
@@ -483,7 +484,7 @@
   "wizard.currency_label": "Výchozí měna",
   "wizard.choose_folder": "Vybrat složku",
   "wizard.settings_hint": "Všechno a ještě více chytrých věcí můžete kdykoliv změnit v Nastavení.",
-  "wizard.account_number_required": "Číslo účtu je povinné",
+  "wizard.account_number_required": "Číslo účtu nebo IBAN je povinné",
   "wizard.happy_invoicing": "Veselé fakturování!",
 
   "update.check_label": "Kontrolovat aktualizace na nejnovější verzi",

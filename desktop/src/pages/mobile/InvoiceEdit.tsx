@@ -313,7 +313,7 @@ export function MobileInvoiceEdit() {
   }
 
   const handleSaveBank = () => {
-    if (!bName.trim() && !bAccountNumber.trim()) {
+    if (!bAccountNumber.trim() && !bIban.trim()) {
       notifications.show({ title: t('bank_account.missing_fields_title'), message: t('bank_account.missing_fields_msg'), color: 'orange' })
       return
     }
@@ -537,7 +537,7 @@ export function MobileInvoiceEdit() {
   ]
 
   const bankData = [
-    ...(bankAccounts || []).map((b) => ({ value: b.id, label: `${b.account_number} (${b.currency})` })),
+    ...(bankAccounts || []).map((b) => ({ value: b.id, label: `${b.account_number || b.iban || b.name} (${b.currency})` })),
     { value: CREATE_NEW, label: `+ ${t('invoice.create_new_bank_account')}` },
   ]
 
@@ -1018,9 +1018,23 @@ export function MobileInvoiceEdit() {
             <Stack gap="md">
               <TextInput label={t('bank_account.name_label')} value={bName}
                 onChange={(e) => setBName(e.currentTarget.value)} />
-              <TextInput label={t('bank_account.account_number_label')} value={bAccountNumber}
-                onChange={(e) => setBAccountNumber(e.currentTarget.value)} required />
-              <TextInput label={t('bank_account.iban_label')} value={bIban}
+              <TextInput label={
+                <Group gap={4}>
+                  <span>{t('bank_account.account_number_label')}</span>
+                  <Tooltip label={t('bank_account.account_or_iban_hint')} multiline w={300} withArrow events={{ hover: true, focus: true, touch: true }}>
+                    <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+                  </Tooltip>
+                </Group>
+              } value={bAccountNumber}
+                onChange={(e) => setBAccountNumber(e.currentTarget.value)} />
+              <TextInput label={
+                <Group gap={4}>
+                  <span>{t('bank_account.iban_label')}</span>
+                  <Tooltip label={t('bank_account.account_or_iban_hint')} multiline w={300} withArrow events={{ hover: true, focus: true, touch: true }}>
+                    <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+                  </Tooltip>
+                </Group>
+              } value={bIban}
                 onChange={(e) => setBIban(e.currentTarget.value)} />
               <Group grow>
                 <TextInput label={t('bank_account.swift_label')} value={bSwift}

@@ -392,7 +392,7 @@ export function useInvoiceForm() {
   ]
 
   const bankData = [
-    ...(bankAccounts || []).map((b) => ({ value: b.id, label: `${b.account_number} (${b.currency})` })),
+    ...(bankAccounts || []).map((b) => ({ value: b.id, label: `${b.account_number || b.iban || b.name} (${b.currency})` })),
     { value: CREATE_NEW, label: `+ ${t('invoice.create_new_bank_account')}` },
   ]
 
@@ -545,7 +545,7 @@ export function useInvoiceForm() {
   }
 
   const handleSaveBank = () => {
-    if (!bName.trim() && !bAccountNumber.trim()) {
+    if (!bAccountNumber.trim() && !bIban.trim()) {
       notifications.show({ title: t('bank_account.missing_fields_title'), message: t('bank_account.missing_fields_msg'), color: 'orange' })
       return
     }
