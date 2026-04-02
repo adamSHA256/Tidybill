@@ -99,8 +99,14 @@ export function MobileAbout() {
               styles={{ root: { borderRadius: 'var(--mantine-radius-sm)' } }}
             />
           ) : (
-            <Text size="sm" c="dimmed" ta="center" py="xs">
-              {t('update.up_to_date')}
+            <Text
+              size="sm"
+              c="dimmed"
+              py="xs"
+              onDoubleClick={handleManualCheck}
+              style={{ cursor: 'pointer' }}
+            >
+              {checking ? t('update.checking') : t('update.up_to_date')}
             </Text>
           )
         ) : (
