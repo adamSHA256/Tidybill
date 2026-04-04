@@ -96,11 +96,13 @@ func (t *TableTemplate) addParties(m core.Maroto, data *InvoiceData, opts *Templ
 	rowHeight := 40.0
 	if opts.HasBankInfo {
 		topOffset := 20.0
-		rightTexts = append(rightTexts,
-			text.New(i18n.TForLang(lang, "pdf.bank_account"), props.Text{Size: 9, Top: topOffset}),
-			text.New(data.BankAccount.AccountNumber, props.Text{Size: 9, Style: fontstyle.Bold, Top: topOffset, Left: 28}),
-		)
-		topOffset += 6
+		if data.BankAccount.AccountNumber != "" {
+			rightTexts = append(rightTexts,
+				text.New(i18n.TForLang(lang, "pdf.bank_account"), props.Text{Size: 9, Top: topOffset}),
+				text.New(data.BankAccount.AccountNumber, props.Text{Size: 9, Style: fontstyle.Bold, Top: topOffset, Left: 28}),
+			)
+			topOffset += 6
+		}
 		rightTexts = append(rightTexts,
 			text.New(i18n.TForLang(lang, "pdf.variable_symbol"), props.Text{Size: 9, Top: topOffset}),
 			text.New(data.Invoice.VariableSymbol, props.Text{Size: 9, Style: fontstyle.Bold, Top: topOffset, Left: 28}),
@@ -113,10 +115,13 @@ func (t *TableTemplate) addParties(m core.Maroto, data *InvoiceData, opts *Templ
 			)
 			topOffset += 6
 		}
-		rightTexts = append(rightTexts,
-			text.New(fmt.Sprintf("IBAN: %s", data.BankAccount.IBAN), props.Text{Size: 9, Top: topOffset}),
-		)
-		topOffset += 6
+		if data.BankAccount.IBAN != "" {
+			rightTexts = append(rightTexts,
+				text.New("IBAN:", props.Text{Size: 9, Top: topOffset}),
+				text.New(data.BankAccount.IBAN, props.Text{Size: 9, Style: fontstyle.Bold, Top: topOffset, Left: 28}),
+			)
+			topOffset += 6
+		}
 		rowHeight = topOffset + 22
 	}
 

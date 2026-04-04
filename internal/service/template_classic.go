@@ -171,23 +171,58 @@ func (t *ClassicTemplate) details(data *InvoiceData, opts *TemplateOptions, lang
 	))
 
 	if opts.HasBankInfo {
-		rows = append(rows, row.New(5).Add(
-			text.NewCol(4, fmt.Sprintf("%s %s", i18n.TForLang(lang, "pdf.bank_account"), data.BankAccount.AccountNumber), props.Text{Size: 9, Left: classicPadLeft}),
-			col.New(4),
-			text.NewCol(4, fmt.Sprintf("%s %s", i18n.TForLang(lang, "pdf.issue_date"), issueDate), props.Text{Size: 9, Right: classicPadRight}),
-		))
+		// Right column: dates (always shown)
+		type dateRow struct{ label string; bold bool }
+		dateRows := []dateRow{
+			{fmt.Sprintf("%s %s", i18n.TForLang(lang, "pdf.issue_date"), issueDate), false},
+			{fmt.Sprintf("%s %s", i18n.TForLang(lang, "pdf.due_date"), dueDate), true},
+		}
+		if taxDateText != "" {
+			dateRows = append(dateRows, dateRow{taxDateText, false})
+		}
 
-		rows = append(rows, row.New(5).Add(
-			text.NewCol(4, fmt.Sprintf("IBAN: %s", data.BankAccount.IBAN), props.Text{Size: 9, Left: classicPadLeft}),
-			col.New(4),
-			text.NewCol(4, fmt.Sprintf("%s %s", i18n.TForLang(lang, "pdf.due_date"), dueDate), props.Text{Size: 9, Style: fontstyle.Bold, Right: classicPadRight}),
-		))
+		// Left column: bank fields (conditional)
+		var bankRows []string
+		if data.BankAccount.AccountNumber != "" {
+			bankRows = append(bankRows, fmt.Sprintf("%s %s", i18n.TForLang(lang, "pdf.bank_account"), data.BankAccount.AccountNumber))
+		}
+		if data.BankAccount.IBAN != "" {
+			bankRows = append(bankRows, fmt.Sprintf("IBAN: %s", data.BankAccount.IBAN))
+		}
+		if data.BankAccount.SWIFT != "" {
+			bankRows = append(bankRows, fmt.Sprintf("SWIFT: %s", data.BankAccount.SWIFT))
+		}
+		bankRows = append(bankRows, fmt.Sprintf("%s %s", i18n.TForLang(lang, "pdf.variable_symbol"), data.Invoice.VariableSymbol))
 
-		rows = append(rows, row.New(5).Add(
-			text.NewCol(4, fmt.Sprintf("%s %s", i18n.TForLang(lang, "pdf.variable_symbol"), data.Invoice.VariableSymbol), props.Text{Size: 9, Style: fontstyle.Bold, Left: classicPadLeft}),
-			col.New(4),
-			text.NewCol(4, taxDateText, props.Text{Size: 9, Right: classicPadRight}),
-		))
+		// Zip left and right columns
+		n := len(bankRows)
+		if len(dateRows) > n {
+			n = len(dateRows)
+		}
+		for i := 0; i < n; i++ {
+			leftText := ""
+			if i < len(bankRows) {
+				leftText = bankRows[i]
+			}
+			rightText := ""
+			rightStyle := props.Text{Size: 9, Right: classicPadRight}
+			if i < len(dateRows) {
+				rightText = dateRows[i].label
+				if dateRows[i].bold {
+					rightStyle.Style = fontstyle.Bold
+				}
+			}
+			// Bold the variable symbol row
+			leftStyle := props.Text{Size: 9, Left: classicPadLeft}
+			if i < len(bankRows) && i == len(bankRows)-1 {
+				leftStyle.Style = fontstyle.Bold
+			}
+			rows = append(rows, row.New(5).Add(
+				text.NewCol(4, leftText, leftStyle),
+				col.New(4),
+				text.NewCol(4, rightText, rightStyle),
+			))
+		}
 	} else {
 		rows = append(rows, row.New(5).Add(
 			col.New(4),
