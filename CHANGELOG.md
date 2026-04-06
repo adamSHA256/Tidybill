@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.4.1
+
+### Fixed
+- Bank account validation: require account number OR IBAN (not both), with info tooltip on both fields
+- Auto-update check: GET endpoint now refreshes stale cache when 24-hour cooldown elapsed
+- Update check UI: "up to date" text left-aligned and double-clickable to re-check
+- URL opening: switched from broken opener plugin to shell plugin for HTTP/HTTPS URLs
+- File opening: custom Rust command bypasses Tauri opener scope, fixing non-standard drive letters (G:, Z:, network shares)
+- PDF templates: account number, IBAN, and SWIFT shown only when non-empty (all 4 Go templates + 4 YAML templates)
+- Windows NSIS installer: "Just install" is now the default option instead of "Uninstall first"
+- Windows NSIS uninstall: now prompts before deleting user data instead of silently wiping it
+
+### New
+- SWIFT field added to setup wizard (alongside currency)
+- About page: description shown before update check section
+- Settings: PDF output section moved next to General on desktop
+
 ## v0.4.0
 
 ### New
