@@ -630,8 +630,12 @@ export function useInvoiceForm() {
   }
 
   const handleCreate = () => {
-    if (!selectedSupplierId || !customerId || (requiresBankInfo && !selectedBankId)) {
-      notifications.show({ title: t('invoice.missing_fields_title'), message: requiresBankInfo ? t('invoice.missing_fields_msg') : t('invoice.missing_fields_msg_no_bank'), color: 'orange' })
+    const missing: string[] = []
+    if (!selectedSupplierId) missing.push(t('invoice.missing_supplier'))
+    if (!customerId) missing.push(t('invoice.missing_customer'))
+    if (requiresBankInfo && !selectedBankId) missing.push(t('invoice.missing_bank_account'))
+    if (missing.length > 0) {
+      notifications.show({ title: t('invoice.missing_fields_title'), message: t('invoice.missing_select').replace('{fields}', missing.join(', ')), color: 'orange' })
       return
     }
     if (items.every((i) => !i.description)) {
@@ -639,8 +643,8 @@ export function useInvoiceForm() {
       return
     }
     createMutation.mutate({
-      supplier_id: selectedSupplierId,
-      customer_id: customerId,
+      supplier_id: selectedSupplierId!,
+      customer_id: customerId!,
       bank_account_id: requiresBankInfo ? selectedBankId! : undefined,
       invoice_number: invoiceNumber || undefined,
       issue_date: issueDate || undefined,

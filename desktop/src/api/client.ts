@@ -65,8 +65,13 @@ async function request<T>(path: string, options?: RequestInit & { timeout?: numb
   if (timer) clearTimeout(timer)
 
   if (!response.ok) {
-    const error = await response.text()
-    throw new Error(error || `Request failed: ${response.status}`)
+    const text = await response.text()
+    let message = text || `Request failed: ${response.status}`
+    try {
+      const parsed = JSON.parse(text)
+      if (parsed.error) message = parsed.error
+    } catch { /* not JSON, use raw text */ }
+    throw new Error(message)
   }
 
   if (response.status === 204) return undefined as T

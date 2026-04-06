@@ -493,8 +493,12 @@ export function MobileInvoiceEdit() {
   const total = subtotal + vatAmount
 
   const handleSave = () => {
-    if (!supplierId || !customerId || (requiresBankInfo && !bankAccountId)) {
-      notifications.show({ title: t('invoice.missing_fields_title'), message: requiresBankInfo ? t('invoice.missing_fields_msg') : t('invoice.missing_fields_msg_no_bank'), color: 'orange' })
+    const missing: string[] = []
+    if (!supplierId) missing.push(t('invoice.missing_supplier'))
+    if (!customerId) missing.push(t('invoice.missing_customer'))
+    if (requiresBankInfo && !bankAccountId) missing.push(t('invoice.missing_bank_account'))
+    if (missing.length > 0) {
+      notifications.show({ title: t('invoice.missing_fields_title'), message: t('invoice.missing_select').replace('{fields}', missing.join(', ')), color: 'orange' })
       return
     }
     if (items.every((i) => !i.description)) {
@@ -502,8 +506,8 @@ export function MobileInvoiceEdit() {
       return
     }
     updateMutation.mutate({
-      supplier_id: supplierId,
-      customer_id: customerId,
+      supplier_id: supplierId!,
+      customer_id: customerId!,
       bank_account_id: requiresBankInfo ? bankAccountId! : undefined,
       invoice_number: invoiceNumber || undefined,
       issue_date: issueDate || undefined,
@@ -602,11 +606,15 @@ export function MobileInvoiceEdit() {
           <Paper p="md" radius="md" withBorder>
             <Text fw={500} mb="sm">{t('invoice.invoice_number')}</Text>
             <Stack gap="sm">
-              <TextInput
-                label={t('invoice.invoice_number')}
-                value={invoiceNumber}
-                onChange={(e) => setInvoiceNumber(e.currentTarget.value)}
-              />
+              <Tooltip label={id ? t('invoice.number_readonly_hint') : ''} multiline w={300} withArrow disabled={!id} events={{ hover: true, focus: true, touch: true }}>
+                <TextInput
+                  label={t('invoice.invoice_number')}
+                  value={invoiceNumber}
+                  onChange={(e) => setInvoiceNumber(e.currentTarget.value)}
+                  readOnly={!!id}
+                  styles={id ? { input: { opacity: 0.6, cursor: 'not-allowed' } } : undefined}
+                />
+              </Tooltip>
               <DateInput
                 label={t('invoice.issue_date')}
                 valueFormat="DD.MM.YYYY"

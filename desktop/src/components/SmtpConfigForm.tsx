@@ -3,7 +3,7 @@ import { Stack, TextInput, NumberInput, Switch, Select, Button, Group, Text, Pas
 import { notifications } from '@mantine/notifications'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, type SmtpConfig, type SmtpConfigInput } from '../api/client'
-import { useT } from '../i18n'
+import { useT, translateError } from '../i18n'
 import { IconPlugConnected, IconInfoCircle } from '@tabler/icons-react'
 
 const providerPresets: Record<string, { host: string; port: number; starttls: boolean }> = {
@@ -109,7 +109,7 @@ export function SmtpConfigForm({ supplierId, supplierName, supplierEmail }: Prop
       })
     },
     onError: (err: Error) => {
-      notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
+      notifications.show({ title: t('common.error'), message: translateError(t, err.message), color: 'red' })
     },
   })
 
@@ -126,7 +126,7 @@ export function SmtpConfigForm({ supplierId, supplierName, supplierEmail }: Prop
     onError: (err: Error) => {
       notifications.show({
         title: t('email.smtp_test_failed'),
-        message: err.message === 'TIMEOUT' ? t('email.send_timeout') : err.message,
+        message: err.message === 'TIMEOUT' ? t('email.send_timeout') : translateError(t, err.message),
         color: 'red',
       })
     },
@@ -153,7 +153,7 @@ export function SmtpConfigForm({ supplierId, supplierName, supplierEmail }: Prop
       })
     },
     onError: (err: Error) => {
-      notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
+      notifications.show({ title: t('common.error'), message: translateError(t, err.message), color: 'red' })
     },
   })
 
