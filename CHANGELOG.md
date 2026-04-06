@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.4.2
+
+### Fixed
+- Windows NSIS installer: data no longer wiped during upgrade (uninstall-before-reinstall flow)
+- Windows NSIS installer: text now recommends "Just install" instead of "Uninstall first"
+- Folder reveal (Open folder) now works on non-standard drive letters (G:, Z:, network shares)
+
 ## v0.4.1
 
 ### Fixed
