@@ -295,6 +295,28 @@ export function Settings() {
           </Stack>
         </Paper>
 
+        {!isMobile && (
+        <Paper p="md" radius="md" withBorder>
+          <Text fw={500} mb="md">{t('settings.pdf_output')}</Text>
+          <Stack gap="md">
+            <Group gap="md">
+              <Text size="sm">{t('settings.default_template')}:</Text>
+              <Badge variant="light" color="blue" size="lg">
+                {defaultTemplate?.name || '—'}
+              </Badge>
+            </Group>
+            <Text c="dimmed" size="sm">{t('settings.pdf_output_hint')}</Text>
+            <Button
+              w={250}
+              variant="light"
+              onClick={() => navigate('/templates')}
+            >
+              {t('settings.go_to_templates')}
+            </Button>
+          </Stack>
+        </Paper>
+        )}
+
       </SimpleGrid>
 
       {/* Row 2: Dashboard — switches in 2-column grid */}
@@ -723,28 +745,30 @@ export function Settings() {
         </Paper>
       </SimpleGrid>
 
-      {/* Row 6: PDF Output + Directories */}
-      <SimpleGrid cols={{ base: 1, md: 2 }}>
-        <Paper p="md" radius="md" withBorder>
-          <Text fw={500} mb="md">{t('settings.pdf_output')}</Text>
-          <Stack gap="md">
-            <Group gap="md">
-              <Text size="sm">{t('settings.default_template')}:</Text>
-              <Badge variant="light" color="blue" size="lg">
-                {defaultTemplate?.name || '—'}
-              </Badge>
-            </Group>
-            <Text c="dimmed" size="sm">{t('settings.pdf_output_hint')}</Text>
-            <Button
-              w={250}
-              variant="light"
-              onClick={() => navigate('/templates')}
-            >
-              {t('settings.go_to_templates')}
-            </Button>
-          </Stack>
-        </Paper>
+      {/* Row 6: PDF Output (mobile only) + Directories */}
+      {isMobile && (
+      <Paper p="md" radius="md" withBorder>
+        <Text fw={500} mb="md">{t('settings.pdf_output')}</Text>
+        <Stack gap="md">
+          <Group gap="md">
+            <Text size="sm">{t('settings.default_template')}:</Text>
+            <Badge variant="light" color="blue" size="lg">
+              {defaultTemplate?.name || '—'}
+            </Badge>
+          </Group>
+          <Text c="dimmed" size="sm">{t('settings.pdf_output_hint')}</Text>
+          <Button
+            w={250}
+            variant="light"
+            onClick={() => navigate('/templates')}
+          >
+            {t('settings.go_to_templates')}
+          </Button>
+        </Stack>
+      </Paper>
+      )}
 
+      <SimpleGrid cols={{ base: 1, md: 2 }}>
         {!isMobileDevice() && (
         <Paper p="md" radius="md" withBorder>
           <Text fw={500} mb="md">{t('settings.directories')}</Text>

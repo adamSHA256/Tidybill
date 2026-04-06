@@ -86,6 +86,12 @@ export function About() {
         <Badge variant="light" color="blue" size="lg">v{aboutInfo.version}</Badge>
       </Group>
 
+      {/* About */}
+      <Paper p="md" radius="md" withBorder>
+        <Text size="sm" mb="xs">{t('about.description')}</Text>
+        <Text size="sm" c="dimmed">{t('about.opensource')}</Text>
+      </Paper>
+
       {/* Update check */}
       <Paper p="md" radius="md" withBorder>
         {updateResult?.checked_at ? (
@@ -133,12 +139,6 @@ export function About() {
             onChange={(e) => handleAutoCheckToggle(e.currentTarget.checked)}
           />
         </Tooltip>
-      </Paper>
-
-      {/* About */}
-      <Paper p="md" radius="md" withBorder>
-        <Text size="sm" mb="xs">{t('about.description')}</Text>
-        <Text size="sm" c="dimmed">{t('about.opensource')}</Text>
       </Paper>
 
       {/* Issues */}
