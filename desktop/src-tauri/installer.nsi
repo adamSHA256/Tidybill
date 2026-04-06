@@ -216,7 +216,7 @@ Function PageReinstall
     !insertmacro MUI_HEADER_TEXT "$(alreadyInstalled)" "$(chooseMaintenanceOption)"
   ; Upgrading
   ${ElseIf} $R0 = 1
-    StrCpy $R1 "$(olderOrUnknownVersionInstalled)"
+    StrCpy $R1 "A previous version of ${PRODUCTNAME} was found. You can install directly over it (recommended) or uninstall first."
     StrCpy $R2 "$(uninstallBeforeInstalling)"
     StrCpy $R3 "$(dontUninstall)"
     !insertmacro MUI_HEADER_TEXT "$(alreadyInstalled)" "$(choowHowToInstall)"
