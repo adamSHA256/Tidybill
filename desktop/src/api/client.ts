@@ -658,8 +658,8 @@ export async function openInBrowser(url: string): Promise<void> {
         const shell = await import('@tauri-apps/plugin-shell')
         await shell.open(url)
       } else {
-        const opener = await import('@tauri-apps/plugin-opener')
-        await opener.openPath(url)
+        const { invoke } = await import('@tauri-apps/api/core')
+        await invoke('open_file_path', { path: url })
       }
     } else {
       window.open(url, '_blank')

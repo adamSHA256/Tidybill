@@ -47,6 +47,18 @@ fn get_api_port(state: tauri::State<'_, ApiPort>) -> u16 {
     state.0.lock().unwrap().unwrap_or(0)
 }
 
+#[tauri::command]
+fn open_file_path(app: tauri::AppHandle, path: String) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    let p = std::path::Path::new(&path);
+    if !p.exists() {
+        return Err(format!("File not found: {}", path));
+    }
+    app.opener()
+        .open_path(&path, None::<&str>)
+        .map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let port_state = Arc::new(Mutex::new(None::<u16>));
@@ -57,7 +69,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_sharesheet::init())
         .manage(ApiPort(port_state.clone()))
-        .invoke_handler(tauri::generate_handler![get_api_port]);
+        .invoke_handler(tauri::generate_handler![get_api_port, open_file_path]);
 
     #[cfg(desktop)]
     {
