@@ -330,11 +330,11 @@ jobs:
           rename_asset "TidyBill_${VERSION}_amd64.deb"           "TidyBill_Linux_Desktop_amd64.deb"
           rename_asset "TidyBill-${VERSION}-1.x86_64.rpm"        "TidyBill_Linux_Desktop_x86_64.rpm"
           rename_asset "TidyBill_${VERSION}_aarch64.dmg"         "TidyBill_Mac_Desktop_aarch64.dmg"
-          rename_asset "TidyBill_${VERSION}_x64.dmg"             "TidyBill_Mac_Desktop_x64.dmg"
+          rename_asset "TidyBill_${VERSION}_x64.app.tar.gz"       "TidyBill_Mac_Desktop_x64.app.tar.gz"
 
           # Signature files for updater (if present)
           rename_asset "TidyBill_${VERSION}_aarch64.dmg.sig"     "TidyBill_Mac_Desktop_aarch64.dmg.sig"
-          rename_asset "TidyBill_${VERSION}_x64.dmg.sig"         "TidyBill_Mac_Desktop_x64.dmg.sig"
+          rename_asset "TidyBill_${VERSION}_x64.app.tar.gz.sig"  "TidyBill_Mac_Desktop_x64.app.tar.gz.sig"
           rename_asset "TidyBill-${VERSION}-1.x86_64.rpm.sig"    "TidyBill_Linux_Desktop_x86_64.rpm.sig"
 
           # Update release body with download table
@@ -371,7 +371,7 @@ jobs:
           | **Linux (Debian/Ubuntu)** | [TidyBill_Linux_Desktop_amd64.deb](${DOWNLOAD_BASE}/TidyBill_Linux_Desktop_amd64.deb) | \`sudo dpkg -i TidyBill_Linux_Desktop_amd64.deb\` |
           | **Linux (Fedora/RHEL)** | [TidyBill_Linux_Desktop_x86_64.rpm](${DOWNLOAD_BASE}/TidyBill_Linux_Desktop_x86_64.rpm) | \`sudo rpm -i TidyBill_Linux_Desktop_x86_64.rpm\` |
           | **macOS (Apple Silicon)** | [TidyBill_Mac_Desktop_aarch64.dmg](${DOWNLOAD_BASE}/TidyBill_Mac_Desktop_aarch64.dmg) | For M1/M2/M3/M4 Macs. Gatekeeper may warn — open System Settings → Privacy & Security → click "Open Anyway" |
-          | **macOS (Intel)** | [TidyBill_Mac_Desktop_x64.dmg](${DOWNLOAD_BASE}/TidyBill_Mac_Desktop_x64.dmg) | For older Intel Macs. Gatekeeper may warn — open System Settings → Privacy & Security → click "Open Anyway" |
+          | **macOS (Intel)** | [TidyBill_Mac_Desktop_x64.app.tar.gz](${DOWNLOAD_BASE}/TidyBill_Mac_Desktop_x64.app.tar.gz) | For older Intel Macs. Extract and move to Applications. Gatekeeper may warn — open System Settings → Privacy & Security → click "Open Anyway" |
 
           ### CLI (terminal only, no GUI)
 
