@@ -43,11 +43,17 @@ type Checker struct {
 // NewChecker creates a new update checker.
 func NewChecker(settings *repository.SettingsRepository) *Checker {
 	c := &Checker{settings: settings}
-	// Restore cached result from DB
+	// Restore cached result from DB, but invalidate if app version changed
 	if raw, _ := settings.Get(cachedResultKey); raw != "" {
 		var r Result
 		if json.Unmarshal([]byte(raw), &r) == nil {
-			c.cached = &r
+			if r.CurrentVer == config.Version {
+				c.cached = &r
+			} else {
+				// Version changed (upgrade/downgrade) — discard stale cache
+				_ = settings.Set(cachedResultKey, "")
+				_ = settings.Set(lastCheckKey, "")
+			}
 		}
 	}
 	return c
