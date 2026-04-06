@@ -690,8 +690,8 @@ export async function openFolder(filePath: string): Promise<void> {
   if (isMobileDevice()) return
   try {
     if (isTauri()) {
-      const { revealItemInDir } = await import('@tauri-apps/plugin-opener')
-      await revealItemInDir(filePath)
+      const { invoke } = await import('@tauri-apps/api/core')
+      await invoke('reveal_file_in_dir', { path: filePath })
     }
   } catch (err) {
     console.error('openFolder failed:', filePath, err)

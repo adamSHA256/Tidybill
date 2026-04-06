@@ -59,6 +59,14 @@ fn open_file_path(app: tauri::AppHandle, path: String) -> Result<(), String> {
         .map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn reveal_file_in_dir(app: tauri::AppHandle, path: String) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    app.opener()
+        .reveal_item_in_dir(&path)
+        .map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let port_state = Arc::new(Mutex::new(None::<u16>));
@@ -69,7 +77,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_sharesheet::init())
         .manage(ApiPort(port_state.clone()))
-        .invoke_handler(tauri::generate_handler![get_api_port, open_file_path]);
+        .invoke_handler(tauri::generate_handler![get_api_port, open_file_path, reveal_file_in_dir]);
 
     #[cfg(desktop)]
     {
