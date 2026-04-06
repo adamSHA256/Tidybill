@@ -358,7 +358,8 @@
   "bank_account.qr_type_hint": "QR code on invoice can be disabled here or for the entire template in \"Tools → PDF Templates\"",
   "bank_account.qr_type_wizard_hint": "QR code on invoice for easy payment, can be set or changed at any time later",
   "bank_account.missing_fields_title": "Missing fields",
-  "bank_account.missing_fields_msg": "Account name or number is required",
+  "bank_account.missing_fields_msg": "Account number or IBAN is required",
+  "bank_account.account_or_iban_hint": "Bank Account or IBAN is required",
   "bank_account.delete_title": "Delete Bank Account",
   "bank_account.delete_confirm": "Are you sure you want to delete bank account <strong>{name}</strong>?",
   "bank_account.section_title": "Bank Accounts",
@@ -482,7 +483,7 @@
   "wizard.currency_label": "Default currency",
   "wizard.choose_folder": "Choose folder",
   "wizard.settings_hint": "Everything and even more smart things you can change anytime in Settings.",
-  "wizard.account_number_required": "Account number is required",
+  "wizard.account_number_required": "Account number or IBAN is required",
   "wizard.happy_invoicing": "Happy invoicing!",
 
   "update.check_label": "Check for updates to the latest version",

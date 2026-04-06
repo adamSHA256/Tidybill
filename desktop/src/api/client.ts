@@ -653,13 +653,13 @@ export function getPreviewPdfUrl(id: string): string {
 export async function openInBrowser(url: string): Promise<void> {
   try {
     if (isTauri()) {
-      const opener = await import('@tauri-apps/plugin-opener')
       if (isMobileDevice() || url.startsWith('http://') || url.startsWith('https://')) {
-        // On mobile, openPath doesn't work (no FileProvider support in opener plugin).
-        // Always use openUrl which opens in the system browser.
-        await opener.openUrl(url)
+        // Use shell plugin for URLs — opener.openUrl is broken on Linux and Windows
+        const shell = await import('@tauri-apps/plugin-shell')
+        await shell.open(url)
       } else {
-        await opener.openPath(url)
+        const { invoke } = await import('@tauri-apps/api/core')
+        await invoke('open_file_path', { path: url })
       }
     } else {
       window.open(url, '_blank')

@@ -78,6 +78,7 @@ export function SetupWizard({ onComplete }: Props) {
   const [bankName, setBankName] = useState('')
   const [bankAccountNumber, setBankAccountNumber] = useState('')
   const [bankIban, setBankIban] = useState('')
+  const [bankSwift, setBankSwift] = useState('')
   const [bankCurrency, setBankCurrency] = useState('CZK')
   const [bankQrType, setBankQrType] = useState('spayd')
 
@@ -189,7 +190,7 @@ export function SetupWizard({ onComplete }: Props) {
 
   const handleBankNext = async () => {
     if (!createdSupplierId) return
-    if (!bankAccountNumber.trim()) {
+    if (!bankAccountNumber.trim() && !bankIban.trim()) {
       notifications.show({
         title: t('bank_account.missing_fields_title'),
         message: t('wizard.account_number_required'),
@@ -203,6 +204,7 @@ export function SetupWizard({ onComplete }: Props) {
         name: bankName,
         account_number: bankAccountNumber,
         iban: bankIban,
+        swift: bankSwift,
         currency: bankCurrency,
         is_default: true,
         qr_type: bankQrType,
@@ -450,27 +452,46 @@ export function SetupWizard({ onComplete }: Props) {
                     onChange={(e) => setBankName(e.currentTarget.value)}
                   />
                   <TextInput
-                    label={t('bank_account.account_number_label')}
+                    label={
+                      <Group gap={4}>
+                        <span>{t('bank_account.account_number_label')}</span>
+                        <Tooltip label={t('bank_account.account_or_iban_hint')} multiline w={300} withArrow events={{ hover: true, focus: true, touch: true }}>
+                          <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+                        </Tooltip>
+                      </Group>
+                    }
                     value={bankAccountNumber}
                     onChange={(e) =>
                       setBankAccountNumber(e.currentTarget.value)
                     }
-                    required
                   />
                   <TextInput
-                    label={t('bank_account.iban_label')}
+                    label={
+                      <Group gap={4}>
+                        <span>{t('bank_account.iban_label')}</span>
+                        <Tooltip label={t('bank_account.account_or_iban_hint')} multiline w={300} withArrow events={{ hover: true, focus: true, touch: true }}>
+                          <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+                        </Tooltip>
+                      </Group>
+                    }
                     value={bankIban}
                     onChange={(e) => setBankIban(e.currentTarget.value)}
                   />
-                  <Select
-                    label={t('bank_account.currency_label')}
-                    data={['CZK', 'EUR', 'USD']}
-                    value={bankCurrency}
-                    onChange={(v) => {
-                      if (v) setBankCurrency(v)
-                    }}
-                    w={200}
-                  />
+                  <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                    <TextInput
+                      label={t('bank_account.swift_label')}
+                      value={bankSwift}
+                      onChange={(e) => setBankSwift(e.currentTarget.value)}
+                    />
+                    <Select
+                      label={t('bank_account.currency_label')}
+                      data={['CZK', 'EUR', 'USD']}
+                      value={bankCurrency}
+                      onChange={(v) => {
+                        if (v) setBankCurrency(v)
+                      }}
+                    />
+                  </SimpleGrid>
                   <Select
                     label={
                       <Group gap={4}>

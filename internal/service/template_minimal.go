@@ -103,13 +103,38 @@ func (t *MinimalTemplate) payment(data *InvoiceData, opts *TemplateOptions, lang
 	rows = append(rows, row.New(1).Add(line.NewCol(12, props.Line{Color: minLineColor, SizePercent: 100})))
 
 	if opts.HasBankInfo {
-		rows = append(rows, row.New(12).Add(
+		// Build right column with conditional bank fields
+		rightTexts := []core.Component{}
+		topOffset := 2.0
+		if data.BankAccount.AccountNumber != "" {
+			rightTexts = append(rightTexts,
+				text.New(fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.bank_account"), data.BankAccount.AccountNumber), props.Text{Size: 9, Align: align.Right, Top: topOffset}),
+			)
+			topOffset += 4
+		}
+		if data.BankAccount.IBAN != "" {
+			rightTexts = append(rightTexts,
+				text.New(fmt.Sprintf("IBAN: %s", data.BankAccount.IBAN), props.Text{Size: 9, Align: align.Right, Top: topOffset}),
+			)
+			topOffset += 4
+		}
+		if data.BankAccount.SWIFT != "" {
+			rightTexts = append(rightTexts,
+				text.New(fmt.Sprintf("SWIFT: %s", data.BankAccount.SWIFT), props.Text{Size: 9, Align: align.Right, Top: topOffset}),
+			)
+			topOffset += 4
+		}
+		rowH := topOffset + 8
+		if rowH < 12 {
+			rowH = 12
+		}
+		rows = append(rows, row.New(rowH).Add(
 			col.New(4).Add(
 				text.New(i18n.TForLang(lang, "pdf.due_date"), props.Text{Size: 9, Style: fontstyle.Bold, Top: 2}),
 				text.New(dueDate, props.Text{Size: 9, Style: fontstyle.Bold, Top: 6}),
 			),
 			text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.variable_symbol_short"), data.Invoice.VariableSymbol), props.Text{Size: 9, Top: 2}),
-			text.NewCol(4, fmt.Sprintf("%s: %s", i18n.TForLang(lang, "pdf.bank_account"), data.BankAccount.AccountNumber), props.Text{Size: 9, Align: align.Right, Top: 2}),
+			col.New(4).Add(rightTexts...),
 		))
 	} else {
 		rows = append(rows, row.New(12).Add(

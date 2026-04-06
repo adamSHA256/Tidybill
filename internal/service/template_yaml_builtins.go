@@ -117,18 +117,22 @@ layout:
             style: { size: 9, top: 18 }
           - text: "{{ .Invoice.PaymentMethod }}"
             style: { size: 9, bold: true, top: 18, left: 35 }
-          - text: "{{ if .Options.HasBankInfo }}{{ label \"pdf.bank_account\" }}{{ end }}"
+          - text: "{{ if and .Options.HasBankInfo (ne .BankAccount.AccountNumber \"\") }}{{ label \"pdf.bank_account\" }}{{ end }}"
             style: { size: 9, top: 26 }
-          - text: "{{ if .Options.HasBankInfo }}{{ .BankAccount.AccountNumber }}{{ end }}"
+          - text: "{{ if and .Options.HasBankInfo (ne .BankAccount.AccountNumber \"\") }}{{ .BankAccount.AccountNumber }}{{ end }}"
             style: { size: 9, bold: true, top: 26, left: 35 }
-          - text: "{{ if .Options.HasBankInfo }}{{ label \"pdf.iban\" }}{{ end }}"
-            style: { size: 9, top: 32 }
-          - text: "{{ if .Options.HasBankInfo }}{{ .BankAccount.IBAN }}{{ end }}"
-            style: { size: 8, bold: true, top: 32, left: 35 }
           - text: "{{ if .Options.HasBankInfo }}{{ label \"pdf.variable_symbol\" }}{{ end }}"
-            style: { size: 9, top: 40 }
+            style: { size: 9, top: 32 }
           - text: "{{ if .Options.HasBankInfo }}{{ .Invoice.VariableSymbol }}{{ end }}"
-            style: { size: 9, bold: true, top: 40, left: 35 }
+            style: { size: 9, bold: true, top: 32, left: 35 }
+          - text: "{{ if and .Options.HasBankInfo (ne .BankAccount.SWIFT \"\") }}SWIFT:{{ end }}"
+            style: { size: 9, top: 38 }
+          - text: "{{ if and .Options.HasBankInfo (ne .BankAccount.SWIFT \"\") }}{{ .BankAccount.SWIFT }}{{ end }}"
+            style: { size: 9, bold: true, top: 38, left: 35 }
+          - text: "{{ if and .Options.HasBankInfo (ne .BankAccount.IBAN \"\") }}{{ label \"pdf.iban\" }}{{ end }}"
+            style: { size: 9, top: 44 }
+          - text: "{{ if and .Options.HasBankInfo (ne .BankAccount.IBAN \"\") }}{{ .BankAccount.IBAN }}{{ end }}"
+            style: { size: 8, bold: true, top: 44, left: 35 }
 
   # ── Payment bar ──
   - row: 15
@@ -387,7 +391,7 @@ layout:
     row: 5
     cols:
       - width: 4
-        text: "{{ label \"pdf.bank_account\" }} {{ .BankAccount.AccountNumber }}"
+        text: "{{ if ne .BankAccount.AccountNumber \"\" }}{{ label \"pdf.bank_account\" }} {{ .BankAccount.AccountNumber }}{{ end }}"
         style: { size: 9, left: 2 }
       - width: 4
       - width: 4
@@ -398,12 +402,20 @@ layout:
     row: 5
     cols:
       - width: 4
-        text: "IBAN: {{ .BankAccount.IBAN }}"
+        text: "{{ if ne .BankAccount.IBAN \"\" }}IBAN: {{ .BankAccount.IBAN }}{{ end }}"
         style: { size: 9, left: 2 }
       - width: 4
       - width: 4
         text: "{{ label \"pdf.due_date\" }} {{ .Invoice.DueDate | date }}"
         style: { size: 9, bold: true, right: 2 }
+
+  - if: "and .Options.HasBankInfo (ne .BankAccount.SWIFT \"\")"
+    row: 5
+    cols:
+      - width: 4
+        text: "SWIFT: {{ .BankAccount.SWIFT }}"
+        style: { size: 9, left: 2 }
+      - width: 8
 
   - if: ".Options.HasBankInfo"
     row: 5
@@ -718,21 +730,37 @@ layout:
     row: 6
     cols:
       - width: 3
-        text: "{{ label \"pdf.bank_account\" }}"
+        text: "{{ if ne .BankAccount.AccountNumber \"\" }}{{ label \"pdf.bank_account\" }}{{ end }}"
         style: { size: 8, color: label_gray }
       - width: 9
-        text: "IBAN"
+        text: "{{ if ne .BankAccount.IBAN \"\" }}IBAN{{ end }}"
         style: { size: 8, color: label_gray }
 
   - if: ".Options.HasBankInfo"
     row: 6
     cols:
       - width: 3
-        text: "{{ .BankAccount.AccountNumber }}"
+        text: "{{ if ne .BankAccount.AccountNumber \"\" }}{{ .BankAccount.AccountNumber }}{{ end }}"
         style: { size: 10, bold: true }
       - width: 9
-        text: "{{ .BankAccount.IBAN }}"
+        text: "{{ if ne .BankAccount.IBAN \"\" }}{{ .BankAccount.IBAN }}{{ end }}"
         style: { size: 10 }
+
+  - if: "and .Options.HasBankInfo (ne .BankAccount.SWIFT \"\")"
+    row: 6
+    cols:
+      - width: 3
+        text: "SWIFT:"
+        style: { size: 8, color: label_gray }
+      - width: 9
+
+  - if: "and .Options.HasBankInfo (ne .BankAccount.SWIFT \"\")"
+    row: 6
+    cols:
+      - width: 3
+        text: "{{ .BankAccount.SWIFT }}"
+        style: { size: 10 }
+      - width: 9
 
   # ── Meta (without bank info) ──
   - if: "not .Options.HasBankInfo"
@@ -955,8 +983,13 @@ layout:
         text: "{{ label \"pdf.variable_symbol_short\" }}: {{ .Invoice.VariableSymbol }}"
         style: { size: 9, top: 2 }
       - width: 4
-        text: "{{ label \"pdf.bank_account\" }} {{ .BankAccount.AccountNumber }}"
-        style: { size: 9, align: right, top: 2 }
+        texts:
+          - text: "{{ if ne .BankAccount.AccountNumber \"\" }}{{ label \"pdf.bank_account\" }}: {{ .BankAccount.AccountNumber }}{{ end }}"
+            style: { size: 9, align: right, top: 2 }
+          - text: "{{ if ne .BankAccount.IBAN \"\" }}IBAN: {{ .BankAccount.IBAN }}{{ end }}"
+            style: { size: 9, align: right, top: 6 }
+          - text: "{{ if ne .BankAccount.SWIFT \"\" }}SWIFT: {{ .BankAccount.SWIFT }}{{ end }}"
+            style: { size: 9, align: right, top: 10 }
 
   - if: "and .Options.HasBankInfo .Supplier.IsVATPayer"
     row: 6

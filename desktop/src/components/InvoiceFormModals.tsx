@@ -167,9 +167,23 @@ export function InvoiceFormModals({ modals, isMobile, t }: Props) {
         <Stack gap="md">
           <TextInput label={t('bank_account.name_label')} value={bName}
             onChange={(e) => setBName(e.currentTarget.value)} />
-          <TextInput label={t('bank_account.account_number_label')} value={bAccountNumber}
-            onChange={(e) => setBAccountNumber(e.currentTarget.value)} required />
-          <TextInput label={t('bank_account.iban_label')} value={bIban}
+          <TextInput label={
+            <Group gap={4}>
+              <span>{t('bank_account.account_number_label')}</span>
+              <Tooltip label={t('bank_account.account_or_iban_hint')} multiline w={300} withArrow events={{ hover: true, focus: true, touch: true }}>
+                <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+              </Tooltip>
+            </Group>
+          } value={bAccountNumber}
+            onChange={(e) => setBAccountNumber(e.currentTarget.value)} />
+          <TextInput label={
+            <Group gap={4}>
+              <span>{t('bank_account.iban_label')}</span>
+              <Tooltip label={t('bank_account.account_or_iban_hint')} multiline w={300} withArrow events={{ hover: true, focus: true, touch: true }}>
+                <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+              </Tooltip>
+            </Group>
+          } value={bIban}
             onChange={(e) => setBIban(e.currentTarget.value)} />
           <SimpleGrid cols={{ base: 1, sm: 2 }}>
             <TextInput label={t('bank_account.swift_label')} value={bSwift}

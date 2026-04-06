@@ -178,8 +178,8 @@ func (s *Server) createBankAccount(w http.ResponseWriter, r *http.Request) {
 	}
 	ba.SupplierID = supplierID
 
-	if ba.AccountNumber == "" {
-		writeError(w, http.StatusBadRequest, "account_number is required")
+	if ba.AccountNumber == "" && ba.IBAN == "" {
+		writeError(w, http.StatusBadRequest, "account_number or iban is required")
 		return
 	}
 
@@ -393,6 +393,11 @@ func (s *Server) updateBankAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	existing.ID = id
+
+	if existing.AccountNumber == "" && existing.IBAN == "" {
+		writeError(w, http.StatusBadRequest, "account_number or iban is required")
+		return
+	}
 
 	if existing.QRType != "" && !validQRTypes[existing.QRType] {
 		writeError(w, http.StatusBadRequest, "invalid qr_type, must be one of: spayd, pay_by_square, epc, none")

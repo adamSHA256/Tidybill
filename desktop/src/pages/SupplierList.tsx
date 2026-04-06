@@ -86,7 +86,7 @@ function BankAccountsRow({ supplierId, supplierName, onEdit, onDelete, onCreate 
                         {ba.is_default && <Badge size="xs" color="teal">{t('bank_account.default')}</Badge>}
                       </Group>
                     </Table.Td>
-                    <Table.Td fz="sm">{ba.account_number}</Table.Td>
+                    <Table.Td fz="sm">{ba.account_number || '\u2014'}</Table.Td>
                     <Table.Td fz="sm">{ba.iban || '\u2014'}</Table.Td>
                     <Table.Td fz="sm">{ba.swift || '\u2014'}</Table.Td>
                     <Table.Td fz="sm">{ba.currency}</Table.Td>
@@ -145,7 +145,7 @@ function MobileBankAccounts({ supplierId, onEdit, onDelete, onCreate }: {
         <Paper key={ba.id} p="xs" radius="sm" withBorder bg="var(--mantine-color-default-hover)">
           <Group justify="space-between" mb={2}>
             <Group gap="xs">
-              <Text size="xs" fw={500}>{ba.name || ba.account_number}</Text>
+              <Text size="xs" fw={500}>{ba.name || ba.account_number || ba.iban}</Text>
               {ba.is_default && <Badge size="xs" color="teal">{t('bank_account.default')}</Badge>}
             </Group>
             <Group gap="xs">
@@ -157,7 +157,7 @@ function MobileBankAccounts({ supplierId, onEdit, onDelete, onCreate }: {
               </ActionIcon>
             </Group>
           </Group>
-          {ba.name && <Text size="xs" c="dimmed">{ba.account_number}</Text>}
+          {ba.name && ba.account_number && <Text size="xs" c="dimmed">{ba.account_number}</Text>}
           {ba.iban && <Text size="xs" c="dimmed">IBAN: {ba.iban}</Text>}
           <Group gap="xs">
             {ba.swift && <Text size="xs" c="dimmed">SWIFT: {ba.swift}</Text>}
@@ -408,7 +408,7 @@ export function SupplierList() {
   }
 
   const handleBankSave = () => {
-    if (!baName.trim() && !baAccountNumber.trim()) {
+    if (!baAccountNumber.trim() && !baIban.trim()) {
       notifications.show({ title: t('bank_account.missing_fields_title'), message: t('bank_account.missing_fields_msg'), color: 'orange' })
       return
     }
@@ -775,9 +775,23 @@ export function SupplierList() {
         <Stack gap="md">
           <TextInput label={t('bank_account.name_label')} value={baName}
             onChange={(e) => setBaName(e.currentTarget.value)} />
-          <TextInput label={t('bank_account.account_number_label')} value={baAccountNumber}
-            onChange={(e) => setBaAccountNumber(e.currentTarget.value)} required />
-          <TextInput label={t('bank_account.iban_label')} value={baIban}
+          <TextInput label={
+            <Group gap={4}>
+              <span>{t('bank_account.account_number_label')}</span>
+              <Tooltip label={t('bank_account.account_or_iban_hint')} multiline w={300} withArrow events={{ hover: true, focus: true, touch: true }}>
+                <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+              </Tooltip>
+            </Group>
+          } value={baAccountNumber}
+            onChange={(e) => setBaAccountNumber(e.currentTarget.value)} />
+          <TextInput label={
+            <Group gap={4}>
+              <span>{t('bank_account.iban_label')}</span>
+              <Tooltip label={t('bank_account.account_or_iban_hint')} multiline w={300} withArrow events={{ hover: true, focus: true, touch: true }}>
+                <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+              </Tooltip>
+            </Group>
+          } value={baIban}
             onChange={(e) => setBaIban(e.currentTarget.value)} />
           <SimpleGrid cols={{ base: 1, sm: 2 }}>
             <TextInput label={t('bank_account.swift_label')} value={baSwift}
@@ -813,7 +827,7 @@ export function SupplierList() {
         title={t('bank_account.delete_title')} size="sm">
         <Stack gap="md">
           <Text size="sm" dangerouslySetInnerHTML={{
-            __html: t('bank_account.delete_confirm').replace('{name}', bankDeleteTarget?.name || bankDeleteTarget?.account_number || '')
+            __html: t('bank_account.delete_confirm').replace('{name}', bankDeleteTarget?.name || bankDeleteTarget?.account_number || bankDeleteTarget?.iban || '')
           }} />
           <Group justify="end">
             <Button variant="default" onClick={() => { setBankDeleteOpen(false); setBankDeleteTarget(null) }}>{t('common.cancel')}</Button>

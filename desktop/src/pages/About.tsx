@@ -86,6 +86,12 @@ export function About() {
         <Badge variant="light" color="blue" size="lg">v{aboutInfo.version}</Badge>
       </Group>
 
+      {/* About */}
+      <Paper p="md" radius="md" withBorder>
+        <Text size="sm" mb="xs">{t('about.description')}</Text>
+        <Text size="sm" c="dimmed">{t('about.opensource')}</Text>
+      </Paper>
+
       {/* Update check */}
       <Paper p="md" radius="md" withBorder>
         {updateResult?.checked_at ? (
@@ -99,8 +105,14 @@ export function About() {
               styles={{ root: { borderRadius: 'var(--mantine-radius-sm)' } }}
             />
           ) : (
-            <Text size="sm" c="dimmed" ta="center" py="xs">
-              {t('update.up_to_date')}
+            <Text
+              size="sm"
+              c="dimmed"
+              py="xs"
+              onDoubleClick={handleManualCheck}
+              style={{ cursor: 'pointer' }}
+            >
+              {checking ? t('update.checking') : t('update.up_to_date')}
             </Text>
           )
         ) : (
@@ -127,12 +139,6 @@ export function About() {
             onChange={(e) => handleAutoCheckToggle(e.currentTarget.checked)}
           />
         </Tooltip>
-      </Paper>
-
-      {/* About */}
-      <Paper p="md" radius="md" withBorder>
-        <Text size="sm" mb="xs">{t('about.description')}</Text>
-        <Text size="sm" c="dimmed">{t('about.opensource')}</Text>
       </Paper>
 
       {/* Issues */}

@@ -12,7 +12,14 @@ func (s *Server) getUpdateCheck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Return cached result if available (non-blocking)
+	// Try a non-forced check: returns cache if fresh, fetches if cooldown elapsed
+	result, err := s.updater.Check(false)
+	if err == nil && result != nil {
+		writeJSON(w, http.StatusOK, result)
+		return
+	}
+
+	// Check failed or disabled — fall back to cached result
 	cached := s.updater.GetCached()
 	if cached != nil {
 		writeJSON(w, http.StatusOK, cached)

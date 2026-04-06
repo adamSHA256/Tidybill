@@ -163,14 +163,36 @@ func (t *ModernTemplate) meta(data *InvoiceData, opts *TemplateOptions, lang i18
 		))
 
 		rows = append(rows, row.New(8))
-		rows = append(rows, row.New(6).Add(
-			col.New(3).Add(text.New(i18n.TForLang(lang, "pdf.bank_account"), props.Text{Size: 8, Color: labelGray})),
-			col.New(9).Add(text.New("IBAN", props.Text{Size: 8, Color: labelGray})),
-		))
-		rows = append(rows, row.New(6).Add(
-			text.NewCol(3, data.BankAccount.AccountNumber, props.Text{Size: 10, Style: fontstyle.Bold}),
-			text.NewCol(9, data.BankAccount.IBAN, props.Text{Size: 10}),
-		))
+		if data.BankAccount.AccountNumber != "" || data.BankAccount.IBAN != "" {
+			// Build label and value for account number / IBAN on same row
+			accLabel, accValue, ibanLabel, ibanValue := "", "", "", ""
+			if data.BankAccount.AccountNumber != "" {
+				accLabel = i18n.TForLang(lang, "pdf.bank_account")
+				accValue = data.BankAccount.AccountNumber
+			}
+			if data.BankAccount.IBAN != "" {
+				ibanLabel = "IBAN"
+				ibanValue = data.BankAccount.IBAN
+			}
+			rows = append(rows, row.New(6).Add(
+				col.New(3).Add(text.New(accLabel, props.Text{Size: 8, Color: labelGray})),
+				col.New(9).Add(text.New(ibanLabel, props.Text{Size: 8, Color: labelGray})),
+			))
+			rows = append(rows, row.New(6).Add(
+				text.NewCol(3, accValue, props.Text{Size: 10, Style: fontstyle.Bold}),
+				text.NewCol(9, ibanValue, props.Text{Size: 10}),
+			))
+		}
+		if data.BankAccount.SWIFT != "" {
+			rows = append(rows, row.New(6).Add(
+				col.New(3).Add(text.New("SWIFT:", props.Text{Size: 8, Color: labelGray})),
+				col.New(9),
+			))
+			rows = append(rows, row.New(6).Add(
+				text.NewCol(3, data.BankAccount.SWIFT, props.Text{Size: 10}),
+				col.New(9),
+			))
+		}
 	} else {
 		rows = append(rows, row.New(6).Add(
 			col.New(4).Add(text.New(i18n.TForLang(lang, "pdf.issue_date"), props.Text{Size: 8, Color: labelGray})),
