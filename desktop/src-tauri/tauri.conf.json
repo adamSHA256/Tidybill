@@ -49,7 +49,8 @@
     "windows": {
       "nsis": {
         "installerIcon": "icons/icon.ico",
-        "installerHooks": "nsis-hooks.nsh"
+        "installerHooks": "nsis-hooks.nsh",
+        "template": "installer.nsi"
       }
     },
     "linux": {
