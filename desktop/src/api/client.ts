@@ -503,6 +503,7 @@ export interface AppSettings {
   'email.default_subject'?: string
   'email.default_body'?: string
   'email.copy_subject'?: string
+  hide_pdf_regenerate_hint?: string
 }
 
 export interface Unit {

@@ -19,6 +19,7 @@ import {
   Modal,
   Textarea,
   Tooltip,
+  Checkbox,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { DateInput } from '@mantine/dates'
@@ -59,6 +60,7 @@ export function InvoiceEdit() {
 
   const [initialized, setInitialized] = useState(false)
   const [statusWarningOpen, setStatusWarningOpen] = useState(false)
+  const [pdfHintOpen, setPdfHintOpen] = useState(false)
   const [statusConfirmed, setStatusConfirmed] = useState(false)
 
   const [supplierId, setSupplierId] = useState<string | null>(null)
@@ -257,7 +259,11 @@ export function InvoiceEdit() {
         color: invoice?.pdf_path ? 'yellow' : 'green',
         autoClose: invoice?.pdf_path ? 8000 : 4000,
       })
-      navigate(`/invoices/${id}`)
+      if (invoice?.pdf_path && editSettings?.hide_pdf_regenerate_hint !== 'true') {
+        setPdfHintOpen(true)
+      } else {
+        navigate(`/invoices/${id}`)
+      }
     },
     onError: (err: Error) => {
       notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
@@ -982,6 +988,27 @@ export function InvoiceEdit() {
           </Modal>
         </>
       )}
+      {/* PDF regeneration hint modal */}
+      <Modal opened={pdfHintOpen} onClose={() => { setPdfHintOpen(false); navigate(`/invoices/${id}`) }}
+        title={t('invoice.pdf_hint_modal_title')} centered>
+        <Stack gap="md">
+          <Text size="sm">{t('invoice.pdf_hint_modal_text')}</Text>
+          <Checkbox
+            label={t('invoice.pdf_hint_dont_show')}
+            onChange={(e) => {
+              if (e.currentTarget.checked) {
+                api.updateSettings({ hide_pdf_regenerate_hint: 'true' })
+                queryClient.invalidateQueries({ queryKey: ['settings'] })
+              }
+            }}
+          />
+          <Group justify="end">
+            <Button onClick={() => { setPdfHintOpen(false); navigate(`/invoices/${id}`) }}>
+              {t('invoice.pdf_hint_ok')}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   )
 }
