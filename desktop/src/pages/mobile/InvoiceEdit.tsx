@@ -256,7 +256,12 @@ export function MobileInvoiceEdit() {
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
       queryClient.invalidateQueries({ queryKey: ['items'] })
-      notifications.show({ title: t('notify.invoice_updated'), message: t('notify.invoice_updated_msg'), color: 'green' })
+      notifications.show({
+        title: t('notify.invoice_updated'),
+        message: invoice?.pdf_path ? t('notify.invoice_updated_pdf_hint') : t('notify.invoice_updated_msg'),
+        color: invoice?.pdf_path ? 'yellow' : 'green',
+        autoClose: invoice?.pdf_path ? 8000 : 4000,
+      })
       navigate(`/invoices/${id}`)
     },
     onError: (err: Error) => {

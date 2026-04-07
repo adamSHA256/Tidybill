@@ -320,6 +320,7 @@
   "notify.invoice_created_msg": "Faktúra bola úspešne vytvorená",
   "notify.invoice_updated": "Faktúra aktualizovaná",
   "notify.invoice_updated_msg": "Faktúra bola úspešne aktualizovaná",
+  "notify.invoice_updated_pdf_hint": "Nezabudnite znovu vygenerovať PDF, ak chcete, aby sa zmeny prejavili v PDF súbore.",
   "notify.status_updated": "Stav aktualizovaný",
   "notify.status_updated_msg": "Stav faktúry zmenený",
   "notify.notes_saved": "Poznámky uložené",

@@ -319,6 +319,7 @@
   "notify.invoice_created_msg": "Invoice was created successfully",
   "notify.invoice_updated": "Invoice updated",
   "notify.invoice_updated_msg": "Invoice was updated successfully",
+  "notify.invoice_updated_pdf_hint": "Don't forget to regenerate the PDF if you want the changes to appear in the PDF file.",
   "notify.status_updated": "Status updated",
   "notify.status_updated_msg": "Invoice status changed",
   "notify.notes_saved": "Notes saved",
