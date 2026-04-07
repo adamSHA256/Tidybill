@@ -14,8 +14,33 @@ env:
   PNPM_VERSION: "10"
 
 jobs:
+  # Create a single draft release before any builds start (prevents race condition)
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.create.outputs.release_id }}
+    steps:
+      - name: Create draft release
+        id: create
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          REPO="${{ github.repository }}"
+          RELEASE_ID=$(gh api "repos/${REPO}/releases" \
+            --method POST \
+            -f tag_name="${TAG}" \
+            -f name="TidyBill ${TAG}" \
+            -f body="Release is being built..." \
+            -F draft=true \
+            -F prerelease=false \
+            --jq '.id')
+          echo "release_id=${RELEASE_ID}" >> "$GITHUB_OUTPUT"
+          echo "Created release ${RELEASE_ID}"
+
   # Build standalone Go CLI binaries for all platforms
   build-cli:
+    needs: [create-release]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -55,6 +80,7 @@ jobs:
 
   # Build Tauri desktop app per platform
   build-desktop:
+    needs: [create-release]
     strategy:
       fail-fast: false
       matrix:
@@ -162,11 +188,9 @@ jobs:
           projectPath: desktop
           tauriScript: pnpm tauri
           args: ${{ matrix.tauri-args }}
+          releaseId: ${{ needs.create-release.outputs.release_id }}
           tagName: ${{ github.ref_name }}
-          releaseName: "TidyBill ${{ github.ref_name }}"
-          releaseBody: "Release is being built..."
           releaseDraft: true
-          prerelease: false
 
   # Build Android APK
   build-android:
@@ -263,7 +287,7 @@ jobs:
 
   # Rename release assets and set release body
   rename-assets:
-    needs: [build-cli, build-desktop, build-android]
+    needs: [create-release, build-cli, build-desktop, build-android]
     runs-on: ubuntu-latest
     steps:
       - name: Download Android APK
@@ -276,9 +300,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="${{ github.ref_name }}"
           REPO="${{ github.repository }}"
-          RELEASE_ID=$(gh api "repos/${REPO}/releases" --jq ".[] | select(.tag_name==\"${TAG}\") | .id")
+          RELEASE_ID="${{ needs.create-release.outputs.release_id }}"
 
           # Rename APK
           mv android-apk/app-universal-release-unsigned.apk android-apk/TidyBill_Android_arm64.apk
@@ -302,9 +325,7 @@ jobs:
           TAG="${{ github.ref_name }}"
           VERSION="${TAG#v}"
           REPO="${{ github.repository }}"
-
-          # Find release (including drafts) by tag name
-          RELEASE_ID=$(gh api "repos/${REPO}/releases" --jq ".[] | select(.tag_name==\"${TAG}\") | .id")
+          RELEASE_ID="${{ needs.create-release.outputs.release_id }}"
           echo "Release ID: ${RELEASE_ID}"
 
           # Get all release assets
@@ -392,7 +413,7 @@ jobs:
 
   # Attach standalone CLI binaries to the release
   upload-cli:
-    needs: [build-cli, build-desktop, build-android]
+    needs: [create-release, build-cli, build-desktop, build-android]
     runs-on: ubuntu-latest
     steps:
       - name: Download all CLI artifacts
@@ -406,11 +427,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="${{ github.ref_name }}"
           REPO="${{ github.repository }}"
-
-          # Find release (including drafts) by tag name
-          RELEASE_ID=$(gh api "repos/${REPO}/releases" --jq ".[] | select(.tag_name==\"${TAG}\") | .id")
+          RELEASE_ID="${{ needs.create-release.outputs.release_id }}"
           echo "Release ID: ${RELEASE_ID}"
 
           UPLOAD_URL="https://uploads.github.com/repos/${REPO}/releases/${RELEASE_ID}/assets"
