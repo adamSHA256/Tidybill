@@ -167,6 +167,7 @@
 
   "notify.customer_created": "Odběratel vytvořen",
   "notify.customer_updated": "Odběratel aktualizován",
+  "notify.customer_updated_msg": "Odběratel byl úspěšně aktualizován",
   "notify.customer_saved_msg": "{name} uložen",
   "notify.customer_deleted": "Odběratel smazán",
   "notify.customer_deleted_msg": "Odběratel byl odstraněn",

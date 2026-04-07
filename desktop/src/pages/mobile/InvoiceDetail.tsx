@@ -17,6 +17,7 @@ import {
   ActionIcon,
   TextInput,
   Alert,
+  Checkbox,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import {
@@ -68,6 +69,7 @@ export function MobileInvoiceDetail() {
   const [customerEmailModalOpen, setCustomerEmailModalOpen] = useState(false)
   const [editCustomerOpen, setEditCustomerOpen] = useState(false)
   const [customerEmail, setCustomerEmail] = useState('')
+  const [pdfHintOpen, setPdfHintOpen] = useState(false)
   const [cName, setCName] = useState('')
   const [cIco, setCIco] = useState('')
   const [cDic, setCDic] = useState('')
@@ -88,6 +90,11 @@ export function MobileInvoiceDetail() {
     queryKey: ['smtp-config', invoice?.supplier_id],
     queryFn: () => api.getSmtpConfig(invoice!.supplier_id),
     enabled: !!invoice?.supplier_id,
+  })
+
+  const { data: appSettings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: api.getSettings,
   })
 
   const handleSendEmail = () => {
@@ -175,6 +182,16 @@ export function MobileInvoiceDetail() {
       setCustomerEmailModalOpen(false)
       if (wasEmailPrompt && variables.email) {
         setTimeout(() => setSendEmailOpen(true), 100)
+      } else {
+        notifications.show({
+          title: t('notify.customer_updated'),
+          message: invoice?.pdf_path ? t('notify.invoice_updated_pdf_hint') : t('notify.customer_updated_msg'),
+          color: invoice?.pdf_path ? 'yellow' : 'green',
+          autoClose: invoice?.pdf_path ? 8000 : 4000,
+        })
+        if (invoice?.pdf_path && appSettings?.hide_pdf_regenerate_hint !== 'true') {
+          setPdfHintOpen(true)
+        }
       }
     },
     onError: (err: Error) => {
@@ -598,6 +615,28 @@ export function MobileInvoiceDetail() {
               street: cStreet.trim(), city: cCity.trim(), zip: cZip.trim(), country: cCountry.trim(),
               email: customerEmail.trim(), phone: cPhone.trim(),
             })} loading={updateCustomerMutation.isPending} disabled={!cName.trim()}>{t('common.save')}</Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      {/* PDF regeneration hint modal */}
+      <Modal opened={pdfHintOpen} onClose={() => setPdfHintOpen(false)}
+        title={t('invoice.pdf_hint_modal_title')} centered fullScreen={isMobile}>
+        <Stack gap="md">
+          <Text size="sm">{t('invoice.pdf_hint_modal_text_mobile')}</Text>
+          <Checkbox
+            label={t('invoice.pdf_hint_dont_show')}
+            onChange={(e) => {
+              if (e.currentTarget.checked) {
+                api.updateSettings({ hide_pdf_regenerate_hint: 'true' })
+                queryClient.invalidateQueries({ queryKey: ['settings'] })
+              }
+            }}
+          />
+          <Group justify="end">
+            <Button onClick={() => setPdfHintOpen(false)}>
+              {t('invoice.pdf_hint_ok')}
+            </Button>
           </Group>
         </Stack>
       </Modal>

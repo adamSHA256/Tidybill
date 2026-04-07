@@ -162,6 +162,7 @@
 
   "notify.customer_created": "Customer created",
   "notify.customer_updated": "Customer updated",
+  "notify.customer_updated_msg": "Customer was updated successfully",
   "notify.customer_saved_msg": "{name} saved",
   "notify.customer_deleted": "Customer deleted",
   "notify.customer_deleted_msg": "Customer removed",
