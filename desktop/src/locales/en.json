@@ -584,7 +584,7 @@
   "email.sent_resend": "Sent — send again",
   "email.sent_short": "Sent",
   "email.send_short": "Send",
-  "email.smtp_tooltip": "By filling in this setting, you will enable sending emails directly from the app.",
+  "email.smtp_tooltip": "Setting this up is easy and lets you send invoices directly from the app! Just pick your email provider (if yours isn't listed, look up the SMTP server and port online), enter the username and password you use to log in, then tap Save SMTP and Test Connection and you're all set!",
   "email.smtp_copy_tooltip": "Copies SMTP settings from another supplier. You will need to enter the password again.",
   "email.smtp_starttls_tooltip": "Encrypted connection to the server. If the connection test fails, try disabling — some providers don't support this.",
   "email.smtp_from_name_tooltip": "The name the customer will see as the sender. Probably your company name.",

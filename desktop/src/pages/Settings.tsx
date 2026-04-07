@@ -91,7 +91,6 @@ export function Settings() {
   const { data: updateResult } = useQuery({
     queryKey: ['update-check'],
     queryFn: api.getUpdateCheck,
-    enabled: !isMobile,
   })
 
   const { data: units } = useQuery({
@@ -819,13 +818,11 @@ export function Settings() {
                 onChange={(e) => setDirLogos(e.currentTarget.value)}
                 style={{ flex: 1 }}
               />
-              {!isMobileDevice() && (
-                <Tooltip label={t('invoice.open_folder')} events={{ hover: true, focus: true, touch: true }}>
-                  <ActionIcon variant="light" size="lg" onClick={() => { if (dirLogos) openInBrowser(dirLogos) }}>
-                    <IconFolderOpen size={18} />
-                  </ActionIcon>
-                </Tooltip>
-              )}
+              <Tooltip label={t('invoice.open_folder')} events={{ hover: true, focus: true, touch: true }}>
+                <ActionIcon variant="light" size="lg" onClick={() => { if (dirLogos) openInBrowser(dirLogos) }}>
+                  <IconFolderOpen size={18} />
+                </ActionIcon>
+              </Tooltip>
             </Group>
             <Group align="end" gap="xs">
               <TextInput
@@ -835,13 +832,11 @@ export function Settings() {
                 onChange={(e) => setDirPdfs(e.currentTarget.value)}
                 style={{ flex: 1 }}
               />
-              {!isMobileDevice() && (
-                <Tooltip label={t('invoice.open_folder')} events={{ hover: true, focus: true, touch: true }}>
-                  <ActionIcon variant="light" size="lg" onClick={() => { if (dirPdfs) openInBrowser(dirPdfs) }}>
-                    <IconFolderOpen size={18} />
-                  </ActionIcon>
-                </Tooltip>
-              )}
+              <Tooltip label={t('invoice.open_folder')} events={{ hover: true, focus: true, touch: true }}>
+                <ActionIcon variant="light" size="lg" onClick={() => { if (dirPdfs) openInBrowser(dirPdfs) }}>
+                  <IconFolderOpen size={18} />
+                </ActionIcon>
+              </Tooltip>
             </Group>
             <Group align="end" gap="xs">
               <TextInput
@@ -851,13 +846,11 @@ export function Settings() {
                 onChange={(e) => setDirPreviews(e.currentTarget.value)}
                 style={{ flex: 1 }}
               />
-              {!isMobileDevice() && (
-                <Tooltip label={t('invoice.open_folder')} events={{ hover: true, focus: true, touch: true }}>
-                  <ActionIcon variant="light" size="lg" onClick={() => { if (dirPreviews) openInBrowser(dirPreviews) }}>
-                    <IconFolderOpen size={18} />
-                  </ActionIcon>
-                </Tooltip>
-              )}
+              <Tooltip label={t('invoice.open_folder')} events={{ hover: true, focus: true, touch: true }}>
+                <ActionIcon variant="light" size="lg" onClick={() => { if (dirPreviews) openInBrowser(dirPreviews) }}>
+                  <IconFolderOpen size={18} />
+                </ActionIcon>
+              </Tooltip>
             </Group>
             <Button
               w={200}
@@ -873,58 +866,56 @@ export function Settings() {
           </Stack>
         </Paper>
         )}
-      </SimpleGrid>
 
-      {/* Update check */}
-      {!isMobile && (
-      <Paper p="md" radius="md" withBorder>
-        {updateResult?.checked_at ? (
-          updateResult.available ? (
+        {/* Update check */}
+        <Paper p="md" radius="md" withBorder>
+          {updateResult?.checked_at ? (
+            updateResult.available ? (
+              <NavLink
+                label={t('update.available')}
+                leftSection={<IconDownload size={20} />}
+                onClick={() => openInBrowser(updateResult.release_url)}
+                active
+                color="blue"
+                styles={{ root: { borderRadius: 'var(--mantine-radius-sm)' } }}
+              />
+            ) : (
+              <Text
+                size="sm"
+                c="dimmed"
+                py="xs"
+                onDoubleClick={handleManualCheck}
+                style={{ cursor: 'pointer' }}
+              >
+                {checking ? t('update.checking') : t('update.up_to_date')}
+              </Text>
+            )
+          ) : (
             <NavLink
-              label={t('update.available')}
-              leftSection={<IconDownload size={20} />}
-              onClick={() => openInBrowser(updateResult.release_url)}
-              active
-              color="blue"
+              label={checking ? t('update.checking') : t('update.check_manually')}
+              leftSection={checking ? <IconRefresh size={20} /> : <IconCheck size={20} />}
+              onClick={handleManualCheck}
+              disabled={checking}
               styles={{ root: { borderRadius: 'var(--mantine-radius-sm)' } }}
             />
-          ) : (
-            <Text
-              size="sm"
-              c="dimmed"
-              py="xs"
-              onDoubleClick={handleManualCheck}
-              style={{ cursor: 'pointer' }}
-            >
-              {checking ? t('update.checking') : t('update.up_to_date')}
-            </Text>
-          )
-        ) : (
-          <NavLink
-            label={checking ? t('update.checking') : t('update.check_manually')}
-            leftSection={checking ? <IconRefresh size={20} /> : <IconCheck size={20} />}
-            onClick={handleManualCheck}
-            disabled={checking}
-            styles={{ root: { borderRadius: 'var(--mantine-radius-sm)' } }}
-          />
-        )}
-        <Tooltip
-          label={t('update.check_tooltip')}
-          multiline
-          w={350}
-          withArrow
-          events={{ hover: true, focus: true, touch: true }}
-        >
-          <Switch
-            mt="md"
-            label={t('update.settings_label')}
-            description={t('update.settings_desc')}
-            checked={autoCheckEnabled}
-            onChange={(e) => handleAutoCheckToggle(e.currentTarget.checked)}
-          />
-        </Tooltip>
-      </Paper>
-      )}
+          )}
+          <Tooltip
+            label={t('update.check_tooltip')}
+            multiline
+            w={350}
+            withArrow
+            events={{ hover: true, focus: true, touch: true }}
+          >
+            <Switch
+              mt="md"
+              label={t('update.settings_label')}
+              description={t('update.settings_desc')}
+              checked={autoCheckEnabled}
+              onChange={(e) => handleAutoCheckToggle(e.currentTarget.checked)}
+            />
+          </Tooltip>
+        </Paper>
+      </SimpleGrid>
 
       <Modal
         opened={enableAutoModalOpen}

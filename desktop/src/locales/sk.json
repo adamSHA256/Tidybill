@@ -585,7 +585,7 @@
   "email.sent_resend": "Odoslané — poslať znova",
   "email.sent_short": "Odoslané",
   "email.send_short": "Odoslať",
-  "email.smtp_tooltip": "Vyplnením tohto nastavenia sprevádzkujete odosielanie e-mailov priamo z aplikácie.",
+  "email.smtp_tooltip": "Vyplnenie je jednoduché a získate tým možnosť odosielať faktúry priamo z aplikácie! Stačí vybrať vami používaného poskytovateľa e-mailu (ak ho nenájdete, na internete zistíte aký SMTP server a port použiť), zadať používateľské meno a heslo používané na prihlásenie do schránky. Nakoniec klepnite na Uložiť SMTP a Test pripojenia a máte všetko nastavené!",
   "email.smtp_copy_tooltip": "Skopíruje nastavenia SMTP z iného dodávateľa. Heslo musíte zadať znova.",
   "email.smtp_starttls_tooltip": "Šifrované pripojenie k serveru. Ak test pripojenia neprechádza, skúste vypnúť — niektorí poskytovatelia túto možnosť nepodporujú.",
   "email.smtp_from_name_tooltip": "Meno, aké uvidí zákazník ako odosielateľa. Najskôr názov vašej firmy.",

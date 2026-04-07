@@ -14,6 +14,9 @@ import {
   Modal,
   Tooltip,
   Box,
+  ActionIcon,
+  TextInput,
+  Alert,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import {
@@ -27,12 +30,13 @@ import {
   IconDots,
   IconShare,
   IconMail,
+  IconAlertCircle,
 } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, formatMoney, formatDate, openInvoicePdf, sharePdf, type InvoiceStatus } from '../../api/client'
-import { useT } from '../../i18n'
+import { useT, translateError } from '../../i18n'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { SendEmailModal } from '../../components/SendEmailModal'
 import { EmailSetupModal } from '../../components/EmailSetupModal'
@@ -61,6 +65,9 @@ export function MobileInvoiceDetail() {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [sendEmailOpen, setSendEmailOpen] = useState(false)
   const [emailSetupOpen, setEmailSetupOpen] = useState(false)
+  const [customerEmailModalOpen, setCustomerEmailModalOpen] = useState(false)
+  const [editCustomerOpen, setEditCustomerOpen] = useState(false)
+  const [customerEmail, setCustomerEmail] = useState('')
 
   const { data: invoice, isLoading } = useQuery({
     queryKey: ['invoice', id],
@@ -80,8 +87,13 @@ export function MobileInvoiceDetail() {
       notifications.show({ title: t('email.no_pdf'), message: t('email.no_pdf'), color: 'orange' })
       return
     }
-    if (!invoice.customer?.email) {
-      notifications.show({ title: t('email.no_customer_email'), message: t('email.no_customer_email'), color: 'orange' })
+    if (!invoice.customer) {
+      notifications.show({ title: t('common.error'), message: t('error.supplier_customer_required'), color: 'orange' })
+      return
+    }
+    if (!invoice.customer.email) {
+      setCustomerEmail('')
+      setCustomerEmailModalOpen(true)
       return
     }
     // Check SMTP config
@@ -141,6 +153,23 @@ export function MobileInvoiceDetail() {
     },
     onError: (err: Error) => {
       notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
+    },
+  })
+
+  const updateCustomerMutation = useMutation({
+    mutationFn: (data: { email: string }) => api.updateCustomer(invoice!.customer!.id, data),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['invoice', id] })
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
+      const wasEmailPrompt = customerEmailModalOpen
+      setEditCustomerOpen(false)
+      setCustomerEmailModalOpen(false)
+      if (wasEmailPrompt && variables.email) {
+        setTimeout(() => setSendEmailOpen(true), 100)
+      }
+    },
+    onError: (err: Error) => {
+      notifications.show({ title: t('common.error'), message: translateError(t, err.message), color: 'red' })
     },
   })
 
@@ -245,7 +274,16 @@ export function MobileInvoiceDetail() {
 
         {/* Customer card */}
         <Paper p="md" radius="md" withBorder>
-          <Text fw={500} mb="md">{t('invoice.customer_section')}</Text>
+          <Group justify="space-between" mb="md">
+            <Text fw={500}>{t('invoice.customer_section')}</Text>
+            {invoice.customer && (
+              <Tooltip label={t('invoice.edit_customer')} events={{ hover: true, focus: true, touch: true }}>
+                <ActionIcon variant="subtle" size="sm" color="blue" onClick={() => { setCustomerEmail(invoice.customer?.email || ''); setEditCustomerOpen(true) }}>
+                  <IconEdit size={16} />
+                </ActionIcon>
+              </Tooltip>
+            )}
+          </Group>
           {invoice.customer ? (
             <Stack gap="xs">
               <Text size="sm" fw={600}>{invoice.customer.name}</Text>
@@ -506,6 +544,36 @@ export function MobileInvoiceDetail() {
         onClose={() => setEmailSetupOpen(false)}
         supplierId={invoice.supplier_id}
       />
+
+      {/* Customer has no email — prompt to add */}
+      <Modal opened={customerEmailModalOpen} onClose={() => setCustomerEmailModalOpen(false)}
+        title={t('invoice.edit_customer')} size="sm" centered fullScreen={isMobile}>
+        <Stack gap="md">
+          <Text size="sm">{t('email.no_customer_email_prompt').replace('{name}', invoice.customer?.name || '')}</Text>
+          <TextInput label={t('customer.email_label')} value={customerEmail} onChange={(e) => setCustomerEmail(e.currentTarget.value)} type="email" />
+          <Group justify="end">
+            <Button variant="default" onClick={() => setCustomerEmailModalOpen(false)}>{t('common.cancel')}</Button>
+            <Button onClick={() => { if (customerEmail.trim()) updateCustomerMutation.mutate({ email: customerEmail.trim() }) }}
+              loading={updateCustomerMutation.isPending} disabled={!customerEmail.trim()}>{t('common.save')}</Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      {/* Edit customer — with disclaimer */}
+      <Modal opened={editCustomerOpen} onClose={() => setEditCustomerOpen(false)}
+        title={t('invoice.edit_customer')} size="sm" centered fullScreen={isMobile}>
+        <Stack gap="md">
+          <Alert icon={<IconAlertCircle size={16} />} color="yellow" variant="light">
+            {t('invoice.edit_customer_disclaimer')}
+          </Alert>
+          <TextInput label={t('customer.email_label')} value={customerEmail} onChange={(e) => setCustomerEmail(e.currentTarget.value)} type="email" />
+          <Group justify="end">
+            <Button variant="default" onClick={() => setEditCustomerOpen(false)}>{t('common.cancel')}</Button>
+            <Button onClick={() => updateCustomerMutation.mutate({ email: customerEmail.trim() })}
+              loading={updateCustomerMutation.isPending} disabled={!customerEmail.trim()}>{t('common.save')}</Button>
+          </Group>
+        </Stack>
+      </Modal>
     </>
   )
 }
