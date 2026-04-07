@@ -1,11 +1,24 @@
 # Changelog
 
-## v0.4.2
+## v0.4.3
+
+### New
+- Leave confirmation when navigating away from unsaved invoice creation
+- Customer edit modal on invoice detail with disclaimer about future invoices
+- Customer email prompt when sending invoice to customer without email
+- PDF regeneration hint modal after editing invoice/customer that has existing PDF
+- Dynamic invoice validation messages (shows exactly which fields are missing)
+- Error translation mapping for common backend errors (SMTP, validation, etc.)
+- Read-only invoice number in edit mode with workflow explanation
+- Update check section in Settings page
+- Extended About page text with Hitchhiker's Guide reference
+- Better SMTP setup tooltip with step-by-step guidance
 
 ### Fixed
 - Windows NSIS installer: data no longer wiped during upgrade (uninstall-before-reinstall flow)
 - Windows NSIS installer: text now recommends "Just install" instead of "Uninstall first"
 - Folder reveal (Open folder) now works on non-standard drive letters (G:, Z:, network shares)
+- macOS Intel build: fixed asset rename from .dmg to .app.tar.gz in CI
 
 ## v0.4.1
 

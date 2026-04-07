@@ -1,6 +1,6 @@
 [package]
 name = "tidybill-desktop"
-version = "0.4.2"
+version = "0.4.3"
 description = "TidyBill Desktop Application"
 edition = "2021"
 
