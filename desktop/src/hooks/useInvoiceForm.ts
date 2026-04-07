@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, useBlocker } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { notifications } from '@mantine/notifications'
 import { api, formatMoney, type Supplier, type BankAccount, type Item, type CustomerItem } from '../api/client'
@@ -106,7 +106,8 @@ export function useInvoiceForm() {
   const [currencyInitialized, setCurrencyInitialized] = useState(!!duplicateFrom)
   const [invoiceNumber, setInvoiceNumber] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<string | null>(duplicateFrom?.payment_method || null)
-  const [notes, setNotes] = useState(duplicateFrom?.notes || '')
+  const [notes, setNotesRaw] = useState(duplicateFrom?.notes || '')
+  const setNotes = (v: string) => { setNotesRaw(v); setFormTouched(true) }
   const [items, setItems] = useState<ItemForm[]>(
     duplicateFrom?.items?.length ? duplicateFrom.items : [{ ...emptyItem }]
   )
@@ -396,6 +397,17 @@ export function useInvoiceForm() {
     { value: CREATE_NEW, label: `+ ${t('invoice.create_new_bank_account')}` },
   ]
 
+  // ── Dirty detection (tracks explicit user edits, excludes supplier/customer selection) ──
+  const [formTouched, setFormTouched] = useState(false)
+
+  // Leave confirmation — blocks ALL navigation (sidebar, back, URL) when form is dirty
+  const blocker = useBlocker(({ currentLocation, nextLocation }) =>
+    formTouched && currentLocation.pathname !== nextLocation.pathname
+  )
+  const leaveConfirmOpen = blocker.state === 'blocked'
+  const confirmLeave = () => { if (blocker.state === 'blocked') blocker.proceed() }
+  const cancelLeave = () => { if (blocker.state === 'blocked') blocker.reset() }
+
   // ── Handlers ─────────────────────────────────────────────
   const handleVatRateSelect = (val: string | null, index: number) => {
     if (!val) return
@@ -555,17 +567,18 @@ export function useInvoiceForm() {
     })
   }
 
-  const addItem = () => setItems([...items, { ...emptyItem, unit: defaultUnit, vat_rate: defaultVatRate }])
+  const addItem = () => { setItems([...items, { ...emptyItem, unit: defaultUnit, vat_rate: defaultVatRate }]); setFormTouched(true) }
   const removeItem = (index: number) => {
-    if (items.length > 1) setItems(items.filter((_, i) => i !== index))
+    if (items.length > 1) { setItems(items.filter((_, i) => i !== index)); setFormTouched(true) }
   }
   const updateItem = (index: number, field: keyof ItemForm, value: string | number) => {
     const updated = [...items]
     updated[index] = { ...updated[index], [field]: value }
     setItems(updated)
+    setFormTouched(true)
   }
 
-  const addFromCatalog = (catalogItem: Item, customerItem?: CustomerItem) => {
+  const addFromCatalog = (catalogItem: Item, customerItem?: CustomerItem) => { setFormTouched(true)
     const price = customerItem ? customerItem.last_price : catalogItem.default_price
     const qty = customerItem ? customerItem.last_quantity : 1
     const newItem: ItemForm = {
@@ -677,6 +690,11 @@ export function useInvoiceForm() {
 
     // Duplicate
     duplicateFrom,
+
+    // Leave confirmation
+    leaveConfirmOpen,
+    confirmLeave,
+    cancelLeave,
 
     // Core state
     supplierId: selectedSupplierId,

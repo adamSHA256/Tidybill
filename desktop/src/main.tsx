@@ -7,8 +7,8 @@ import { DatesProvider } from '@mantine/dates'
 import 'dayjs/locale/cs'
 import 'dayjs/locale/sk'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter } from 'react-router-dom'
-import App from './App'
+import { RouterProvider } from 'react-router-dom'
+import { router } from './App'
 import { I18nProvider } from './i18n'
 import { ApiGate } from './components/ApiGate'
 
@@ -54,9 +54,7 @@ createRoot(document.getElementById('root')!).render(
           <ModalsProvider>
             <DatesProvider settings={{ locale: 'cs' }}>
               <I18nProvider>
-                <BrowserRouter>
-                  <App />
-                </BrowserRouter>
+                <RouterProvider router={router} />
               </I18nProvider>
             </DatesProvider>
           </ModalsProvider>

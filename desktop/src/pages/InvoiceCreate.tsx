@@ -18,6 +18,7 @@ import {
   Badge,
   Alert,
   Tooltip,
+  Modal,
 } from '@mantine/core'
 import { DateInput } from '@mantine/dates'
 import { IconTrash, IconPlus, IconPackage, IconAlertTriangle, IconInfoCircle } from '@tabler/icons-react'
@@ -325,6 +326,18 @@ export function InvoiceCreate() {
       </Group>
 
       <InvoiceFormModals modals={form.modals} isMobile={isMobile} t={t} />
+
+      {/* Leave confirmation modal */}
+      <Modal opened={form.leaveConfirmOpen} onClose={form.cancelLeave}
+        title={t('invoice.leave_confirm_title')} centered>
+        <Stack gap="md">
+          <Text size="sm">{t('invoice.leave_confirm_text')}</Text>
+          <Group justify="end">
+            <Button variant="default" onClick={form.cancelLeave}>{t('invoice.leave_confirm_stay')}</Button>
+            <Button color="red" onClick={form.confirmLeave}>{t('invoice.leave_confirm_leave')}</Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   )
 }
