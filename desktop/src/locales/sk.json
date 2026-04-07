@@ -568,6 +568,9 @@
   "email.setup_redirect": "Presmerovať do e-mailu",
 
   "email.no_customer_email": "Zákazník nemá vyplnený e-mail.",
+  "email.no_customer_email_prompt": "Odberateľ {name} nemá nastavený žiadny e-mail. Chcete ho nastaviť?",
+  "invoice.edit_customer": "Upraviť odberateľa",
+  "invoice.edit_customer_disclaimer": "Zmeny sa prejavia u tohto odberateľa pre všetky budúce faktúry.",
   "email.no_pdf": "Najprv vygenerujte PDF.",
   "email.no_smtp": "SMTP nie je nastavené pre tohto dodávateľa.",
 

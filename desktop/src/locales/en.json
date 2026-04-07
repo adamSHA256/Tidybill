@@ -567,6 +567,9 @@
   "email.setup_redirect": "Redirect to email",
 
   "email.no_customer_email": "Customer has no email address.",
+  "email.no_customer_email_prompt": "Customer {name} has no email address configured. Would you like to set it now?",
+  "invoice.edit_customer": "Edit customer",
+  "invoice.edit_customer_disclaimer": "Changes will apply to this customer for all future invoices.",
   "email.no_pdf": "Generate a PDF first.",
   "email.no_smtp": "SMTP is not configured for this supplier.",
 

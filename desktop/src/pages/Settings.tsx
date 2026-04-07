@@ -16,8 +16,10 @@ import {
   SegmentedControl,
   ActionIcon,
   Tooltip,
+  NavLink,
+  Modal,
 } from '@mantine/core'
-import { IconFolderOpen } from '@tabler/icons-react'
+import { IconFolderOpen, IconDownload, IconRefresh, IconCheck } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
@@ -83,6 +85,14 @@ export function Settings() {
   const [dirPdfs, setDirPdfs] = useState('')
   const [dirPreviews, setDirPreviews] = useState('')
   const [newUnitName, setNewUnitName] = useState('')
+  const [checking, setChecking] = useState(false)
+  const [enableAutoModalOpen, setEnableAutoModalOpen] = useState(false)
+
+  const { data: updateResult } = useQuery({
+    queryKey: ['update-check'],
+    queryFn: api.getUpdateCheck,
+    enabled: !isMobile,
+  })
 
   const { data: units } = useQuery({
     queryKey: ['units'],
@@ -228,6 +238,34 @@ export function Settings() {
 
   if (isLoading) {
     return <Center h={300}><Loader /></Center>
+  }
+
+  const autoCheckEnabled = settings?.check_updates === 'true'
+
+  const handleManualCheck = async () => {
+    setChecking(true)
+    try {
+      const result = await api.triggerUpdateCheck()
+      queryClient.setQueryData(['update-check'], result)
+      if (!autoCheckEnabled) setEnableAutoModalOpen(true)
+    } catch {
+      notifications.show({ title: t('common.error'), message: t('update.check_failed'), color: 'red' })
+    } finally {
+      setChecking(false)
+    }
+  }
+
+  const handleEnableAutoCheck = async (enable: boolean) => {
+    setEnableAutoModalOpen(false)
+    if (enable) {
+      await api.updateSettings({ check_updates: 'true' })
+      queryClient.invalidateQueries({ queryKey: ['settings'] })
+    }
+  }
+
+  const handleAutoCheckToggle = async (checked: boolean) => {
+    await api.updateSettings({ check_updates: checked ? 'true' : 'false' })
+    queryClient.invalidateQueries({ queryKey: ['settings'] })
   }
 
   const comingSoonBadge = <Badge size="xs" variant="light" color="gray">{t('settings.coming_soon')}</Badge>
@@ -836,6 +874,74 @@ export function Settings() {
         </Paper>
         )}
       </SimpleGrid>
+
+      {/* Update check */}
+      {!isMobile && (
+      <Paper p="md" radius="md" withBorder>
+        {updateResult?.checked_at ? (
+          updateResult.available ? (
+            <NavLink
+              label={t('update.available')}
+              leftSection={<IconDownload size={20} />}
+              onClick={() => openInBrowser(updateResult.release_url)}
+              active
+              color="blue"
+              styles={{ root: { borderRadius: 'var(--mantine-radius-sm)' } }}
+            />
+          ) : (
+            <Text
+              size="sm"
+              c="dimmed"
+              py="xs"
+              onDoubleClick={handleManualCheck}
+              style={{ cursor: 'pointer' }}
+            >
+              {checking ? t('update.checking') : t('update.up_to_date')}
+            </Text>
+          )
+        ) : (
+          <NavLink
+            label={checking ? t('update.checking') : t('update.check_manually')}
+            leftSection={checking ? <IconRefresh size={20} /> : <IconCheck size={20} />}
+            onClick={handleManualCheck}
+            disabled={checking}
+            styles={{ root: { borderRadius: 'var(--mantine-radius-sm)' } }}
+          />
+        )}
+        <Tooltip
+          label={t('update.check_tooltip')}
+          multiline
+          w={350}
+          withArrow
+          events={{ hover: true, focus: true, touch: true }}
+        >
+          <Switch
+            mt="md"
+            label={t('update.settings_label')}
+            description={t('update.settings_desc')}
+            checked={autoCheckEnabled}
+            onChange={(e) => handleAutoCheckToggle(e.currentTarget.checked)}
+          />
+        </Tooltip>
+      </Paper>
+      )}
+
+      <Modal
+        opened={enableAutoModalOpen}
+        onClose={() => setEnableAutoModalOpen(false)}
+        title={t('update.enable_auto_title')}
+        centered
+      >
+        <Text mb="lg">{t('update.enable_auto_message')}</Text>
+        <Group justify="flex-end">
+          <Button variant="default" onClick={() => handleEnableAutoCheck(false)}>
+            {t('update.enable_auto_no')}
+          </Button>
+          <Button onClick={() => handleEnableAutoCheck(true)}>
+            {t('update.enable_auto_yes')}
+          </Button>
+        </Group>
+      </Modal>
 
     </Stack>
   )
