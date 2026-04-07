@@ -15,6 +15,10 @@ import {
   Center,
   Modal,
   Tooltip,
+  ActionIcon,
+  TextInput,
+  Alert,
+  Checkbox,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import {
@@ -28,12 +32,13 @@ import {
   IconCopy,
   IconInfoCircle,
   IconMail,
+  IconAlertCircle,
 } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, formatMoney, formatDate, openInvoicePdf, openFolder, type InvoiceStatus } from '../api/client'
-import { useT } from '../i18n'
+import { useT, translateError } from '../i18n'
 import { SendEmailModal } from '../components/SendEmailModal'
 import { EmailSetupModal } from '../components/EmailSetupModal'
 
@@ -60,6 +65,19 @@ export function InvoiceDetail() {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [sendEmailOpen, setSendEmailOpen] = useState(false)
   const [emailSetupOpen, setEmailSetupOpen] = useState(false)
+  const [customerEmailModalOpen, setCustomerEmailModalOpen] = useState(false)
+  const [editCustomerOpen, setEditCustomerOpen] = useState(false)
+  const [customerEmail, setCustomerEmail] = useState('')
+  const [pdfHintOpen, setPdfHintOpen] = useState(false)
+  const [cName, setCName] = useState('')
+  const [cIco, setCIco] = useState('')
+  const [cDic, setCDic] = useState('')
+  const [cIcDph, setCIcDph] = useState('')
+  const [cStreet, setCStreet] = useState('')
+  const [cCity, setCCity] = useState('')
+  const [cZip, setCZip] = useState('')
+  const [cCountry, setCCountry] = useState('')
+  const [cPhone, setCPhone] = useState('')
 
   const { data: invoice, isLoading } = useQuery({
     queryKey: ['invoice', id],
@@ -73,14 +91,24 @@ export function InvoiceDetail() {
     enabled: !!invoice?.supplier_id,
   })
 
+  const { data: appSettings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: api.getSettings,
+  })
+
   const handleSendEmail = () => {
     if (!invoice) return
     if (!invoice.pdf_path) {
       notifications.show({ title: t('email.no_pdf'), message: t('email.no_pdf'), color: 'orange' })
       return
     }
-    if (!invoice.customer?.email) {
-      notifications.show({ title: t('email.no_customer_email'), message: t('email.no_customer_email'), color: 'orange' })
+    if (!invoice.customer) {
+      notifications.show({ title: t('common.error'), message: t('error.supplier_customer_required'), color: 'orange' })
+      return
+    }
+    if (!invoice.customer.email) {
+      setCustomerEmail('')
+      setCustomerEmailModalOpen(true)
       return
     }
     // Check SMTP config
@@ -140,6 +168,35 @@ export function InvoiceDetail() {
     },
     onError: (err: Error) => {
       notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
+    },
+  })
+
+  const updateCustomerMutation = useMutation({
+    mutationFn: (data: Record<string, string>) => api.updateCustomer(invoice!.customer!.id, data),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['invoice', id] })
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
+      const wasEmailPrompt = customerEmailModalOpen
+      setEditCustomerOpen(false)
+      setCustomerEmailModalOpen(false)
+      // If this was the "no email" prompt and we just set an email, continue to send flow
+      if (wasEmailPrompt && variables.email) {
+        setTimeout(() => setSendEmailOpen(true), 100)
+      } else {
+        // Show PDF hint after customer edit if PDF exists
+        notifications.show({
+          title: t('notify.customer_updated'),
+          message: invoice?.pdf_path ? t('notify.invoice_updated_pdf_hint') : t('notify.customer_updated_msg'),
+          color: invoice?.pdf_path ? 'yellow' : 'green',
+          autoClose: invoice?.pdf_path ? 8000 : 4000,
+        })
+        if (invoice?.pdf_path && appSettings?.hide_pdf_regenerate_hint !== 'true') {
+          setPdfHintOpen(true)
+        }
+      }
+    },
+    onError: (err: Error) => {
+      notifications.show({ title: t('common.error'), message: translateError(t, err.message), color: 'red' })
     },
   })
 
@@ -309,7 +366,22 @@ export function InvoiceDetail() {
         </Paper>
 
         <Paper p="md" radius="md" withBorder>
-          <Text fw={500} mb="md">{t('invoice.customer_section')}</Text>
+          <Group justify="space-between" mb="md">
+            <Text fw={500}>{t('invoice.customer_section')}</Text>
+            {invoice.customer && (
+              <Tooltip label={t('invoice.edit_customer')} events={{ hover: true, focus: true, touch: true }}>
+                <ActionIcon variant="subtle" size="sm" color="blue" onClick={() => {
+                  const c = invoice.customer!
+                  setCName(c.name || ''); setCIco(c.ico || ''); setCDic(c.dic || ''); setCIcDph(c.ic_dph || '')
+                  setCStreet(c.street || ''); setCCity(c.city || ''); setCZip(c.zip || ''); setCCountry(c.country || '')
+                  setCustomerEmail(c.email || ''); setCPhone(c.phone || '')
+                  setEditCustomerOpen(true)
+                }}>
+                  <IconEdit size={16} />
+                </ActionIcon>
+              </Tooltip>
+            )}
+          </Group>
           {invoice.customer ? (
             <Stack gap="xs">
               <Text size="sm" fw={600}>{invoice.customer.name}</Text>
@@ -453,6 +525,76 @@ export function InvoiceDetail() {
         onClose={() => setEmailSetupOpen(false)}
         supplierId={invoice.supplier_id}
       />
+
+      {/* Customer has no email — prompt to add */}
+      <Modal opened={customerEmailModalOpen} onClose={() => setCustomerEmailModalOpen(false)}
+        title={t('invoice.edit_customer')} size="sm" centered>
+        <Stack gap="md">
+          <Text size="sm">{t('email.no_customer_email_prompt').replace('{name}', invoice.customer?.name || '')}</Text>
+          <TextInput label={t('customer.email_label')} value={customerEmail} onChange={(e) => setCustomerEmail(e.currentTarget.value)} type="email" />
+          <Group justify="end">
+            <Button variant="default" onClick={() => setCustomerEmailModalOpen(false)}>{t('common.cancel')}</Button>
+            <Button onClick={() => { if (customerEmail.trim()) updateCustomerMutation.mutate({ email: customerEmail.trim() }) }}
+              loading={updateCustomerMutation.isPending} disabled={!customerEmail.trim()}>{t('common.save')}</Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      {/* Edit customer — full edit with disclaimer */}
+      <Modal opened={editCustomerOpen} onClose={() => setEditCustomerOpen(false)}
+        title={t('invoice.edit_customer')} size="lg" centered>
+        <Stack gap="md">
+          <Alert icon={<IconAlertCircle size={16} />} color="yellow" variant="light">
+            {t('invoice.edit_customer_disclaimer')}
+          </Alert>
+          <TextInput label={t('customer.name_label')} value={cName} onChange={(e) => setCName(e.currentTarget.value)} required />
+          <SimpleGrid cols={2}>
+            <TextInput label={t('customer.ico_label')} value={cIco} onChange={(e) => setCIco(e.currentTarget.value)} />
+            <TextInput label={t('customer.dic_label')} value={cDic} onChange={(e) => setCDic(e.currentTarget.value)} />
+          </SimpleGrid>
+          <TextInput label={t('customer.ic_dph_label')} value={cIcDph} onChange={(e) => setCIcDph(e.currentTarget.value)} />
+          <TextInput label={t('customer.street_label')} value={cStreet} onChange={(e) => setCStreet(e.currentTarget.value)} />
+          <SimpleGrid cols={2}>
+            <TextInput label={t('customer.city_label')} value={cCity} onChange={(e) => setCCity(e.currentTarget.value)} />
+            <TextInput label={t('customer.zip_label')} value={cZip} onChange={(e) => setCZip(e.currentTarget.value)} />
+          </SimpleGrid>
+          <TextInput label={t('customer.country_label')} value={cCountry} onChange={(e) => setCCountry(e.currentTarget.value)} />
+          <SimpleGrid cols={2}>
+            <TextInput label={t('customer.email_label')} value={customerEmail} onChange={(e) => setCustomerEmail(e.currentTarget.value)} type="email" />
+            <TextInput label={t('customer.phone_label')} value={cPhone} onChange={(e) => setCPhone(e.currentTarget.value)} />
+          </SimpleGrid>
+          <Group justify="end">
+            <Button variant="default" onClick={() => setEditCustomerOpen(false)}>{t('common.cancel')}</Button>
+            <Button onClick={() => updateCustomerMutation.mutate({
+              name: cName.trim(), ico: cIco.trim(), dic: cDic.trim(), ic_dph: cIcDph.trim(),
+              street: cStreet.trim(), city: cCity.trim(), zip: cZip.trim(), country: cCountry.trim(),
+              email: customerEmail.trim(), phone: cPhone.trim(),
+            })} loading={updateCustomerMutation.isPending} disabled={!cName.trim()}>{t('common.save')}</Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      {/* PDF regeneration hint modal */}
+      <Modal opened={pdfHintOpen} onClose={() => setPdfHintOpen(false)}
+        title={t('invoice.pdf_hint_modal_title')} centered>
+        <Stack gap="md">
+          <Text size="sm">{t('invoice.pdf_hint_modal_text')}</Text>
+          <Checkbox
+            label={t('invoice.pdf_hint_dont_show')}
+            onChange={(e) => {
+              if (e.currentTarget.checked) {
+                api.updateSettings({ hide_pdf_regenerate_hint: 'true' })
+                queryClient.invalidateQueries({ queryKey: ['settings'] })
+              }
+            }}
+          />
+          <Group justify="end">
+            <Button onClick={() => setPdfHintOpen(false)}>
+              {t('invoice.pdf_hint_ok')}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   )
 }

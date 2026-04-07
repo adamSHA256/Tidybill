@@ -17,6 +17,7 @@ import {
   Alert,
   Tooltip,
   SimpleGrid,
+  Modal,
 } from '@mantine/core'
 import { DateInput } from '@mantine/dates'
 import {
@@ -37,7 +38,6 @@ export function MobileInvoiceCreate() {
   const isMobile = useIsMobile()
 
   const {
-    navigate,
     t,
     duplicateFrom,
     isLoading,
@@ -526,7 +526,7 @@ export function MobileInvoiceCreate() {
 
       {/* Bottom action bar */}
       <Group justify="space-between" pb="md">
-        <Button variant="default" onClick={() => navigate('/invoices')}>
+        <Button variant="default" onClick={() => form.navigate('/invoices')}>
           {t('common.cancel')}
         </Button>
         <Button onClick={handleCreate} loading={createPending}>
@@ -536,6 +536,18 @@ export function MobileInvoiceCreate() {
 
       {/* Shared modals */}
       <InvoiceFormModals modals={form.modals} isMobile={isMobile} t={form.t} />
+
+      {/* Leave confirmation modal */}
+      <Modal opened={form.leaveConfirmOpen} onClose={form.cancelLeave}
+        title={form.t('invoice.leave_confirm_title')} centered fullScreen={isMobile}>
+        <Stack gap="md">
+          <Text size="sm">{form.t('invoice.leave_confirm_text')}</Text>
+          <Group justify="end">
+            <Button variant="default" onClick={form.cancelLeave}>{form.t('invoice.leave_confirm_stay')}</Button>
+            <Button color="red" onClick={form.confirmLeave}>{form.t('invoice.leave_confirm_leave')}</Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   )
 }

@@ -18,6 +18,7 @@ import {
   Modal,
   Textarea,
   Tooltip,
+  Checkbox,
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { DateInput } from '@mantine/dates'
@@ -64,6 +65,7 @@ export function MobileInvoiceEdit() {
 
   const [initialized, setInitialized] = useState(false)
   const [statusWarningOpen, setStatusWarningOpen] = useState(false)
+  const [pdfHintOpen, setPdfHintOpen] = useState(false)
   const [statusConfirmed, setStatusConfirmed] = useState(false)
 
   const [supplierId, setSupplierId] = useState<string | null>(null)
@@ -256,8 +258,17 @@ export function MobileInvoiceEdit() {
       queryClient.invalidateQueries({ queryKey: ['invoices'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
       queryClient.invalidateQueries({ queryKey: ['items'] })
-      notifications.show({ title: t('notify.invoice_updated'), message: t('notify.invoice_updated_msg'), color: 'green' })
-      navigate(`/invoices/${id}`)
+      notifications.show({
+        title: t('notify.invoice_updated'),
+        message: invoice?.pdf_path ? t('notify.invoice_updated_pdf_hint') : t('notify.invoice_updated_msg'),
+        color: invoice?.pdf_path ? 'yellow' : 'green',
+        autoClose: invoice?.pdf_path ? 8000 : 4000,
+      })
+      if (invoice?.pdf_path && editSettings?.hide_pdf_regenerate_hint !== 'true') {
+        setPdfHintOpen(true)
+      } else {
+        navigate(`/invoices/${id}`)
+      }
     },
     onError: (err: Error) => {
       notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
@@ -493,8 +504,12 @@ export function MobileInvoiceEdit() {
   const total = subtotal + vatAmount
 
   const handleSave = () => {
-    if (!supplierId || !customerId || (requiresBankInfo && !bankAccountId)) {
-      notifications.show({ title: t('invoice.missing_fields_title'), message: requiresBankInfo ? t('invoice.missing_fields_msg') : t('invoice.missing_fields_msg_no_bank'), color: 'orange' })
+    const missing: string[] = []
+    if (!supplierId) missing.push(t('invoice.missing_supplier'))
+    if (!customerId) missing.push(t('invoice.missing_customer'))
+    if (requiresBankInfo && !bankAccountId) missing.push(t('invoice.missing_bank_account'))
+    if (missing.length > 0) {
+      notifications.show({ title: t('invoice.missing_fields_title'), message: t('invoice.missing_select').replace('{fields}', missing.join(', ')), color: 'orange' })
       return
     }
     if (items.every((i) => !i.description)) {
@@ -502,8 +517,8 @@ export function MobileInvoiceEdit() {
       return
     }
     updateMutation.mutate({
-      supplier_id: supplierId,
-      customer_id: customerId,
+      supplier_id: supplierId!,
+      customer_id: customerId!,
       bank_account_id: requiresBankInfo ? bankAccountId! : undefined,
       invoice_number: invoiceNumber || undefined,
       issue_date: issueDate || undefined,
@@ -602,11 +617,15 @@ export function MobileInvoiceEdit() {
           <Paper p="md" radius="md" withBorder>
             <Text fw={500} mb="sm">{t('invoice.invoice_number')}</Text>
             <Stack gap="sm">
-              <TextInput
-                label={t('invoice.invoice_number')}
-                value={invoiceNumber}
-                onChange={(e) => setInvoiceNumber(e.currentTarget.value)}
-              />
+              <Tooltip label={id ? t('invoice.number_readonly_hint') : ''} multiline w={300} withArrow disabled={!id} events={{ hover: true, focus: true, touch: true }}>
+                <TextInput
+                  label={t('invoice.invoice_number')}
+                  value={invoiceNumber}
+                  onChange={(e) => setInvoiceNumber(e.currentTarget.value)}
+                  readOnly={!!id}
+                  styles={id ? { input: { opacity: 0.6, cursor: 'not-allowed' } } : undefined}
+                />
+              </Tooltip>
               <DateInput
                 label={t('invoice.issue_date')}
                 valueFormat="DD.MM.YYYY"
@@ -1081,6 +1100,27 @@ export function MobileInvoiceEdit() {
           </Modal>
         </>
       )}
+      {/* PDF regeneration hint modal */}
+      <Modal opened={pdfHintOpen} onClose={() => { setPdfHintOpen(false); navigate(`/invoices/${id}`) }}
+        title={t('invoice.pdf_hint_modal_title')} centered fullScreen>
+        <Stack gap="md">
+          <Text size="sm">{t('invoice.pdf_hint_modal_text_mobile')}</Text>
+          <Checkbox
+            label={t('invoice.pdf_hint_dont_show')}
+            onChange={(e) => {
+              if (e.currentTarget.checked) {
+                api.updateSettings({ hide_pdf_regenerate_hint: 'true' })
+                queryClient.invalidateQueries({ queryKey: ['settings'] })
+              }
+            }}
+          />
+          <Group justify="end">
+            <Button onClick={() => { setPdfHintOpen(false); navigate(`/invoices/${id}`) }}>
+              {t('invoice.pdf_hint_ok')}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   )
 }

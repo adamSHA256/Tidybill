@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { createBrowserRouter, Outlet } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Center, Loader } from '@mantine/core'
 import { AppShell } from './components/AppShell'
@@ -29,7 +29,7 @@ import { About } from './pages/About'
 import { MobileAbout } from './pages/mobile/About'
 import { api } from './api/client'
 
-export default function App() {
+function AppLayout() {
   const [wizardDone, setWizardDone] = useState(false)
 
   const { data: firstRunData, isLoading, isError } = useQuery({
@@ -42,11 +42,6 @@ export default function App() {
   const showWizard = !wizardDone && firstRunData?.first_run === true
   const isMobile = useIsMobile()
   const Shell = isMobile ? MobileShell : AppShell
-  const InvoiceListPage = isMobile ? MobileInvoiceList : InvoiceList
-  const InvoiceCreatePage = isMobile ? MobileInvoiceCreate : InvoiceCreate
-  const InvoiceDetailPage = isMobile ? MobileInvoiceDetail : InvoiceDetail
-  const InvoiceEditPage = isMobile ? MobileInvoiceEdit : InvoiceEdit
-  const AboutPage = isMobile ? MobileAbout : About
 
   return (
     <ApiHealthGuard>
@@ -58,25 +53,37 @@ export default function App() {
         <SetupWizard onComplete={() => setWizardDone(true)} />
       ) : (
         <Shell>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/invoices" element={<InvoiceListPage />} />
-            <Route path="/invoices/new" element={<InvoiceCreatePage />} />
-            <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
-            <Route path="/invoices/:id/edit" element={<InvoiceEditPage />} />
-            <Route path="/customers" element={<CustomerList />} />
-            <Route path="/suppliers" element={<SupplierList />} />
-            <Route path="/items" element={<ItemCatalog />} />
-            <Route path="/templates" element={<Templates />} />
-            <Route path="/template-editor/:id" element={<TemplateEditor />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/automatizace" element={<Automatizace />} />
-            <Route path="/sync" element={<SyncPage />} />
-            <Route path="/more" element={<MorePage />} />
-            <Route path="/about" element={<AboutPage />} />
-          </Routes>
+          <Outlet />
         </Shell>
       )}
     </ApiHealthGuard>
   )
 }
+
+function ResponsivePage({ Desktop, Mobile }: { Desktop: React.ComponentType; Mobile: React.ComponentType }) {
+  const isMobile = useIsMobile()
+  return isMobile ? <Mobile /> : <Desktop />
+}
+
+export const router = createBrowserRouter([
+  {
+    element: <AppLayout />,
+    children: [
+      { path: '/', element: <Dashboard /> },
+      { path: '/invoices', element: <ResponsivePage Desktop={InvoiceList} Mobile={MobileInvoiceList} /> },
+      { path: '/invoices/new', element: <ResponsivePage Desktop={InvoiceCreate} Mobile={MobileInvoiceCreate} /> },
+      { path: '/invoices/:id', element: <ResponsivePage Desktop={InvoiceDetail} Mobile={MobileInvoiceDetail} /> },
+      { path: '/invoices/:id/edit', element: <ResponsivePage Desktop={InvoiceEdit} Mobile={MobileInvoiceEdit} /> },
+      { path: '/customers', element: <CustomerList /> },
+      { path: '/suppliers', element: <SupplierList /> },
+      { path: '/items', element: <ItemCatalog /> },
+      { path: '/templates', element: <Templates /> },
+      { path: '/template-editor/:id', element: <TemplateEditor /> },
+      { path: '/settings', element: <Settings /> },
+      { path: '/automatizace', element: <Automatizace /> },
+      { path: '/sync', element: <SyncPage /> },
+      { path: '/more', element: <MorePage /> },
+      { path: '/about', element: <ResponsivePage Desktop={About} Mobile={MobileAbout} /> },
+    ],
+  },
+])

@@ -3,7 +3,7 @@ import { Modal, Stack, TextInput, Textarea, Button, Group, Text, Alert, Switch }
 import { notifications } from '@mantine/notifications'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
-import { useT } from '../i18n'
+import { useT, translateError } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { IconMail, IconAlertCircle, IconPaperclip } from '@tabler/icons-react'
 
@@ -72,7 +72,7 @@ export function SendEmailModal({ invoiceId, opened, onClose }: Props) {
         notifications.hide(sendingNotifId)
         const message = err.message === 'TIMEOUT'
           ? t('email.send_timeout')
-          : err.message
+          : translateError(t, err.message)
         notifications.show({
           title: t('email.sent_error'),
           message,

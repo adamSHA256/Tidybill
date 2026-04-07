@@ -61,3 +61,30 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 export function useT() {
   return useContext(I18nContext)
 }
+
+// Map known backend error strings/prefixes to translation keys
+const errorMap: [RegExp, string][] = [
+  [/^connection failed:/, 'error.smtp_connection_failed'],
+  [/^failed to decrypt saved password$/, 'error.smtp_decrypt_failed'],
+  [/^password is required$/, 'error.password_required'],
+  [/^host, username, and from_email are required$/, 'error.smtp_fields_required'],
+  [/^account_number or iban is required$/, 'error.account_or_iban_required'],
+  [/^invoice number already exists:/, 'error.invoice_number_exists'],
+  [/^supplier_id is required$/, 'error.supplier_required'],
+  [/^customer_id and supplier_id are required$/, 'error.supplier_customer_required'],
+  [/^bank_account_id is required for this payment method$/, 'error.bank_required_for_payment'],
+  [/^name is required$/, 'error.name_required'],
+  [/^PDF generation failed:/, 'error.pdf_generation_failed'],
+  [/^passphrase must be at least 8 characters$/, 'error.passphrase_too_short'],
+  [/^file is encrypted, passphrase required$/, 'error.passphrase_required'],
+]
+
+export function translateError(t: (key: string) => string, message: string): string {
+  for (const [pattern, key] of errorMap) {
+    if (pattern.test(message)) {
+      const translated = t(key)
+      if (translated !== key) return translated
+    }
+  }
+  return message
+}

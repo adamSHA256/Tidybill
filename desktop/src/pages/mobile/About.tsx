@@ -86,6 +86,11 @@ export function MobileAbout() {
         <Badge variant="light" color="blue" size="lg">v{aboutInfo.version}</Badge>
       </Group>
 
+      <Paper p="md" radius="md" withBorder>
+        <Text size="sm" mb="xs">{t('about.description')}</Text>
+        <Text size="sm" c="dimmed">{t('about.opensource')}</Text>
+      </Paper>
+
       {/* Update check */}
       <Paper p="md" radius="md" withBorder>
         {updateResult?.checked_at ? (
@@ -133,11 +138,6 @@ export function MobileAbout() {
             onChange={(e) => handleAutoCheckToggle(e.currentTarget.checked)}
           />
         </Tooltip>
-      </Paper>
-
-      <Paper p="md" radius="md" withBorder>
-        <Text size="sm" mb="xs">{t('about.description')}</Text>
-        <Text size="sm" c="dimmed">{t('about.opensource')}</Text>
       </Paper>
 
       <Paper p="md" radius="md" withBorder>
