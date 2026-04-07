@@ -68,6 +68,15 @@ export function MobileInvoiceDetail() {
   const [customerEmailModalOpen, setCustomerEmailModalOpen] = useState(false)
   const [editCustomerOpen, setEditCustomerOpen] = useState(false)
   const [customerEmail, setCustomerEmail] = useState('')
+  const [cName, setCName] = useState('')
+  const [cIco, setCIco] = useState('')
+  const [cDic, setCDic] = useState('')
+  const [cIcDph, setCIcDph] = useState('')
+  const [cStreet, setCStreet] = useState('')
+  const [cCity, setCCity] = useState('')
+  const [cZip, setCZip] = useState('')
+  const [cCountry, setCCountry] = useState('')
+  const [cPhone, setCPhone] = useState('')
 
   const { data: invoice, isLoading } = useQuery({
     queryKey: ['invoice', id],
@@ -157,7 +166,7 @@ export function MobileInvoiceDetail() {
   })
 
   const updateCustomerMutation = useMutation({
-    mutationFn: (data: { email: string }) => api.updateCustomer(invoice!.customer!.id, data),
+    mutationFn: (data: Record<string, string>) => api.updateCustomer(invoice!.customer!.id, data),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['invoice', id] })
       queryClient.invalidateQueries({ queryKey: ['customers'] })
@@ -278,7 +287,13 @@ export function MobileInvoiceDetail() {
             <Text fw={500}>{t('invoice.customer_section')}</Text>
             {invoice.customer && (
               <Tooltip label={t('invoice.edit_customer')} events={{ hover: true, focus: true, touch: true }}>
-                <ActionIcon variant="subtle" size="sm" color="blue" onClick={() => { setCustomerEmail(invoice.customer?.email || ''); setEditCustomerOpen(true) }}>
+                <ActionIcon variant="subtle" size="sm" color="blue" onClick={() => {
+                  const c = invoice.customer!
+                  setCName(c.name || ''); setCIco(c.ico || ''); setCDic(c.dic || ''); setCIcDph(c.ic_dph || '')
+                  setCStreet(c.street || ''); setCCity(c.city || ''); setCZip(c.zip || ''); setCCountry(c.country || '')
+                  setCustomerEmail(c.email || ''); setCPhone(c.phone || '')
+                  setEditCustomerOpen(true)
+                }}>
                   <IconEdit size={16} />
                 </ActionIcon>
               </Tooltip>
@@ -559,18 +574,30 @@ export function MobileInvoiceDetail() {
         </Stack>
       </Modal>
 
-      {/* Edit customer — with disclaimer */}
+      {/* Edit customer — full edit with disclaimer */}
       <Modal opened={editCustomerOpen} onClose={() => setEditCustomerOpen(false)}
-        title={t('invoice.edit_customer')} size="sm" centered fullScreen={isMobile}>
+        title={t('invoice.edit_customer')} size="lg" centered fullScreen={isMobile}>
         <Stack gap="md">
           <Alert icon={<IconAlertCircle size={16} />} color="yellow" variant="light">
             {t('invoice.edit_customer_disclaimer')}
           </Alert>
+          <TextInput label={t('customer.name_label')} value={cName} onChange={(e) => setCName(e.currentTarget.value)} required />
+          <TextInput label={t('customer.ico_label')} value={cIco} onChange={(e) => setCIco(e.currentTarget.value)} />
+          <TextInput label={t('customer.dic_label')} value={cDic} onChange={(e) => setCDic(e.currentTarget.value)} />
+          <TextInput label={t('customer.ic_dph_label')} value={cIcDph} onChange={(e) => setCIcDph(e.currentTarget.value)} />
+          <TextInput label={t('customer.street_label')} value={cStreet} onChange={(e) => setCStreet(e.currentTarget.value)} />
+          <TextInput label={t('customer.city_label')} value={cCity} onChange={(e) => setCCity(e.currentTarget.value)} />
+          <TextInput label={t('customer.zip_label')} value={cZip} onChange={(e) => setCZip(e.currentTarget.value)} />
+          <TextInput label={t('customer.country_label')} value={cCountry} onChange={(e) => setCCountry(e.currentTarget.value)} />
           <TextInput label={t('customer.email_label')} value={customerEmail} onChange={(e) => setCustomerEmail(e.currentTarget.value)} type="email" />
+          <TextInput label={t('customer.phone_label')} value={cPhone} onChange={(e) => setCPhone(e.currentTarget.value)} />
           <Group justify="end">
             <Button variant="default" onClick={() => setEditCustomerOpen(false)}>{t('common.cancel')}</Button>
-            <Button onClick={() => updateCustomerMutation.mutate({ email: customerEmail.trim() })}
-              loading={updateCustomerMutation.isPending} disabled={!customerEmail.trim()}>{t('common.save')}</Button>
+            <Button onClick={() => updateCustomerMutation.mutate({
+              name: cName.trim(), ico: cIco.trim(), dic: cDic.trim(), ic_dph: cIcDph.trim(),
+              street: cStreet.trim(), city: cCity.trim(), zip: cZip.trim(), country: cCountry.trim(),
+              email: customerEmail.trim(), phone: cPhone.trim(),
+            })} loading={updateCustomerMutation.isPending} disabled={!cName.trim()}>{t('common.save')}</Button>
           </Group>
         </Stack>
       </Modal>
