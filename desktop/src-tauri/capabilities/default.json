@@ -25,6 +25,11 @@
               "validator": "\\d+"
             }
           ]
+        },
+        {
+          "name": "binaries/rclone",
+          "sidecar": true,
+          "args": true
         }
       ]
     },

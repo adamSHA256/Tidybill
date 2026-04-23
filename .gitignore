@@ -24,3 +24,6 @@ vendor/
 
 # Generated files
 *.pdf
+
+# rclone sidecar cache (binaries fetched by scripts/fetch-rclone.sh, not committed)
+.rclone-cache/
