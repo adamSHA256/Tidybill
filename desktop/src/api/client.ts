@@ -293,6 +293,70 @@ export const api = {
     if (!response.ok) throw new Error(await response.text())
     return response.json()
   },
+
+  cloud: {
+    transports: () =>
+      request<{ transports: CloudTransportInfo[] }>('/cloud/transports'),
+
+    gdriveConnect: () =>
+      request<{ auth_url: string; state: string }>('/cloud/gdrive/connect', { method: 'POST' }),
+
+    gdriveDisconnect: () =>
+      request<{ ok: true }>('/cloud/gdrive/disconnect', { method: 'POST' }),
+
+    rcloneConnect: (backend: string, body: RcloneConnectBody) =>
+      request<{ ok: true; account_label: string }>(
+        `/cloud/rclone/${encodeURIComponent(backend)}/connect`,
+        { method: 'POST', body: JSON.stringify(body) }
+      ),
+
+    rcloneDisconnect: (backend: string) =>
+      request<{ ok: true }>(
+        `/cloud/rclone/${encodeURIComponent(backend)}/disconnect`,
+        { method: 'POST' }
+      ),
+
+    upload: (transport_id: string, passphrase?: string, filters?: ExportFilters) =>
+      request<{ ok: true; blob_ref: CloudBlobRef }>('/cloud/upload', {
+        method: 'POST',
+        body: JSON.stringify({ transport_id, passphrase, filters }),
+      }),
+
+    list: (transport_id: string) =>
+      request<{ blobs: CloudBlobRef[] }>(
+        `/cloud/${encodeURIComponent(transport_id)}/list`
+      ),
+
+    downloadPreview: (transport_id: string, provider_id: string, passphrase?: string, preview_mode?: string) =>
+      request<ImportReport>(
+        `/cloud/${encodeURIComponent(transport_id)}/download-preview`,
+        {
+          method: 'POST',
+          // Wire-field name MUST be `preview_mode` — the Go handler reads
+          // that exact JSON tag (see Phase 8.3 handleCloudDownloadPreview).
+          // Do NOT rename this to `mode`; that is the wire name for
+          // download-apply only.
+          body: JSON.stringify({ provider_id, passphrase, preview_mode }),
+        }
+      ),
+
+    downloadApply: (transport_id: string, provider_id: string, passphrase: string | undefined, mode: string) =>
+      request<ImportReport>(
+        `/cloud/${encodeURIComponent(transport_id)}/download-apply`,
+        { method: 'POST', body: JSON.stringify({ provider_id, passphrase, mode }) }
+      ),
+
+    deleteBlob: (transport_id: string, provider_id: string) =>
+      request<{ ok: true }>(
+        `/cloud/${encodeURIComponent(transport_id)}/blob?provider_id=${encodeURIComponent(provider_id)}`,
+        { method: 'DELETE' }
+      ),
+
+    rcloneBackends: () =>
+      request<{ backends: Array<{ id: string; type: string; fields: Array<{ name: string; kind: string; required?: boolean; default?: string; options?: string[]; obscure?: boolean }> }> }>(
+        '/cloud/rclone/backends'
+      ),
+  },
 }
 
 // Types matching Go models exactly
@@ -620,6 +684,29 @@ export interface ImportReport {
     description: string
     resolution: string
   }>
+}
+
+export interface CloudBlobRef {
+  id: string
+  filename: string
+  size: number
+  modified_at: string
+  encrypted: boolean
+}
+
+export interface CloudStatus {
+  connected: boolean
+  account_label?: string
+  detail?: string
+}
+
+export interface CloudTransportInfo {
+  id: string
+  status: CloudStatus
+}
+
+export interface RcloneConnectBody {
+  [field: string]: string | number | undefined
 }
 
 export interface CreateInvoiceRequest {

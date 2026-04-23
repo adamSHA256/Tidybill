@@ -21,11 +21,15 @@ import {
 } from '@mantine/core'
 import { DateInput } from '@mantine/dates'
 import { notifications } from '@mantine/notifications'
-import { IconDownload, IconUpload, IconCloudOff, IconAlertCircle, IconInfoCircle, IconKey } from '@tabler/icons-react'
-import { useQuery } from '@tanstack/react-query'
+import { IconDownload, IconUpload, IconAlertCircle, IconInfoCircle, IconKey, IconCloudUpload } from '@tabler/icons-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, isTauri, isMobileDevice, shareFile, type ExportFilters, type ImportReport } from '../api/client'
 import { useT } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
+import { CloudSyncPanel } from '../components/CloudSyncPanel'
+import { ConnectCloudModal } from '../components/ConnectCloudModal'
+import { CloudRestoreModal } from '../components/CloudRestoreModal'
+import { CloudUploadModal } from '../components/CloudUploadModal'
 
 export function SyncPage() {
   const { t } = useT()
@@ -57,6 +61,31 @@ export function SyncPage() {
   const [fileEncrypted, setFileEncrypted] = useState(false)
   const selectedFileRef = useRef<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Cloud sync state
+  const [connectOpen, setConnectOpen] = useState(false)
+  const [uploadTarget, setUploadTarget] = useState<string | null>(null)
+  const [restoreTarget, setRestoreTarget] = useState<string | null>(null)
+  const qc = useQueryClient()
+
+  const { data: transports } = useQuery({
+    queryKey: ['cloud-transports'],
+    queryFn: () => api.cloud.transports().then((r) => r.transports),
+    refetchInterval: 5_000,
+  })
+
+  const disconnect = useMutation({
+    mutationFn: async (transportId: string) => {
+      if (transportId === 'gdrive') {
+        return api.cloud.gdriveDisconnect()
+      }
+      const backend = transportId.replace('rclone:', '')
+      return api.cloud.rcloneDisconnect(backend)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['cloud-transports'] })
+    },
+  })
 
   const { data: suppliers } = useQuery({
     queryKey: ['suppliers'],
@@ -447,16 +476,40 @@ export function SyncPage() {
         </Stack>
       </Paper>
 
-      {/* Sync (coming soon) section */}
-      <Paper p="md" radius="md" withBorder mt="md">
-        <Stack gap="sm">
-          <Group gap="xs">
-            <IconCloudOff size={20} style={{ opacity: 0.5 }} />
-            <Text fw={500} c="dimmed">{t('backup.sync_title')}</Text>
+      {/* Cloud Sync section */}
+      <Paper p="md" withBorder>
+        <Stack gap="md">
+          <Group justify="space-between">
+            <Title order={4}>{t('cloud.title')}</Title>
+            <Button leftSection={<IconCloudUpload size={16} />}
+                    onClick={() => setConnectOpen(true)}>
+              {t('cloud.connect_button')}
+            </Button>
           </Group>
-          <Text c="dimmed" size="sm">{t('backup.sync_coming_soon')}</Text>
+          <CloudSyncPanel
+            transports={transports ?? []}
+            onUpload={(id) => setUploadTarget(id)}
+            onRestore={(id) => setRestoreTarget(id)}
+            onDisconnect={(id) => disconnect.mutate(id)}
+          />
         </Stack>
       </Paper>
+
+      <ConnectCloudModal
+        opened={connectOpen}
+        onClose={() => setConnectOpen(false)}
+        onConnected={() => qc.invalidateQueries({ queryKey: ['cloud-transports'] })}
+      />
+      <CloudRestoreModal
+        opened={restoreTarget !== null}
+        transportId={restoreTarget}
+        onClose={() => setRestoreTarget(null)}
+      />
+      <CloudUploadModal
+        opened={uploadTarget !== null}
+        transportId={uploadTarget}
+        onClose={() => setUploadTarget(null)}
+      />
 
       {/* Export filter modal */}
       <Modal
