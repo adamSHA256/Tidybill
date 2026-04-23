@@ -1,11 +1,20 @@
 package api
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
+	"log"
 	"net/http"
+	"sync"
 
 	"github.com/adamSHA256/tidybill/internal/backup"
+	"github.com/adamSHA256/tidybill/internal/cloud"
+	"github.com/adamSHA256/tidybill/internal/cloud/gdrive"
+	"github.com/adamSHA256/tidybill/internal/cloud/keychain"
+	"github.com/adamSHA256/tidybill/internal/cloud/localfs"
+	"github.com/adamSHA256/tidybill/internal/cloud/rclone"
 	"github.com/adamSHA256/tidybill/internal/config"
 	"github.com/adamSHA256/tidybill/internal/database/repository"
 	"github.com/adamSHA256/tidybill/internal/email"
@@ -14,22 +23,28 @@ import (
 )
 
 type Server struct {
-	invoices     *repository.InvoiceRepository
-	invoiceItems *repository.InvoiceItemRepository
-	customers    *repository.CustomerRepository
-	suppliers    *repository.SupplierRepository
-	bankAccounts *repository.BankAccountRepository
-	settings     *repository.SettingsRepository
-	items        *repository.ItemRepository
-	custItems    *repository.CustomerItemRepository
-	templates    *repository.PDFTemplateRepository
-	smtpConfigs  *repository.SmtpConfigRepository
-	pdf          *service.PDFService
-	emailService *email.Service
-	cfg          *config.Config
-	updater      *update.Checker
-	backupExport *backup.ExportService
-	backupImport *backup.ImportService
+	invoices      *repository.InvoiceRepository
+	invoiceItems  *repository.InvoiceItemRepository
+	customers     *repository.CustomerRepository
+	suppliers     *repository.SupplierRepository
+	bankAccounts  *repository.BankAccountRepository
+	settings      *repository.SettingsRepository
+	items         *repository.ItemRepository
+	custItems     *repository.CustomerItemRepository
+	templates     *repository.PDFTemplateRepository
+	smtpConfigs   *repository.SmtpConfigRepository
+	pdf           *service.PDFService
+	emailService  *email.Service
+	cfg           *config.Config
+	updater       *update.Checker
+	backupExport  *backup.ExportService
+	backupImport  *backup.ImportService
+	cloudRegistry  *cloud.Registry
+	cloudConfigs   *repository.CloudConfigsRepository
+	kc             keychain.Store
+	rcloneMgr      *rclone.Manager
+	gdriveConnectMu     sync.Mutex
+	gdriveConnectStates map[string]pendingGDriveConnect
 }
 
 func NewServer(db *sql.DB, cfg *config.Config) *Server {
@@ -46,27 +61,60 @@ func NewServer(db *sql.DB, cfg *config.Config) *Server {
 	updater := update.NewChecker(settings)
 	updater.StartAutoCheck()
 
+	reg := cloud.NewRegistry()
+	reg.Register(localfs.New(cfg.ExportDir))
+
+	cloudConfigs := repository.NewCloudConfigsRepository(db)
+
 	s := &Server{
-		invoices:     invoices,
-		invoiceItems: invoiceItems,
-		customers:    customers,
-		suppliers:    suppliers,
-		bankAccounts: bankAccounts,
-		settings:     settings,
-		items:        items,
-		custItems:    custItems,
-		templates:    templates,
-		smtpConfigs:  smtpConfigs,
-		pdf:          service.NewPDFService(cfg.PDFDir, cfg.PreviewDir),
-		emailService: email.NewService(smtpConfigs, invoices, customers, suppliers, settings),
-		cfg:          cfg,
-		updater:      updater,
-		backupExport: backup.NewExportService(
+		invoices:      invoices,
+		invoiceItems:  invoiceItems,
+		customers:     customers,
+		suppliers:     suppliers,
+		bankAccounts:  bankAccounts,
+		settings:      settings,
+		items:         items,
+		custItems:     custItems,
+		templates:     templates,
+		smtpConfigs:   smtpConfigs,
+		pdf:           service.NewPDFService(cfg.PDFDir, cfg.PreviewDir),
+		emailService:  email.NewService(smtpConfigs, invoices, customers, suppliers, settings),
+		cfg:           cfg,
+		updater:       updater,
+		backupExport:  backup.NewExportService(
 			db, suppliers, bankAccounts, customers, invoices,
 			invoiceItems, items, custItems, templates, smtpConfigs, settings,
 		),
-		backupImport: backup.NewImportService(db),
+		backupImport:       backup.NewImportService(db),
+		cloudRegistry:      reg,
+		cloudConfigs:       cloudConfigs,
+		gdriveConnectStates: make(map[string]pendingGDriveConnect),
 	}
+
+	// Keychain (best-effort).
+	kc, err := keychain.New(cfg.DataDir)
+	if err != nil {
+		log.Printf("keychain unavailable: %v", err)
+	}
+	s.kc = kc
+
+	// Re-register gdrive if a refresh token is already in the keychain.
+	if kc != nil {
+		if t, err := gdrive.New(kc, settings); err == nil {
+			s.cloudRegistry.Register(t)
+		} else if !errors.Is(err, gdrive.ErrNotConnected) {
+			log.Printf("gdrive restore: %v", err)
+		}
+	}
+
+	// rclone manager — lazy-spawn (do not call EnsureRunning here).
+	if bin, err := rclone.LocateBinary(); err == nil {
+		s.rcloneMgr = rclone.NewManager(bin)
+		s.reregisterRcloneRemotes(context.Background())
+	} else {
+		log.Printf("rclone not available: %v", err)
+	}
+
 	return s
 }
 
@@ -189,6 +237,19 @@ func (s *Server) Router() http.Handler {
 	mux.HandleFunc("POST /api/backup/import", s.handleImport)
 	mux.HandleFunc("POST /api/backup/import/preview", s.handleImportPreview)
 	mux.HandleFunc("GET /api/backup/generate-mnemonic", s.handleGenerateMnemonic)
+
+	// Cloud transports
+	mux.HandleFunc("GET /api/cloud/transports", s.handleCloudTransports)
+	mux.HandleFunc("GET /api/cloud/rclone/backends", s.handleCloudRcloneBackends)
+	mux.HandleFunc("POST /api/cloud/gdrive/connect", s.handleCloudGDriveConnect)
+	mux.HandleFunc("POST /api/cloud/gdrive/disconnect", s.handleCloudGDriveDisconnect)
+	mux.HandleFunc("POST /api/cloud/rclone/{backend}/connect", s.handleCloudRcloneConnect)
+	mux.HandleFunc("POST /api/cloud/rclone/{backend}/disconnect", s.handleCloudRcloneDisconnect)
+	mux.HandleFunc("POST /api/cloud/upload", s.handleCloudUpload)
+	mux.HandleFunc("GET /api/cloud/{transport_id}/list", s.handleCloudList)
+	mux.HandleFunc("POST /api/cloud/{transport_id}/download-preview", s.handleCloudDownloadPreview)
+	mux.HandleFunc("POST /api/cloud/{transport_id}/download-apply", s.handleCloudDownloadApply)
+	mux.HandleFunc("DELETE /api/cloud/{transport_id}/blob", s.handleCloudDeleteBlob)
 
 	return corsMiddleware(mux)
 }

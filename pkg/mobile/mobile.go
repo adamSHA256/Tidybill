@@ -62,6 +62,11 @@ func StartServer(dataDir string) (int, error) {
 	settingsRepo.SetDefault("email.default_subject", "Faktura ((number))")
 	settingsRepo.SetDefault("email.default_body", "Dobrý den,\n\nv příloze zasílám fakturu č. ((number)) na částku ((total)).\nSplatnost: ((due_date)).\n\nS pozdravem\n((supplier))")
 	settingsRepo.SetDefault("email.copy_subject", "TidyBill - ((subject))")
+	settingsRepo.SetDefault("cloud.default_transport", "")
+	settingsRepo.SetDefault("cloud.default_encrypted", "1")
+	settingsRepo.SetDefault("cloud.passphrase_cache",  "session")
+	settingsRepo.SetDefault("cloud.gdrive.folder_id",  "")
+	settingsRepo.SetDefault("cloud.rclone.auto_start", "1")
 
 	srv := api.NewServer(db.DB, cfg)
 
