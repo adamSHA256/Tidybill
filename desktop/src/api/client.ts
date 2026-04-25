@@ -353,7 +353,7 @@ export const api = {
       ),
 
     rcloneBackends: () =>
-      request<{ backends: Array<{ id: string; type: string; fields: Array<{ name: string; kind: string; required?: boolean; default?: string; options?: string[]; obscure?: boolean }> }> }>(
+      request<{ backends: Array<{ id: string; type: string; fields: Array<{ name: string; kind: string; required?: boolean; default?: string; options?: string[]; obscure?: boolean; generated?: boolean; transient?: boolean }> }> }>(
         '/cloud/rclone/backends'
       ),
   },

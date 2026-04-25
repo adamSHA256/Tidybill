@@ -7,7 +7,7 @@ import { api } from '../api/client'
 import { GDriveStep } from './connect/GDriveStep'
 import { RcloneFormStep } from './connect/RcloneFormStep'
 
-type Step = 'pick' | 'gdrive' | 'sftp' | 'webdav' | 's3' | 'dropbox' | 'onedrive' | 'advanced'
+type Step = 'pick' | 'gdrive' | 'sftp' | 'webdav' | 's3' | 'dropbox' | 'onedrive' | 'protondrive' | 'advanced'
 
 interface ConnectCloudModalProps {
   opened: boolean
@@ -62,6 +62,12 @@ export function ConnectCloudModal({ opened, onClose, onConnected }: ConnectCloud
       disabled: false,
     },
     {
+      id: 'protondrive' as Step,
+      label: t('cloud.rclone.protondrive.title'),
+      icon: <IconCloud size={28} />,
+      disabled: false,
+    },
+    {
       id: 'dropbox' as Step,
       label: t('cloud.rclone.dropbox.label'),
       icon: <IconBrandDropbox size={28} />,
@@ -111,7 +117,7 @@ export function ConnectCloudModal({ opened, onClose, onConnected }: ConnectCloud
         />
       )}
 
-      {(step === 'sftp' || step === 'webdav' || step === 's3') && (
+      {(step === 'sftp' || step === 'webdav' || step === 's3' || step === 'protondrive') && (
         <RcloneFormStep
           backendId={step}
           onClose={handleClose}
