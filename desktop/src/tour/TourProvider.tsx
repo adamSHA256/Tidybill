@@ -97,7 +97,10 @@ export function TourProvider({ children }: { children: ReactNode }) {
       onDestroyed: () => {
         cancelledRef.current = true
         setIsRunning(false)
-        const completed = idx >= flow.steps.length - 1
+        // idx is incremented past the last step only via Next/Done on the final
+        // popover. Closing with ✕ on the last step leaves idx at flow.steps.length - 1,
+        // which must NOT count as completion.
+        const completed = idx >= flow.steps.length
         if (completed) markCompleted(id)
         setCurrentFlowId(null)
       },

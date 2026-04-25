@@ -113,6 +113,26 @@ describe('TourProvider', () => {
     expect(persistence.readState().completedFlows).toContain('create-invoice')
   })
 
+  it('closing with X on the last step does NOT mark the flow as completed', async () => {
+    const markSpy = vi.spyOn(persistence, 'markCompleted')
+    renderProvider(ALL_CREATE_ANCHORS)
+    fireEvent.click(screen.getByTestId('start-create'))
+
+    // Advance through Next 6 times so the LAST popover (idx=6) is showing.
+    for (let i = 0; i < 6; i++) {
+      await waitFor(() => expect(mockHighlight).toHaveBeenCalledTimes(i + 1))
+      mockHighlight.mock.calls[i][0].popover.onNextClick()
+    }
+    await waitFor(() => expect(mockHighlight).toHaveBeenCalledTimes(7))
+
+    // User presses X on the last step instead of Done.
+    fireEvent.click(screen.getByTestId('stop'))
+
+    await waitFor(() => expect(screen.getByTestId('is-running')).toHaveTextContent('false'))
+    expect(markSpy).not.toHaveBeenCalled()
+    expect(persistence.readState().completedFlows).not.toContain('create-invoice')
+  })
+
   it('startFlow with unknown id returns silently without error', () => {
     renderProvider()
     expect(() => fireEvent.click(screen.getByTestId('start-unknown'))).not.toThrow()
