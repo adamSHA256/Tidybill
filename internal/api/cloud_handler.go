@@ -214,6 +214,9 @@ func (s *Server) handleCloudRcloneConnect(w http.ResponseWriter, r *http.Request
 	// Validate required fields.
 	var missing []string
 	for _, f := range backend.Fields {
+		if f.Generated {
+			continue // generated fields are filled by rclone, not by the user
+		}
 		if f.Required && body[f.Name] == "" {
 			missing = append(missing, f.Name)
 		}
@@ -223,9 +226,14 @@ func (s *Server) handleCloudRcloneConnect(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Persist all field values to keychain.
+	// Persist user-input fields to the keychain. Skip Transient (e.g. TOTP
+	// codes that would be stale on next restart) and Generated (rclone fills
+	// these after auth — captured below from config/dump).
 	if s.kc != nil {
 		for _, f := range backend.Fields {
+			if f.Transient || f.Generated {
+				continue
+			}
 			if v := body[f.Name]; v != "" {
 				if err := s.kc.Set(keychain.RcloneAcct(backendID, f.Name), v); err != nil {
 					writeError(w, http.StatusInternalServerError, "keychain write: "+err.Error())
@@ -252,6 +260,9 @@ func (s *Server) handleCloudRcloneConnect(w http.ResponseWriter, r *http.Request
 	remoteName := "tidybill-" + backend.ID
 	parameters := map[string]string{}
 	for _, f := range backend.Fields {
+		if f.Generated {
+			continue // not present in body on initial connect
+		}
 		if v := body[f.Name]; v != "" {
 			parameters[f.Name] = v
 		}
@@ -263,6 +274,11 @@ func (s *Server) handleCloudRcloneConnect(w http.ResponseWriter, r *http.Request
 		"opt":        map[string]any{"obscure": true, "nonInteractive": true},
 	}, nil); err != nil {
 		s.cleanupFailedRcloneConnect(ctx, rc, backendID, remoteName, backend, body)
+		if backendID == "protondrive" {
+			status, code := mapProtonDriveError(err)
+			writeJSON(w, status, map[string]any{"error_code": code, "error_raw": err.Error()})
+			return
+		}
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -272,8 +288,40 @@ func (s *Server) handleCloudRcloneConnect(w http.ResponseWriter, r *http.Request
 		"fs": remoteName + ":",
 	}, nil); err != nil {
 		s.cleanupFailedRcloneConnect(ctx, rc, backendID, remoteName, backend, body)
+		if backendID == "protondrive" {
+			status, code := mapProtonDriveError(err)
+			writeJSON(w, status, map[string]any{"error_code": code, "error_raw": err.Error()})
+			return
+		}
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
+	}
+
+	// Capture rclone-generated session fields (e.g. Proton Drive's client_uid,
+	// client_access_token, client_refresh_token, client_salted_key_pass) so we
+	// can restore them on next app start without re-prompting the user for
+	// credentials/2FA. Failure here is non-fatal: the connect succeeded, the
+	// remote works, and at worst the user re-authenticates on next restart.
+	if s.kc != nil {
+		var dumped map[string]map[string]string
+		if err := rc.Call(ctx, "config/dump", map[string]any{}, &dumped); err == nil {
+			if remoteCfg, ok := dumped[remoteName]; ok {
+				for _, f := range backend.Fields {
+					if !f.Generated {
+						continue
+					}
+					if v := remoteCfg[f.Name]; v != "" {
+						if err := s.kc.Set(keychain.RcloneAcct(backendID, f.Name), v); err != nil {
+							log.Printf("rclone connect %s: persist generated field %s: %v", backendID, f.Name, err)
+						}
+					}
+				}
+			} else {
+				log.Printf("rclone connect %s: remote %q not in config/dump output", backendID, remoteName)
+			}
+		} else {
+			log.Printf("rclone connect %s: config/dump failed: %v", backendID, err)
+		}
 	}
 
 	// Determine bucketPath.
@@ -332,8 +380,26 @@ func buildRcloneAccountLabel(backendID string, body map[string]string) string {
 			ep = body["region"]
 		}
 		return body["bucket"] + " @ " + ep
+	case "protondrive":
+		return body["username"]
 	default:
 		return backendID
+	}
+}
+
+func mapProtonDriveError(rawErr error) (httpStatus int, code string) {
+	msg := strings.ToLower(rawErr.Error())
+	switch {
+	case strings.Contains(msg, "incorrect login credentials"), strings.Contains(msg, "incorrect password"):
+		return http.StatusUnauthorized, "invalid_credentials"
+	case strings.Contains(msg, "two factor authentication required"), strings.Contains(msg, "2fa is required"):
+		return http.StatusUnauthorized, "invalid_2fa"
+	case strings.Contains(msg, "incorrect 2fa"), strings.Contains(msg, "invalid totp"):
+		return http.StatusUnauthorized, "invalid_2fa"
+	case strings.Contains(msg, "session expired"), strings.Contains(msg, "refresh token"):
+		return http.StatusUnauthorized, "session_expired"
+	default:
+		return http.StatusInternalServerError, "generic"
 	}
 }
 
@@ -647,6 +713,10 @@ func (s *Server) reregisterRcloneRemotes(ctx context.Context) {
 			pc.RemoteName = "tidybill-" + backendID
 		}
 
+		// Restore ALL fields (user-input + Generated) from the keychain.
+		// Transient fields (e.g. 2FA codes) were never persisted, so they're
+		// naturally absent — that's what we want; rclone uses the saved
+		// Generated session tokens to skip re-auth.
 		params := map[string]string{}
 		for _, f := range backend.Fields {
 			v, err := s.kc.Get(keychain.RcloneAcct(backendID, f.Name))
