@@ -14,7 +14,7 @@ interface WelcomeTourDialogProps {
 export function WelcomeTourDialog({ opened, onClose }: WelcomeTourDialogProps) {
   const { t } = useT()
   const { startFlow } = useTour()
-  const [doNotShow, setDoNotShow] = useState(true)
+  const [doNotShow, setDoNotShow] = useState(false)
 
   const handleOption = (id: FlowId | 'no-thanks') => {
     markWelcomeSeen(doNotShow)

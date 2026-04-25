@@ -60,12 +60,12 @@ describe('WelcomeTourDialog', () => {
     expect(document.querySelector('[data-tour-option="no-thanks"]')).not.toBeNull()
   })
 
-  it('renders do-not-show checkbox checked by default', () => {
+  it('renders do-not-show checkbox unchecked by default', () => {
     renderDialog()
-    expect(screen.getByRole('checkbox')).toBeChecked()
+    expect(screen.getByRole('checkbox')).not.toBeChecked()
   })
 
-  it('clicking fast option calls startFlow and closes, welcomeSeen=true doNotAutoShow=true', async () => {
+  it('clicking fast option calls startFlow and closes, welcomeSeen=true doNotAutoShow=false', async () => {
     const user = userEvent.setup()
     const onClose = renderDialog()
     await user.click(document.querySelector('[data-tour-option="create-invoice"]')!)
@@ -73,7 +73,7 @@ describe('WelcomeTourDialog', () => {
     expect(onClose).toHaveBeenCalled()
     const state = readState()
     expect(state.welcomeSeen).toBe(true)
-    expect(state.doNotAutoShow).toBe(true)
+    expect(state.doNotAutoShow).toBe(false)
   })
 
   it('clicking explore option calls startFlow with just-show-me', async () => {
@@ -99,29 +99,29 @@ describe('WelcomeTourDialog', () => {
     expect(readState().welcomeSeen).toBe(true)
   })
 
-  it('unchecking do-not-show then picking option persists doNotAutoShow=false', async () => {
+  it('checking do-not-show then picking option persists doNotAutoShow=true', async () => {
     const user = userEvent.setup()
     renderDialog()
     await user.click(screen.getByRole('checkbox'))
     await user.click(document.querySelector('[data-tour-option="create-invoice"]')!)
-    expect(readState().doNotAutoShow).toBe(false)
+    expect(readState().doNotAutoShow).toBe(true)
   })
 
-  it('unchecking do-not-show then closing with ESC persists doNotAutoShow=false', async () => {
+  it('checking do-not-show then closing with ESC persists doNotAutoShow=true', async () => {
     const user = userEvent.setup()
     renderDialog()
     await user.click(screen.getByRole('checkbox'))
     await user.keyboard('{Escape}')
-    expect(readState().doNotAutoShow).toBe(false)
+    expect(readState().doNotAutoShow).toBe(true)
   })
 
-  it('closing with ESC (no path chosen) persists welcomeSeen=true doNotAutoShow=true', async () => {
+  it('closing with ESC (default unchecked) persists welcomeSeen=true doNotAutoShow=false', async () => {
     const user = userEvent.setup()
     const onClose = renderDialog()
     await user.keyboard('{Escape}')
     const state = readState()
     expect(state.welcomeSeen).toBe(true)
-    expect(state.doNotAutoShow).toBe(true)
+    expect(state.doNotAutoShow).toBe(false)
     expect(onClose).toHaveBeenCalled()
   })
 })
