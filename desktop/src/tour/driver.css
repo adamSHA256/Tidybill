@@ -1,0 +1,48 @@
+.driver-popover {
+  background: var(--mantine-color-body);
+  color: var(--mantine-color-text);
+  border-radius: var(--mantine-radius-md);
+  font-family: inherit;
+  box-shadow: var(--mantine-shadow-md);
+}
+.driver-popover-title { font-size: 1rem; font-weight: 600; }
+.driver-popover-description { font-size: 0.875rem; line-height: 1.45; }
+
+/* Primary button (Next / Finish) */
+.driver-popover-footer button {
+  background: var(--mantine-primary-color-filled);
+  color: var(--mantine-color-white);
+  border-radius: var(--mantine-radius-sm);
+  border: none;
+  padding: 6px 14px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-shadow: none;
+  transition: background-color 100ms ease;
+}
+.driver-popover-footer button:hover,
+.driver-popover-footer button:focus {
+  background: var(--mantine-primary-color-filled-hover);
+  color: var(--mantine-color-white);
+  text-shadow: none;
+}
+
+/* Secondary buttons (Prev / Close-in-footer) */
+.driver-popover-footer button.driver-popover-prev-btn,
+.driver-popover-footer button.driver-popover-close-btn {
+  background: transparent;
+  color: var(--mantine-color-text);
+  border: 1px solid var(--mantine-color-default-border);
+  text-shadow: none;
+}
+.driver-popover-footer button.driver-popover-prev-btn:hover,
+.driver-popover-footer button.driver-popover-prev-btn:focus,
+.driver-popover-footer button.driver-popover-close-btn:hover,
+.driver-popover-footer button.driver-popover-close-btn:focus {
+  background: var(--mantine-color-default-hover);
+  color: var(--mantine-color-text);
+}
+
+.driver-popover-progress-text { color: var(--mantine-color-dimmed); font-size: 0.75rem; }
+.driver-overlay { background: rgba(0,0,0,0.5); }
