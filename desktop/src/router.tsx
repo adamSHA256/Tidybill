@@ -21,6 +21,7 @@ import { SyncPage } from './pages/SyncPage'
 import { MorePage } from './pages/MorePage'
 import { About } from './pages/About'
 import { MobileAbout } from './pages/mobile/About'
+import { HelpPage } from './pages/HelpPage'
 
 export const router = createBrowserRouter([
   {
@@ -39,6 +40,7 @@ export const router = createBrowserRouter([
       { path: '/settings', element: <Settings /> },
       { path: '/automatizace', element: <Automatizace /> },
       { path: '/sync', element: <SyncPage /> },
+      { path: '/help', element: <HelpPage /> },
       { path: '/more', element: <MorePage /> },
       { path: '/about', element: <ResponsivePage Desktop={About} Mobile={MobileAbout} /> },
     ],
