@@ -127,7 +127,7 @@ export function Templates() {
   }
 
   return (
-    <Stack gap="lg">
+    <Stack data-tour="page-templates" gap="lg">
       <Group justify="space-between">
         <div>
           <Title order={2}>{t('template.title')}</Title>

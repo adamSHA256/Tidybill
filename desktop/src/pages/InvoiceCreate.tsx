@@ -55,7 +55,7 @@ export function InvoiceCreate() {
 
       <Paper p="md" radius="md" withBorder>
         <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }}>
-          <TextInput label={
+          <TextInput data-tour="invoice-number-input" label={
             <Group gap={4}>
               <span>{t('invoice.invoice_number')}</span>
               <Tooltip label={t('invoice.invoice_number_hint')} multiline w={300} withArrow events={{ hover: true, focus: true, touch: true }}>
@@ -63,7 +63,7 @@ export function InvoiceCreate() {
               </Tooltip>
             </Group>
           } placeholder={t('invoice.invoice_number_placeholder')} value={form.invoiceNumber} onChange={(e) => form.setInvoiceNumber(e.currentTarget.value)} />
-          <DateInput label={t('invoice.issue_date')} valueFormat="DD.MM.YYYY" value={form.issueDate} onChange={form.setIssueDate} clearable />
+          <DateInput data-tour="invoice-dates" label={t('invoice.issue_date')} valueFormat="DD.MM.YYYY" value={form.issueDate} onChange={form.setIssueDate} clearable />
           <DateInput
             label={
               <Group gap={4}>
@@ -115,7 +115,7 @@ export function InvoiceCreate() {
       </Paper>
 
       <SimpleGrid cols={{ base: 1, md: 2 }}>
-        <Paper p="md" radius="md" withBorder>
+        <Paper data-tour="invoice-supplier-select" p="md" radius="md" withBorder>
           <Text fw={500} mb="md">{t('invoice.supplier_you')}</Text>
           {form.suppliers && form.suppliers.length === 0 ? (
             <Paper
@@ -166,7 +166,7 @@ export function InvoiceCreate() {
           )}
         </Paper>
 
-        <Paper p="md" radius="md" withBorder>
+        <Paper data-tour="invoice-customer-select" p="md" radius="md" withBorder>
           <Text fw={500} mb="md">{t('invoice.customer')}</Text>
           <Select
             label={t('invoice.select_customer')}
@@ -187,7 +187,7 @@ export function InvoiceCreate() {
         </Paper>
       </SimpleGrid>
 
-      <Paper p="md" radius="md" withBorder>
+      <Paper data-tour="invoice-items-table" p="md" radius="md" withBorder>
         <Group justify="space-between" mb="md">
           <Text fw={500}>{t('invoice.items')}</Text>
           <Group gap="xs">
@@ -322,7 +322,7 @@ export function InvoiceCreate() {
 
       <Group justify="end">
         <Button variant="default" onClick={() => form.navigate('/invoices')}>{t('common.cancel')}</Button>
-        <Button onClick={form.handleCreate} loading={form.createPending}>{t('invoice.create_button')}</Button>
+        <Button data-tour="invoice-create-submit" onClick={form.handleCreate} loading={form.createPending}>{t('invoice.create_button')}</Button>
       </Group>
 
       <InvoiceFormModals modals={form.modals} isMobile={isMobile} t={t} />

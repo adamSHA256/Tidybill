@@ -126,7 +126,7 @@ export function InvoiceList() {
     <Stack gap="lg">
       <Group justify="space-between">
         <Title order={2}>{t('invoice.title')}</Title>
-        <Button leftSection={<IconPlus size={16} />} onClick={() => navigate('/invoices/new')}>
+        <Button data-tour="invoice-list-new-btn" leftSection={<IconPlus size={16} />} onClick={() => navigate('/invoices/new')}>
           {t('invoice.new')}
         </Button>
       </Group>
