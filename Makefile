@@ -20,7 +20,7 @@ else
   TRIPLE := x86_64-pc-windows-msvc
 endif
 
-.PHONY: build run clean build-linux build-windows build-all desktop desktop-sidecar desktop-dev seed check
+.PHONY: build run clean build-linux build-windows build-all desktop desktop-sidecar desktop-dev desktop-fetch-rclone desktop-fetch-rclone-linux desktop-fetch-rclone-windows desktop-fetch-rclone-osx seed check
 
 # === CLI targets (unchanged) ===
 build:
@@ -57,10 +57,32 @@ GDRIVE_CLIENT_ID ?= $(shell [ -f $(GOOGLE_OAUTH_JSON) ] && jq -r '.installed.cli
 GDRIVE_CLIENT_SECRET ?= $(shell [ -f $(GOOGLE_OAUTH_JSON) ] && jq -r '.installed.client_secret // ""' $(GOOGLE_OAUTH_JSON) 2>/dev/null)
 GDRIVE_LDFLAGS := -X github.com/adamSHA256/tidybill/internal/cloud/gdrive.ClientID=$(GDRIVE_CLIENT_ID) -X github.com/adamSHA256/tidybill/internal/cloud/gdrive.ClientSecret=$(GDRIVE_CLIENT_SECRET)
 
+# Detect which "fetch-rclone --only" group corresponds to current TRIPLE
+FETCH_OS := $(if $(findstring linux,$(TRIPLE)),linux,$(if $(findstring darwin,$(TRIPLE)),osx,$(if $(findstring windows,$(TRIPLE)),windows,)))
+
+# rclone binary is .exe-suffixed on Windows, plain elsewhere.
+RCLONE_EXT := $(if $(findstring windows,$(TRIPLE)),.exe,)
+RCLONE_BIN := desktop/src-tauri/binaries/rclone-$(TRIPLE)$(RCLONE_EXT)
+
+$(RCLONE_BIN):
+	./scripts/fetch-rclone.sh --only $(FETCH_OS)
+
+desktop-fetch-rclone:
+	./scripts/fetch-rclone.sh
+
+desktop-fetch-rclone-linux:
+	./scripts/fetch-rclone.sh --only linux
+
+desktop-fetch-rclone-windows:
+	./scripts/fetch-rclone.sh --only windows
+
+desktop-fetch-rclone-osx:
+	./scripts/fetch-rclone.sh --only osx
+
 desktop: desktop-sidecar
 	cd desktop && pnpm install && pnpm tauri build
 
-desktop-sidecar:
+desktop-sidecar: $(RCLONE_BIN)
 	@if [ -z "$(GDRIVE_CLIENT_ID)" ]; then \
 		echo "warning: GDrive credentials not injected — set GOOGLE_OAUTH_JSON or GDRIVE_CLIENT_ID/SECRET. Connect to Google Drive will fail at runtime."; \
 	fi
