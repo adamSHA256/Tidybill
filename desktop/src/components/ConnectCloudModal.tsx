@@ -63,7 +63,7 @@ export function ConnectCloudModal({ opened, onClose, onConnected }: ConnectCloud
     },
     {
       id: 'protondrive' as Step,
-      label: t('cloud.rclone.protondrive.title'),
+      label: t('cloud.rclone.protondrive.label'),
       icon: <IconCloud size={28} />,
       disabled: false,
     },

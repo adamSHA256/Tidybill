@@ -721,7 +721,7 @@
   "cloud.rclone.s3.secret_access_key": "Secret access key",
   "cloud.rclone.dropbox.label": "Dropbox (pripravujeme)",
   "cloud.rclone.onedrive.label": "OneDrive (pripravujeme)",
-  "cloud.rclone.protondrive.title": "Proton Drive",
+  "cloud.rclone.protondrive.label": "Proton Drive",
   "cloud.rclone.protondrive.username.label": "E-mail",
   "cloud.rclone.protondrive.username.help": "Váš e-mail na Proton účte (napr. vy@proton.me).",
   "cloud.rclone.protondrive.password.label": "Heslo",

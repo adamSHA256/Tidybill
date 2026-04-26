@@ -720,7 +720,7 @@
   "cloud.rclone.s3.secret_access_key": "Secret access key",
   "cloud.rclone.dropbox.label": "Dropbox (coming soon)",
   "cloud.rclone.onedrive.label": "OneDrive (coming soon)",
-  "cloud.rclone.protondrive.title": "Proton Drive",
+  "cloud.rclone.protondrive.label": "Proton Drive",
   "cloud.rclone.protondrive.username.label": "Email",
   "cloud.rclone.protondrive.username.help": "Your Proton account email (e.g. you@proton.me).",
   "cloud.rclone.protondrive.password.label": "Password",
