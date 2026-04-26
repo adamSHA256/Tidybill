@@ -515,7 +515,14 @@ func (s *Server) handleCloudUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filename := "tidybill-backup-" + time.Now().UTC().Format("2006-01-02") + ".tidybill"
+	// Filename uses ISO-8601 UTC down to seconds so two uploads in the
+	// same day (or after a failed/canceled upload that left a zombie file
+	// on the remote) don't collide. Proton Drive in particular returns
+	// Code=2500 ("name already exists") on collision and the protondrive
+	// backend's draft-replace fallback only works for true draft state,
+	// not finalized or zombie files — so unique names are the only
+	// reliable way to avoid the collision.
+	filename := "tidybill-backup-" + time.Now().UTC().Format("2006-01-02T15-04-05Z") + ".tidybill"
 
 	ref, err := t.Upload(ctx, filename, bytes.NewReader(data), int64(len(data)))
 	if err != nil {
