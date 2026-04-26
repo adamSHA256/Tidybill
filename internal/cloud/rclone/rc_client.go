@@ -21,8 +21,16 @@ func NewRC(addr, user, pass string) *RC {
 }
 
 // newRCHTTPClient returns the HTTP client used to talk to the local rclone rcd
-// subprocess: 30 s total deadline, 10 s TLS handshake, 10 s response header.
-// Callers should still wrap individual requests in context.WithTimeout.
+// subprocess. rcd's RC endpoints like operations/copyfile are SYNCHRONOUS —
+// they don't return until the underlying cloud upload/download completes.
+// For Proton Drive, that includes encryption + chunked upload, easily 30+ s
+// for even a small file. So:
+//   - dial + TLS handshake stay short (loopback, should be instant)
+//   - ResponseHeaderTimeout NOT set (rcd legitimately takes minutes)
+//   - total Timeout generous (10 min) — covers any reasonable backup size
+//     while still preventing runaway hangs from a stuck rcd.
+// Callers should still pass a context with a per-call deadline if they want
+// finer control.
 func newRCHTTPClient() *http.Client {
 	t := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
@@ -30,13 +38,12 @@ func newRCHTTPClient() *http.Client {
 			Timeout:   10 * time.Second,
 			KeepAlive: 30 * time.Second,
 		}).DialContext,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ResponseHeaderTimeout: 10 * time.Second,
-		ForceAttemptHTTP2:     true,
-		MaxIdleConns:          10,
-		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout: 10 * time.Second,
+		ForceAttemptHTTP2:   true,
+		MaxIdleConns:        10,
+		IdleConnTimeout:     90 * time.Second,
 	}
-	return &http.Client{Transport: t, Timeout: 30 * time.Second}
+	return &http.Client{Transport: t, Timeout: 10 * time.Minute}
 }
 
 func (c *RC) Call(ctx context.Context, method string, in, out any) error {
