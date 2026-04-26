@@ -19,8 +19,30 @@ import (
 	"github.com/adamSHA256/tidybill/internal/cloud/gdrive"
 	"github.com/adamSHA256/tidybill/internal/cloud/keychain"
 	"github.com/adamSHA256/tidybill/internal/cloud/rclone"
+	"github.com/adamSHA256/tidybill/internal/config"
 	"github.com/adamSHA256/tidybill/internal/database/repository"
 )
+
+// applyBackendExtras injects backend-specific parameters that the user never
+// touches but rclone needs sent on every config/create. For Proton Drive this
+// is mandatory: the default app_version (`macos-drive@1.0.0-alpha.1+rclone`)
+// is fingerprinted by Proton's anti-abuse system and triggers Code=2028 at the
+// SRP login endpoint. The `external-drive-*` prefix is the sanctioned
+// third-party identifier per Proton engineer dlaumen
+// (https://github.com/rclone/rclone/pull/9189). enable_caching=false +
+// replace_existing_draft=true reduce concurrent metadata calls and let failed
+// uploads retry cleanly. Called from both initial connect and reregister.
+func applyBackendExtras(backendID string, params map[string]string) {
+	if backendID != "protondrive" {
+		return
+	}
+	// Identify ourselves truthfully — we are TidyBill, not rclone.
+	// Per Proton SDK acceptable-use policy, the header must accurately
+	// represent the application; spoofing is forbidden.
+	params["app_version"] = "external-drive-tidybill@" + config.Version
+	params["enable_caching"] = "false"
+	params["replace_existing_draft"] = "true"
+}
 
 // pendingGDriveConnect holds the PKCE verifier for an in-flight OAuth flow.
 type pendingGDriveConnect struct {
@@ -267,6 +289,7 @@ func (s *Server) handleCloudRcloneConnect(w http.ResponseWriter, r *http.Request
 			parameters[f.Name] = v
 		}
 	}
+	applyBackendExtras(backendID, parameters)
 	if err := rc.Call(ctx, "config/create", map[string]any{
 		"name":       remoteName,
 		"type":       backend.Type,
@@ -737,6 +760,7 @@ func (s *Server) reregisterRcloneRemotes(ctx context.Context) {
 				params[f.Name] = v
 			}
 		}
+		applyBackendExtras(backendID, params)
 		if err := rc.Call(ctx, "config/create", map[string]any{
 			"name":       pc.RemoteName,
 			"type":       backend.Type,
