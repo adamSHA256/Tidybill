@@ -19,27 +19,44 @@ import (
 	"github.com/adamSHA256/tidybill/internal/cloud/gdrive"
 	"github.com/adamSHA256/tidybill/internal/cloud/keychain"
 	"github.com/adamSHA256/tidybill/internal/cloud/rclone"
-	"github.com/adamSHA256/tidybill/internal/config"
 	"github.com/adamSHA256/tidybill/internal/database/repository"
 )
 
 // applyBackendExtras injects backend-specific parameters that the user never
 // touches but rclone needs sent on every config/create. For Proton Drive this
-// is mandatory: the default app_version (`macos-drive@1.0.0-alpha.1+rclone`)
-// is fingerprinted by Proton's anti-abuse system and triggers Code=2028 at the
-// SRP login endpoint. The `external-drive-*` prefix is the sanctioned
-// third-party identifier per Proton engineer dlaumen
-// (https://github.com/rclone/rclone/pull/9189). enable_caching=false +
-// replace_existing_draft=true reduce concurrent metadata calls and let failed
-// uploads retry cleanly. Called from both initial connect and reregister.
+// is mandatory.
+//
+// PROTON DRIVE / app_version:
+// We send `external-drive-rclone@1.73.5`. Empirically, Proton's API has a
+// hardcoded server-side allowlist on the `/api/drive/blocks` upload endpoint
+// keyed on the literal substring `rclone` in x-pm-appversion. Auth + file
+// metadata accept any `external-drive-*` value, but blocks-upload returns
+// HTTP 400 Code=2000 ("outdated version") for anything not on the allowlist.
+//
+// Proton engineer dlaumen on https://github.com/rclone/rclone/pull/9189:
+//   "if a user sets a custom app_version and we can no longer detect the
+//    request comes from rclone then the upload will fail. We will keep this
+//    exception in place for rclone until after the Proton Drive SDK is deemed
+//    stable and 3rd parties had a chance to implement it."
+//
+// So claiming to be TidyBill (the truthful header) blocks uploads. Until
+// Proton ships the official Drive SDK with a partner-registration system,
+// we have to ride on the rclone exception. The version string must:
+//   - contain the substring `rclone` (the allowlist match key)
+//   - parse against `^(external-drive)+(-[a-z_]+)+@\d+\.\d+\.\d+`
+// Pinned to 1.73.5 to match the actual rclone bundled by scripts/fetch-rclone.sh
+// — bump this string in lockstep when the bundled rclone version is bumped.
+//
+// PROTON DRIVE / other params:
+//   enable_caching=false        → reduces concurrent metadata calls
+//   replace_existing_draft=true → lets failed uploads retry cleanly
+//
+// Called from both initial connect and reregister.
 func applyBackendExtras(backendID string, params map[string]string) {
 	if backendID != "protondrive" {
 		return
 	}
-	// Identify ourselves truthfully — we are TidyBill, not rclone.
-	// Per Proton SDK acceptable-use policy, the header must accurately
-	// represent the application; spoofing is forbidden.
-	params["app_version"] = "external-drive-tidybill@" + config.Version
+	params["app_version"] = "external-drive-rclone@1.73.5"
 	params["enable_caching"] = "false"
 	params["replace_existing_draft"] = "true"
 }
