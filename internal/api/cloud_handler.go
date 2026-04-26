@@ -274,7 +274,7 @@ func (s *Server) handleCloudRcloneConnect(w http.ResponseWriter, r *http.Request
 		"opt":        map[string]any{"obscure": true, "nonInteractive": true},
 	}, nil); err != nil {
 		s.cleanupFailedRcloneConnect(ctx, rc, backendID, remoteName, backend, body)
-		if backendID == "protondrive" {
+		if backendID == "protondrive" && !isRcloneTransportError(err) {
 			status, code := mapProtonDriveError(err)
 			writeJSON(w, status, map[string]any{"error_code": code, "error_raw": err.Error()})
 			return
@@ -288,7 +288,7 @@ func (s *Server) handleCloudRcloneConnect(w http.ResponseWriter, r *http.Request
 		"fs": remoteName + ":",
 	}, nil); err != nil {
 		s.cleanupFailedRcloneConnect(ctx, rc, backendID, remoteName, backend, body)
-		if backendID == "protondrive" {
+		if backendID == "protondrive" && !isRcloneTransportError(err) {
 			status, code := mapProtonDriveError(err)
 			writeJSON(w, status, map[string]any{"error_code": code, "error_raw": err.Error()})
 			return
@@ -385,6 +385,17 @@ func buildRcloneAccountLabel(backendID string, body map[string]string) string {
 	default:
 		return backendID
 	}
+}
+
+// isRcloneTransportError returns true for errors that indicate rclone's RC
+// daemon wasn't reachable at all (not an auth failure from rclone itself).
+// These should not be mapped to protondrive auth codes.
+func isRcloneTransportError(err error) bool {
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "connection refused") ||
+		strings.Contains(msg, "dial tcp") ||
+		strings.Contains(msg, "no such host") ||
+		strings.Contains(msg, "eof")
 }
 
 func mapProtonDriveError(rawErr error) (httpStatus int, code string) {

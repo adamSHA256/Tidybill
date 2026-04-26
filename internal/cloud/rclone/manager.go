@@ -65,7 +65,12 @@ func (m *Manager) EnsureRunning(ctx context.Context) error {
 		"--config", m.cfgPath,
 		"--log-level", "INFO",
 	}
-	cmd := exec.CommandContext(ctx, m.bin, args...)
+	// Use context.Background() — NOT the caller's request context — so that
+	// rclone stays alive for the lifetime of the Manager. A request context
+	// is cancelled when the HTTP handler returns (or the client disconnects),
+	// which would kill rclone mid-session and leave subsequent requests with
+	// "connection refused". Lifecycle is managed explicitly via Stop().
+	cmd := exec.CommandContext(context.Background(), m.bin, args...)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return err
