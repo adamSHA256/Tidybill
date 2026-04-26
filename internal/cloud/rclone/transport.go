@@ -117,9 +117,15 @@ func (t *Transport) Upload(ctx context.Context, filename string, body io.Reader,
 	}
 
 	// Copy from local tempfile to remote.
+	// IMPORTANT: rclone's `:local:` connection string defaults its root to
+	// rcd's CWD, so passing an absolute path in `srcRemote` makes rclone
+	// look for `<rcd-cwd>/<absolute-path>` and fail with 404 "object not
+	// found". Use the split form: put the directory in srcFs (so it
+	// becomes the Fs root), and the bare filename in srcRemote.
+	// Same fix on Download below. See rclone forum thread 15608.
 	if err := rc.Call(ctx, "operations/copyfile", map[string]any{
-		"srcFs":     ":local:",
-		"srcRemote": absPath,
+		"srcFs":     ":local:" + filepath.Dir(absPath),
+		"srcRemote": filepath.Base(absPath),
 		"dstFs":     t.fs(),
 		"dstRemote": filename,
 	}, nil); err != nil {
@@ -203,13 +209,18 @@ func (t *Transport) Download(ctx context.Context, ref cloud.BlobRef) (io.ReadClo
 		return nil, err
 	}
 	tmpPath := filepath.Join(t.tmpDir, "download-"+randomHex(8)+".tidybill")
+	absTmpPath, err := filepath.Abs(tmpPath)
+	if err != nil {
+		return nil, err
+	}
 
 	filename := filepath.Base(ref.ID)
+	// See Upload() comment about :local: + absolute path → 404. Split here too.
 	if err := rc.Call(ctx, "operations/copyfile", map[string]any{
 		"srcFs":     t.fs(),
 		"srcRemote": filename,
-		"dstFs":     ":local:",
-		"dstRemote": tmpPath,
+		"dstFs":     ":local:" + filepath.Dir(absTmpPath),
+		"dstRemote": filepath.Base(absTmpPath),
 	}, nil); err != nil {
 		return nil, fmt.Errorf("download copyfile: %w", err)
 	}
