@@ -735,6 +735,7 @@
   "cloud.rclone.protondrive.error.invalid_credentials": "Špatný e-mail nebo heslo.",
   "cloud.rclone.protondrive.error.invalid_2fa": "Kód 2FA je nesprávný nebo vypršel. Zkuste to znovu s novým kódem.",
   "cloud.rclone.protondrive.error.session_expired": "Vaše Proton relace vypršela. Znovu se připojte pro pokračování.",
+  "cloud.rclone.protondrive.error.rate_limited": "Proton dočasně zablokoval toto přihlášení kvůli neobvyklé aktivitě. Počkejte 15–30 minut a zkuste to znovu.",
   "cloud.rclone.protondrive.error.generic": "Nepodařilo se připojit k Proton Drive. Zkontrolujte přihlašovací údaje a zkuste to znovu.",
   "cloud.proton.label": "Proton Drive",
   "cloud.proton.deferred": "Přímá podpora zatím není k dispozici — viz dokumentace. Pro stejnou úroveň soukromí můžete použít Nextcloud přes WebDAV, nebo připojit Proton Drive přes rclone jako místní složku.",

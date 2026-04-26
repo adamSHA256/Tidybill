@@ -409,6 +409,8 @@ func mapProtonDriveError(rawErr error) (httpStatus int, code string) {
 		return http.StatusUnauthorized, "invalid_2fa"
 	case strings.Contains(msg, "session expired"), strings.Contains(msg, "refresh token"):
 		return http.StatusUnauthorized, "session_expired"
+	case strings.Contains(msg, "unusual activity"), strings.Contains(msg, "code=2028"), strings.Contains(msg, "temporarily limited"):
+		return http.StatusTooManyRequests, "rate_limited"
 	default:
 		return http.StatusInternalServerError, "generic"
 	}

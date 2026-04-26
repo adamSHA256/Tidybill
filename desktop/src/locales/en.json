@@ -734,6 +734,7 @@
   "cloud.rclone.protondrive.error.invalid_credentials": "Wrong email or password.",
   "cloud.rclone.protondrive.error.invalid_2fa": "The 2FA code is wrong or expired. Try again with a fresh code.",
   "cloud.rclone.protondrive.error.session_expired": "Your Proton session expired. Reconnect to continue.",
+  "cloud.rclone.protondrive.error.rate_limited": "Proton temporarily blocked this login due to unusual activity. Wait 15–30 minutes and try again.",
   "cloud.rclone.protondrive.error.generic": "Couldn't connect to Proton Drive. Check your credentials and try again.",
   "cloud.proton.label": "Proton Drive",
   "cloud.proton.deferred": "Not supported directly yet — see docs. You can use Nextcloud via WebDAV for equivalent privacy, or mount Proton Drive with rclone and pick it as a local folder.",
