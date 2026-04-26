@@ -188,7 +188,7 @@ export function CustomerList() {
   const colorForIndex = (i: number) => avatarColors[i % avatarColors.length]
 
   return (
-    <Stack gap="lg">
+    <Stack data-tour="page-customers" gap="lg">
       <Group justify="space-between">
         <div>
           <Title order={isMobile ? 3 : 2}>{t('customer.title')}</Title>
@@ -201,7 +201,7 @@ export function CustomerList() {
             value={search}
             onChange={(e) => setSearch(e.currentTarget.value)}
           />
-          <Button leftSection={<IconPlus size={16} />} onClick={openCreate}>{t('customer.add')}</Button>
+          <Button data-tour="customer-add-btn" leftSection={<IconPlus size={16} />} onClick={openCreate}>{t('customer.add')}</Button>
         </Group>
       </Group>
 

@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Box, UnstyledButton, Text } from '@mantine/core'
+import { Box, UnstyledButton, Text, ActionIcon } from '@mantine/core'
 import {
   IconDashboard,
   IconFileInvoice,
   IconPlus,
   IconDots,
+  IconHelp,
 } from '@tabler/icons-react'
 import { useT } from '../i18n'
 
@@ -36,6 +37,11 @@ export function MobileShell({ children }: { children: ReactNode }) {
       minHeight: '100vh',
       paddingBottom: 64,
     }}>
+      <Box style={{ position: 'fixed', top: 12, right: 12, zIndex: 90 }}>
+        <ActionIcon variant="light" size="lg" onClick={() => navigate('/help')} aria-label={t('tour.help_aria')}>
+          <IconHelp size={20} />
+        </ActionIcon>
+      </Box>
       <Box p="md">
         {children}
       </Box>

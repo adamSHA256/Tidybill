@@ -41,7 +41,7 @@ export function Automatizace() {
   })
 
   return (
-    <Container size="sm" py="xl">
+    <Container data-tour="page-automatizace" size="sm" py="xl">
       <Title order={2} mb="lg">{t('email.automatizace_title')}</Title>
 
       <Paper p="md" radius="md" withBorder>

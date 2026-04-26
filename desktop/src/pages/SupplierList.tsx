@@ -431,7 +431,7 @@ export function SupplierList() {
   const pageSubtitle = supplierCount > 1 ? t('supplier.subtitle_plural') : t('supplier.subtitle')
 
   return (
-    <Stack gap="lg">
+    <Stack data-tour="page-suppliers" gap="lg">
       <Group justify="space-between">
         <div>
           <Title order={isMobile ? 3 : 2}>{pageTitle}</Title>
