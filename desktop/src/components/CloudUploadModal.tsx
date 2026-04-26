@@ -49,6 +49,13 @@ export function CloudUploadModal({ opened, transportId, onClose }: Props) {
       onClose={handleClose}
       title={t('cloud.upload_action')}
       size="sm"
+      // While the upload is in flight, lock the modal: clicking outside
+      // or pressing Escape would close the modal but the mutation keeps
+      // running invisibly — better to force the user to wait for the
+      // notification (success or failure) before doing anything else.
+      closeOnClickOutside={!upload.isPending}
+      closeOnEscape={!upload.isPending}
+      withCloseButton={!upload.isPending}
     >
       <Stack gap="md">
         {!unencryptedConfirm ? (
