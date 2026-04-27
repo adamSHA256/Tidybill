@@ -655,13 +655,11 @@ export function SyncPage() {
 
               {selectedCloudBlob && (
                 <Stack gap="xs">
-                  {selectedCloudBlob.encrypted && (
-                    <PasswordInput
-                      label={t('cloud.restore.passphrase_optional')}
-                      value={cloudImportPassphrase}
-                      onChange={(e) => setCloudImportPassphrase(e.currentTarget.value)}
-                    />
-                  )}
+                  <PasswordInput
+                    label={t('cloud.restore.passphrase_optional')}
+                    value={cloudImportPassphrase}
+                    onChange={(e) => setCloudImportPassphrase(e.currentTarget.value)}
+                  />
                   <Button
                     variant="light"
                     leftSection={previewLoading ? <Loader size={16} /> : <IconDownload size={16} />}
