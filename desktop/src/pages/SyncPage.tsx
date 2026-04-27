@@ -29,6 +29,13 @@ import { useIsMobile } from '../hooks/useIsMobile'
 import { CloudSyncPanel } from '../components/CloudSyncPanel'
 import { ConnectCloudModal } from '../components/ConnectCloudModal'
 
+function translateBackendError(msg: string, t: (key: string) => string): string {
+  if (msg.includes('wrong passphrase or corrupted')) return t('error.wrong_passphrase')
+  if (msg.includes('passphrase required')) return t('error.passphrase_required')
+  if (msg.includes('passphrase must be at least')) return t('error.passphrase_too_short')
+  return msg
+}
+
 function getTransportLabel(id: string, t: (key: string) => string): string {
   if (id === 'local') return t('cloud.local.label')
   if (id === 'gdrive') return t('cloud.gdrive.label')
@@ -314,8 +321,8 @@ export function SyncPage() {
       setIsCloudImportFlow(false)
       setPreviewModalOpen(true)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      notifications.show({ title: t('common.error'), message, color: 'red' })
+      const raw = err instanceof Error ? err.message : String(err)
+      notifications.show({ title: t('common.error'), message: translateBackendError(raw, t), color: 'red' })
     } finally {
       setPreviewLoading(false)
     }
@@ -335,8 +342,8 @@ export function SyncPage() {
       setIsCloudImportFlow(true)
       setPreviewModalOpen(true)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      notifications.show({ title: t('common.error'), message, color: 'red' })
+      const raw = err instanceof Error ? err.message : String(err)
+      notifications.show({ title: t('common.error'), message: translateBackendError(raw, t), color: 'red' })
     } finally {
       setPreviewLoading(false)
     }
@@ -365,8 +372,8 @@ export function SyncPage() {
         notifications.show({ title: t('backup.import_success'), message: '', color: 'green' })
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      notifications.show({ title: t('common.error'), message, color: 'red' })
+      const raw = err instanceof Error ? err.message : String(err)
+      notifications.show({ title: t('common.error'), message: translateBackendError(raw, t), color: 'red' })
     } finally {
       setImporting(false)
     }
@@ -648,16 +655,19 @@ export function SyncPage() {
 
               {selectedCloudBlob && (
                 <Stack gap="xs">
-                  <PasswordInput
-                    label={t('cloud.restore.passphrase_optional')}
-                    value={cloudImportPassphrase}
-                    onChange={(e) => setCloudImportPassphrase(e.currentTarget.value)}
-                  />
+                  {selectedCloudBlob.encrypted && (
+                    <PasswordInput
+                      label={t('cloud.restore.passphrase_optional')}
+                      value={cloudImportPassphrase}
+                      onChange={(e) => setCloudImportPassphrase(e.currentTarget.value)}
+                    />
+                  )}
                   <Button
                     variant="light"
                     leftSection={previewLoading ? <Loader size={16} /> : <IconDownload size={16} />}
                     onClick={handleCloudBlobPreview}
                     loading={previewLoading || importing}
+                    disabled={selectedCloudBlob.encrypted && !cloudImportPassphrase}
                   >
                     {t('backup.cloud_load')}
                   </Button>

@@ -617,6 +617,7 @@
   "error.pdf_generation_failed": "PDF generation failed",
   "error.passphrase_too_short": "Passphrase must be at least 8 characters",
   "error.passphrase_required": "File is encrypted, passphrase required",
+  "error.wrong_passphrase": "Wrong passphrase or corrupted file",
 
   "about.title": "About TidyBill",
   "about.version": "Version",

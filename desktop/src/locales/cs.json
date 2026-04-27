@@ -618,6 +618,7 @@
   "error.pdf_generation_failed": "Generování PDF selhalo",
   "error.passphrase_too_short": "Heslo musí mít alespoň 8 znaků",
   "error.passphrase_required": "Soubor je šifrovaný, heslo je vyžadováno",
+  "error.wrong_passphrase": "Špatné heslo nebo poškozený soubor",
 
   "about.title": "O TidyBill",
   "about.version": "Verze",
