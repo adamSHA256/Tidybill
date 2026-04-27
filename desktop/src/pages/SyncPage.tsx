@@ -21,7 +21,7 @@ import {
 } from '@mantine/core'
 import { DateInput } from '@mantine/dates'
 import { notifications } from '@mantine/notifications'
-import { IconDownload, IconUpload, IconAlertCircle, IconInfoCircle, IconKey, IconCloudUpload } from '@tabler/icons-react'
+import { IconDownload, IconUpload, IconAlertCircle, IconInfoCircle, IconCloudUpload } from '@tabler/icons-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, isTauri, isMobileDevice, shareFile, type ExportFilters, type ImportReport, type CloudTransportInfo, type CloudBlobRef } from '../api/client'
 import { useT } from '../i18n'
@@ -60,10 +60,6 @@ export function SyncPage() {
   const [filterDateTo, setFilterDateTo] = useState<Date | null>(null)
   const [filterExcludeSettings, setFilterExcludeSettings] = useState(false)
   const [encryptExport, setEncryptExport] = useState(false)
-  const [exportPassphrase, setExportPassphrase] = useState('')
-  const [exportPassphraseConfirm, setExportPassphraseConfirm] = useState('')
-  const [generatedMnemonic, setGeneratedMnemonic] = useState<string | null>(null)
-  const [generatingMnemonic, setGeneratingMnemonic] = useState(false)
 
   // Import state
   const [importSource, setImportSource] = useState('local')
@@ -115,6 +111,13 @@ export function SyncPage() {
     queryFn: api.getSettings,
   })
 
+  const { data: masterKeyStatus } = useQuery({
+    queryKey: ['master-key-status'],
+    queryFn: api.masterKey.status,
+    refetchInterval: false,
+  })
+  const masterKeyConfigured = masterKeyStatus?.configured ?? false
+
   // Cloud blob list for Import panel (fetched when a cloud source is selected)
   const { data: cloudBlobList, isLoading: cloudBlobsLoading } = useQuery({
     queryKey: ['cloud-list', importSource],
@@ -147,32 +150,6 @@ export function SyncPage() {
 
   const formatDateStr = (d: Date): string => {
     return d.toISOString().split('T')[0]
-  }
-
-  const validatePassphrase = (pass: string): string | null => {
-    if (pass.length < 8) return t('backup.passphrase_too_short')
-    if (!/[^a-zA-Z0-9]/.test(pass)) return t('backup.passphrase_needs_special')
-    return null
-  }
-
-  const passphraseValid = !encryptExport || (
-    !validatePassphrase(exportPassphrase) &&
-    exportPassphrase === exportPassphraseConfirm
-  )
-
-  const handleGenerateMnemonic = async () => {
-    setGeneratingMnemonic(true)
-    try {
-      const { mnemonic } = await api.generateMnemonic()
-      setExportPassphrase(mnemonic)
-      setExportPassphraseConfirm(mnemonic)
-      setGeneratedMnemonic(mnemonic)
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      notifications.show({ title: t('common.error'), message, color: 'red' })
-    } finally {
-      setGeneratingMnemonic(false)
-    }
   }
 
   // Returns the actual saved path/filename, or null if cancelled
@@ -211,26 +188,20 @@ export function SyncPage() {
   }
 
   const handleExportAll = async () => {
-    if (encryptExport && exportPassphrase !== exportPassphraseConfirm) {
-      notifications.show({ title: t('common.error'), message: t('backup.passphrase_mismatch'), color: 'red' })
-      return
-    }
     setExporting(true)
     try {
       if (exportDestination !== 'local') {
-        const passphrase = encryptExport ? exportPassphrase : undefined
-        await api.cloud.upload(exportDestination, passphrase || undefined)
+        await api.cloud.upload(exportDestination)
         notifications.show({ title: t('cloud.upload.success'), message: '', color: 'green' })
         return
       }
-      const passphrase = encryptExport ? exportPassphrase : undefined
       const filename = `tidybill-backup-${new Date().toISOString().split('T')[0]}.tidybill`
       if (isTauri() && isMobileDevice()) {
-        const result = await api.exportBackupToFile(undefined, passphrase)
+        const result = await api.exportBackupToFile(undefined, undefined, encryptExport || undefined)
         await shareFile(result.path, result.filename)
         notifications.show({ title: t('backup.export_success'), message: '', color: 'green' })
       } else {
-        const blob = await api.exportBackup(undefined, passphrase)
+        const blob = await api.exportBackup(undefined, undefined, encryptExport || undefined)
         const savedPath = await triggerDownload(blob, filename)
         if (!savedPath) return
         const savedName = savedPath.includes('/') ? savedPath.split('/').pop() : savedPath
@@ -245,10 +216,6 @@ export function SyncPage() {
   }
 
   const handleExportFiltered = async () => {
-    if (encryptExport && exportPassphrase !== exportPassphraseConfirm) {
-      notifications.show({ title: t('common.error'), message: t('backup.passphrase_mismatch'), color: 'red' })
-      return
-    }
     setExporting(true)
     setFilterModalOpen(false)
     try {
@@ -261,14 +228,13 @@ export function SyncPage() {
       if (filterDateTo) filters.date_to = formatDateStr(filterDateTo)
       if (filterExcludeSettings) filters.exclude_settings = true
 
-      const passphrase = encryptExport ? exportPassphrase : undefined
       const filename = `tidybill-backup-${new Date().toISOString().split('T')[0]}.tidybill`
       if (isTauri() && isMobileDevice()) {
-        const result = await api.exportBackupToFile(filters, passphrase)
+        const result = await api.exportBackupToFile(filters, undefined, encryptExport || undefined)
         await shareFile(result.path, result.filename)
         notifications.show({ title: t('backup.export_success'), message: '', color: 'green' })
       } else {
-        const blob = await api.exportBackup(filters, passphrase)
+        const blob = await api.exportBackup(filters, undefined, encryptExport || undefined)
         const savedPath = await triggerDownload(blob, filename)
         if (!savedPath) return
         const savedName = savedPath.includes('/') ? savedPath.split('/').pop() : savedPath
@@ -287,12 +253,34 @@ export function SyncPage() {
     if (!file) return
     e.target.value = ''
 
-    const header = await file.slice(0, 6).arrayBuffer()
-    const magic = new TextDecoder().decode(new Uint8Array(header).slice(0, 5))
-    const isEncrypted = magic === 'TBILL'
-    setFileEncrypted(isEncrypted)
+    const header = await file.slice(0, 7).arrayBuffer()
+    const bytes = new Uint8Array(header)
+    const magic5 = new TextDecoder().decode(bytes.slice(0, 5))
+    const isEncrypted = magic5 === 'TBILL'
+    // v2 mode 1: byte[5]=0x02 (v2 magic), byte[6]=0x01 (master-key mode)
+    const isMasterEncrypted = isEncrypted && bytes[5] === 0x02 && bytes[6] === 0x01
+
     selectedFileRef.current = file
 
+    if (isMasterEncrypted) {
+      // Backend auto-uses master key — proceed directly to preview
+      setFileEncrypted(false)
+      setPreviewLoading(true)
+      try {
+        const report = await api.previewImport(file, undefined, importMode)
+        setPreviewReport(report)
+        setIsCloudImportFlow(false)
+        setPreviewModalOpen(true)
+      } catch (err: unknown) {
+        const raw = err instanceof Error ? err.message : String(err)
+        notifications.show({ title: t('common.error'), message: translateBackendError(raw, t), color: 'red' })
+      } finally {
+        setPreviewLoading(false)
+      }
+      return
+    }
+
+    setFileEncrypted(isEncrypted)
     if (isEncrypted) {
       setImportPassphrase('')
       return
@@ -471,7 +459,7 @@ export function SyncPage() {
               leftSection={exportDestination === 'local' ? <IconDownload size={16} /> : <IconCloudUpload size={16} />}
               onClick={handleExportAll}
               loading={exporting}
-              disabled={!passphraseValid}
+              disabled={encryptExport && !masterKeyConfigured}
             >
               {exportDestination === 'local'
                 ? t('backup.export_all')
@@ -481,7 +469,7 @@ export function SyncPage() {
               <Button
                 variant="light"
                 onClick={() => setFilterModalOpen(true)}
-                disabled={exporting || !passphraseValid}
+                disabled={exporting || (encryptExport && !masterKeyConfigured)}
               >
                 {t('backup.export_filtered')}
               </Button>
@@ -491,55 +479,12 @@ export function SyncPage() {
           <Switch
             label={t('backup.encrypt')}
             checked={encryptExport}
-            onChange={(e) => {
-              setEncryptExport(e.currentTarget.checked)
-              if (!e.currentTarget.checked) {
-                setGeneratedMnemonic(null)
-              }
-            }}
+            onChange={(e) => setEncryptExport(e.currentTarget.checked)}
           />
-          {encryptExport && (
-            <Stack gap="xs">
-              <Group align="end">
-                <PasswordInput
-                  label={t('backup.passphrase')}
-                  description={t('backup.passphrase_rules')}
-                  value={exportPassphrase}
-                  onChange={(e) => {
-                    setExportPassphrase(e.currentTarget.value)
-                    setGeneratedMnemonic(null)
-                  }}
-                  error={exportPassphrase ? validatePassphrase(exportPassphrase) : undefined}
-                  style={{ flex: 1 }}
-                />
-                <Button
-                  variant="light"
-                  size="sm"
-                  leftSection={<IconKey size={16} />}
-                  onClick={handleGenerateMnemonic}
-                  loading={generatingMnemonic}
-                >
-                  {t('backup.generate_mnemonic')}
-                </Button>
-              </Group>
-              <PasswordInput
-                label={t('backup.passphrase_confirm')}
-                value={exportPassphraseConfirm}
-                onChange={(e) => setExportPassphraseConfirm(e.currentTarget.value)}
-                error={exportPassphrase !== exportPassphraseConfirm && exportPassphraseConfirm ? t('backup.passphrase_mismatch') : undefined}
-              />
-              {generatedMnemonic && (
-                <Alert icon={<IconAlertCircle size={16} />} color="yellow">
-                  <Text size="sm" fw={500} mb="xs">{t('backup.mnemonic_warning')}</Text>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px 16px' }}>
-                    {generatedMnemonic.split(' ').map((word, i) => (
-                      <Text key={i} size="sm" ff="monospace">{i + 1}. {word}</Text>
-                    ))}
-                  </div>
-                </Alert>
-              )}
-              <Text c="dimmed" size="xs">{t('backup.encrypt_warning')}</Text>
-            </Stack>
+          {encryptExport && !masterKeyConfigured && (
+            <Alert icon={<IconAlertCircle size={16} />} color="yellow">
+              {t('backup.encrypt_master_disabled')}
+            </Alert>
           )}
         </Stack>
       </Paper>
@@ -665,7 +610,7 @@ export function SyncPage() {
                     leftSection={previewLoading ? <Loader size={16} /> : <IconDownload size={16} />}
                     onClick={handleCloudBlobPreview}
                     loading={previewLoading || importing}
-                    disabled={selectedCloudBlob.encrypted && !cloudImportPassphrase}
+                    disabled={selectedCloudBlob.encrypted && !cloudImportPassphrase && !masterKeyConfigured}
                   >
                     {t('backup.cloud_load')}
                   </Button>
