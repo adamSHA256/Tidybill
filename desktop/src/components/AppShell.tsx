@@ -8,6 +8,7 @@ import {
   useMantineColorScheme,
   Divider,
   Button,
+  Alert,
 } from '@mantine/core'
 import {
   IconDashboard,
@@ -23,6 +24,7 @@ import {
   IconInfoCircle,
   IconMail,
   IconDatabaseExport,
+  IconShieldLock,
 } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
@@ -73,6 +75,13 @@ export function AppShell({ children }: { children: ReactNode }) {
     queryFn: api.getSuppliers,
   })
   const supplierCount = (suppliers || []).length
+
+  const { data: masterKeyStatus } = useQuery({
+    queryKey: ['master-key-status'],
+    queryFn: api.masterKey.status,
+    refetchInterval: false,
+  })
+  const showMasterKeyBanner = masterKeyStatus !== undefined && !masterKeyStatus.configured
 
   const getNavLabel = (item: typeof navKeys[number]) => {
     if (item.pluralKey && supplierCount > 1) {
@@ -155,6 +164,26 @@ export function AppShell({ children }: { children: ReactNode }) {
       </MantineAppShell.Navbar>
 
       <MantineAppShell.Main>
+        {showMasterKeyBanner && (
+          <Alert
+            icon={<IconShieldLock size={16} />}
+            color="yellow"
+            mb="md"
+            style={{ cursor: 'default' }}
+          >
+            <Group gap="xs" wrap="nowrap">
+              <span>{t('banner.no_master_key')}</span>
+              <Button
+                size="compact-xs"
+                variant="subtle"
+                color="yellow"
+                onClick={() => navigate('/settings')}
+              >
+                {t('banner.no_master_key_action')}
+              </Button>
+            </Group>
+          </Alert>
+        )}
         {children}
       </MantineAppShell.Main>
     </MantineAppShell>

@@ -251,20 +251,20 @@ export const api = {
   // Backup
   generateMnemonic: () => request<{mnemonic: string}>('/backup/generate-mnemonic'),
 
-  exportBackup: async (filters?: ExportFilters, passphrase?: string): Promise<Blob> => {
+  exportBackup: async (filters?: ExportFilters, passphrase?: string, encryptMaster?: boolean): Promise<Blob> => {
     const response = await fetch(`${getApiBase()}/backup/export`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...filters, passphrase }),
+      body: JSON.stringify({ ...filters, passphrase, encrypt_master: encryptMaster }),
     })
     if (!response.ok) throw new Error(await response.text())
     return response.blob()
   },
 
-  exportBackupToFile: async (filters?: ExportFilters, passphrase?: string): Promise<{path: string, filename: string}> => {
+  exportBackupToFile: async (filters?: ExportFilters, passphrase?: string, encryptMaster?: boolean): Promise<{path: string, filename: string}> => {
     return request<{path: string, filename: string}>('/backup/export-file', {
       method: 'POST',
-      body: JSON.stringify({ ...filters, passphrase }),
+      body: JSON.stringify({ ...filters, passphrase, encrypt_master: encryptMaster }),
     })
   },
 
@@ -356,6 +356,29 @@ export const api = {
       request<{ backends: Array<{ id: string; type: string; fields: Array<{ name: string; kind: string; required?: boolean; default?: string; options?: string[]; obscure?: boolean; generated?: boolean; transient?: boolean }> }> }>(
         '/cloud/rclone/backends'
       ),
+  },
+
+  masterKey: {
+    status: () =>
+      request<{ configured: boolean }>('/master-key/status'),
+
+    generate: () =>
+      request<{ phrase: string }>('/master-key/generate', { method: 'POST' }),
+
+    import: (phrase: string) =>
+      request<{ ok: boolean }>('/master-key/import', {
+        method: 'POST',
+        body: JSON.stringify({ phrase }),
+      }),
+
+    revealToken: () =>
+      request<{ token: string; expires_at: string }>('/master-key/reveal-token'),
+
+    reveal: (token: string) =>
+      request<{ phrase: string }>(`/master-key/reveal?token=${encodeURIComponent(token)}`),
+
+    delete: () =>
+      request<{ ok: boolean }>('/master-key', { method: 'DELETE' }),
   },
 }
 

@@ -28,6 +28,7 @@ import { api, openInBrowser, isMobileDevice, type Unit, type PDFTemplate, type V
 import { applyZoom } from '../utils/zoom'
 import { useT } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
+import { MasterKeyPanel } from '../components/MasterKeyPanel'
 
 const langOptions = [
   { value: 'cs', label: 'Čeština' },
@@ -883,6 +884,11 @@ export function Settings() {
           </Stack>
         </Paper>
         )}
+
+        {/* Recovery phrase (master key) */}
+        <Paper p="md" radius="md" withBorder>
+          <MasterKeyPanel />
+        </Paper>
 
         {/* Update check */}
         <Paper p="md" radius="md" withBorder>
