@@ -13,7 +13,6 @@ import (
 	"github.com/adamSHA256/tidybill/internal/cloud"
 	"github.com/adamSHA256/tidybill/internal/cloud/gdrive"
 	"github.com/adamSHA256/tidybill/internal/cloud/keychain"
-	"github.com/adamSHA256/tidybill/internal/cloud/localfs"
 	"github.com/adamSHA256/tidybill/internal/cloud/rclone"
 	"github.com/adamSHA256/tidybill/internal/config"
 	"github.com/adamSHA256/tidybill/internal/database/repository"
@@ -62,7 +61,6 @@ func NewServer(db *sql.DB, cfg *config.Config) *Server {
 	updater.StartAutoCheck()
 
 	reg := cloud.NewRegistry()
-	reg.Register(localfs.New(cfg.ExportDir))
 
 	cloudConfigs := repository.NewCloudConfigsRepository(db)
 
