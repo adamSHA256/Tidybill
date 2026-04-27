@@ -502,6 +502,8 @@ func (s *Server) handleCloudRcloneDisconnect(w http.ResponseWriter, r *http.Requ
 }
 
 // POST /api/cloud/upload
+// Encrypts with the master key if configured; otherwise uploads plain JSON.
+// Legacy passphrase field is still accepted for backwards compat.
 func (s *Server) handleCloudUpload(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -522,10 +524,24 @@ func (s *Server) handleCloudUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var data []byte
-	if req.Passphrase != "" {
+	encrypted := false
+	switch {
+	case req.Passphrase != "":
 		data, err = s.backupExport.ExportEncryptedJSON(req.Filters, req.Passphrase)
-	} else {
-		data, err = s.backupExport.ExportJSON(req.Filters)
+		encrypted = true
+	default:
+		// Try master key; fall back to plain export if not configured.
+		seed, seedErr := s.resolveMasterSeed()
+		if seedErr != nil {
+			writeError(w, http.StatusInternalServerError, "keychain error: "+seedErr.Error())
+			return
+		}
+		if seed != nil {
+			data, err = s.backupExport.ExportMasterEncryptedJSON(req.Filters, seed)
+			encrypted = true
+		} else {
+			data, err = s.backupExport.ExportJSON(req.Filters)
+		}
 	}
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "export failed: "+err.Error())
@@ -549,7 +565,7 @@ func (s *Server) handleCloudUpload(w http.ResponseWriter, r *http.Request) {
 
 	// Record upload in cloud_uploads.
 	if s.cloudConfigs != nil {
-		_ = s.cloudConfigs.InsertUpload(ctx, req.TransportID, filename, ref.ID, len(data), req.Passphrase != "")
+		_ = s.cloudConfigs.InsertUpload(ctx, req.TransportID, filename, ref.ID, len(data), encrypted)
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "blob_ref": ref})
@@ -619,16 +635,21 @@ func (s *Server) handleCloudDownloadPreview(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if backup.IsEncrypted(data) && req.Passphrase == "" {
+	opts := backup.ImportOptions{
+		Mode:        backup.ImportModePreview,
+		Passphrase:  req.Passphrase,
+		PreviewMode: req.PreviewMode,
+	}
+	if err := s.fillMasterSeed(data, &opts); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if backup.IsEncrypted(data) && opts.Passphrase == "" && len(opts.MasterSeed) == 0 {
 		writeError(w, http.StatusBadRequest, "passphrase required")
 		return
 	}
 
-	report, err := s.backupImport.Import(bytes.NewReader(data), backup.ImportOptions{
-		Mode:        backup.ImportModePreview,
-		Passphrase:  req.Passphrase,
-		PreviewMode: req.PreviewMode,
-	})
+	report, err := s.backupImport.Import(bytes.NewReader(data), opts)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -691,15 +712,20 @@ func (s *Server) handleCloudDownloadApply(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if backup.IsEncrypted(data) && req.Passphrase == "" {
+	opts := backup.ImportOptions{
+		Mode:       mode,
+		Passphrase: req.Passphrase,
+	}
+	if err := s.fillMasterSeed(data, &opts); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if backup.IsEncrypted(data) && opts.Passphrase == "" && len(opts.MasterSeed) == 0 {
 		writeError(w, http.StatusBadRequest, "passphrase required")
 		return
 	}
 
-	report, err := s.backupImport.Import(bytes.NewReader(data), backup.ImportOptions{
-		Mode:       mode,
-		Passphrase: req.Passphrase,
-	})
+	report, err := s.backupImport.Import(bytes.NewReader(data), opts)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return

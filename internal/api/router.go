@@ -44,6 +44,7 @@ type Server struct {
 	rcloneMgr      *rclone.Manager
 	gdriveConnectMu     sync.Mutex
 	gdriveConnectStates map[string]pendingGDriveConnect
+	revealToken         revealTokenState
 }
 
 func NewServer(db *sql.DB, cfg *config.Config) *Server {
@@ -235,6 +236,14 @@ func (s *Server) Router() http.Handler {
 	mux.HandleFunc("POST /api/backup/import", s.handleImport)
 	mux.HandleFunc("POST /api/backup/import/preview", s.handleImportPreview)
 	mux.HandleFunc("GET /api/backup/generate-mnemonic", s.handleGenerateMnemonic)
+
+	// Master recovery phrase management
+	mux.HandleFunc("GET /api/master-key/status", s.handleMasterKeyStatus)
+	mux.HandleFunc("POST /api/master-key/generate", s.handleMasterKeyGenerate)
+	mux.HandleFunc("POST /api/master-key/import", s.handleMasterKeyImport)
+	mux.HandleFunc("GET /api/master-key/reveal-token", s.handleMasterKeyRevealToken)
+	mux.HandleFunc("GET /api/master-key/reveal", s.handleMasterKeyReveal)
+	mux.HandleFunc("DELETE /api/master-key", s.handleMasterKeyDelete)
 
 	// Cloud transports
 	mux.HandleFunc("GET /api/cloud/transports", s.handleCloudTransports)
