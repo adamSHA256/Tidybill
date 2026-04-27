@@ -5,12 +5,13 @@ import type { CloudTransportInfo } from '../api/client'
 
 interface CloudSyncPanelProps {
   transports: CloudTransportInfo[]
+  isLoading?: boolean
   onUpload: (transportId: string) => void
   onRestore: (transportId: string) => void
   onDisconnect: (transportId: string) => void
 }
 
-export function CloudSyncPanel({ transports, onUpload, onRestore, onDisconnect }: CloudSyncPanelProps) {
+export function CloudSyncPanel({ transports, isLoading, onUpload, onRestore, onDisconnect }: CloudSyncPanelProps) {
   const { t } = useT()
 
   if (transports.length === 0) {
@@ -29,10 +30,12 @@ export function CloudSyncPanel({ transports, onUpload, onRestore, onDisconnect }
                 <Text fw={500} size="sm">
                   {getTransportLabel(tr.id, t)}
                 </Text>
-                {tr.status.connected ? (
-                  <Badge color="green" size="xs">Connected</Badge>
+                {isLoading ? (
+                  <Badge color="yellow" size="xs">{t('cloud.status.connecting')}</Badge>
+                ) : tr.status.connected ? (
+                  <Badge color="green" size="xs">{t('cloud.status.connected')}</Badge>
                 ) : (
-                  <Badge color="red" size="xs">Disconnected</Badge>
+                  <Badge color="red" size="xs">{t('cloud.status.disconnected')}</Badge>
                 )}
               </Group>
               {tr.status.account_label && (
@@ -69,7 +72,7 @@ export function CloudSyncPanel({ transports, onUpload, onRestore, onDisconnect }
                   leftSection={<IconUnlink size={14} />}
                   onClick={() => onDisconnect(tr.id)}
                 >
-                  Disconnect
+                  {t('cloud.disconnect_action')}
                 </Button>
               )}
             </Group>

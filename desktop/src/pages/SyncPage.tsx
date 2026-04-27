@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import {
   Container,
   Paper,
@@ -23,7 +23,7 @@ import { DateInput } from '@mantine/dates'
 import { notifications } from '@mantine/notifications'
 import { IconDownload, IconUpload, IconAlertCircle, IconInfoCircle, IconKey, IconCloudUpload } from '@tabler/icons-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api, isTauri, isMobileDevice, shareFile, type ExportFilters, type ImportReport } from '../api/client'
+import { api, isTauri, isMobileDevice, shareFile, type ExportFilters, type ImportReport, type CloudTransportInfo } from '../api/client'
 import { useT } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { CloudSyncPanel } from '../components/CloudSyncPanel'
@@ -68,11 +68,33 @@ export function SyncPage() {
   const [restoreTarget, setRestoreTarget] = useState<string | null>(null)
   const qc = useQueryClient()
 
-  const { data: transports } = useQuery({
+  const { data: transports, isLoading: transportsLoading } = useQuery({
     queryKey: ['cloud-transports'],
     queryFn: () => api.cloud.transports().then((r) => r.transports),
     refetchInterval: 5_000,
+    // Render the previous session's transport list immediately on mount so
+    // the panel doesn't flash empty for ~1-2s while the first fetch resolves.
+    // The real fetch then replaces this. Combined with isLoading we can show
+    // a "Connecting..." badge until the first refresh confirms status.
+    placeholderData: () => {
+      try {
+        const cached = localStorage.getItem('cloud-transports-cache')
+        return cached ? (JSON.parse(cached) as CloudTransportInfo[]) : undefined
+      } catch {
+        return undefined
+      }
+    },
   })
+
+  // Persist the latest transport list so the next app open has it as
+  // placeholderData. Best-effort; localStorage may be full or disabled.
+  useEffect(() => {
+    if (transports && transports.length > 0) {
+      try {
+        localStorage.setItem('cloud-transports-cache', JSON.stringify(transports))
+      } catch { /* ignore */ }
+    }
+  }, [transports])
 
   const disconnect = useMutation({
     mutationFn: async (transportId: string) => {
@@ -488,6 +510,7 @@ export function SyncPage() {
           </Group>
           <CloudSyncPanel
             transports={transports ?? []}
+            isLoading={transportsLoading}
             onUpload={(id) => setUploadTarget(id)}
             onRestore={(id) => setRestoreTarget(id)}
             onDisconnect={(id) => disconnect.mutate(id)}
