@@ -756,5 +756,12 @@
   "cloud.restore.mode_force": "Force (overwrite everything)",
   "cloud.restore.preview": "Preview",
   "cloud.restore.apply": "Import",
-  "cloud.restore.success": "Data imported"
+  "cloud.restore.success": "Data imported",
+
+  "backup.dest_label": "Destination",
+  "backup.dest_local": "Local file",
+  "backup.source_label": "Source",
+  "backup.source_local": "File from disk",
+  "backup.cloud_load": "Preview backup",
+  "settings.dir_backups": "Backup directory"
 }

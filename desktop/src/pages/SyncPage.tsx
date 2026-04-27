@@ -23,13 +23,21 @@ import { DateInput } from '@mantine/dates'
 import { notifications } from '@mantine/notifications'
 import { IconDownload, IconUpload, IconAlertCircle, IconInfoCircle, IconKey, IconCloudUpload } from '@tabler/icons-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api, isTauri, isMobileDevice, shareFile, type ExportFilters, type ImportReport, type CloudTransportInfo } from '../api/client'
+import { api, isTauri, isMobileDevice, shareFile, type ExportFilters, type ImportReport, type CloudTransportInfo, type CloudBlobRef } from '../api/client'
 import { useT } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { CloudSyncPanel } from '../components/CloudSyncPanel'
 import { ConnectCloudModal } from '../components/ConnectCloudModal'
-import { CloudRestoreModal } from '../components/CloudRestoreModal'
-import { CloudUploadModal } from '../components/CloudUploadModal'
+
+function getTransportLabel(id: string, t: (key: string) => string): string {
+  if (id === 'local') return t('cloud.local.label')
+  if (id === 'gdrive') return t('cloud.gdrive.label')
+  if (id.startsWith('rclone:')) {
+    const backend = id.replace('rclone:', '')
+    return t(`cloud.rclone.${backend}.label`) || id
+  }
+  return id
+}
 
 export function SyncPage() {
   const { t } = useT()
@@ -37,6 +45,7 @@ export function SyncPage() {
 
   // Export state
   const [exporting, setExporting] = useState(false)
+  const [exportDestination, setExportDestination] = useState('local')
   const [filterModalOpen, setFilterModalOpen] = useState(false)
   const [filterSupplierIds, setFilterSupplierIds] = useState<string[]>([])
   const [filterSkipPaidYears, setFilterSkipPaidYears] = useState<number | ''>('')
@@ -50,6 +59,7 @@ export function SyncPage() {
   const [generatingMnemonic, setGeneratingMnemonic] = useState(false)
 
   // Import state
+  const [importSource, setImportSource] = useState('local')
   const [importMode, setImportMode] = useState('merge')
   const [importing, setImporting] = useState(false)
   const [previewLoading, setPreviewLoading] = useState(false)
@@ -62,20 +72,19 @@ export function SyncPage() {
   const selectedFileRef = useRef<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Cloud import state
+  const [selectedCloudBlob, setSelectedCloudBlob] = useState<CloudBlobRef | null>(null)
+  const [cloudImportPassphrase, setCloudImportPassphrase] = useState('')
+  const [isCloudImportFlow, setIsCloudImportFlow] = useState(false)
+
   // Cloud sync state
   const [connectOpen, setConnectOpen] = useState(false)
-  const [uploadTarget, setUploadTarget] = useState<string | null>(null)
-  const [restoreTarget, setRestoreTarget] = useState<string | null>(null)
   const qc = useQueryClient()
 
   const { data: transports, isLoading: transportsLoading } = useQuery({
     queryKey: ['cloud-transports'],
     queryFn: () => api.cloud.transports().then((r) => r.transports),
     refetchInterval: 5_000,
-    // Render the previous session's transport list immediately on mount so
-    // the panel doesn't flash empty for ~1-2s while the first fetch resolves.
-    // The real fetch then replaces this. Combined with isLoading we can show
-    // a "Connecting..." badge until the first refresh confirms status.
     placeholderData: () => {
       try {
         const cached = localStorage.getItem('cloud-transports-cache')
@@ -86,8 +95,6 @@ export function SyncPage() {
     },
   })
 
-  // Persist the latest transport list so the next app open has it as
-  // placeholderData. Best-effort; localStorage may be full or disabled.
   useEffect(() => {
     if (transports && transports.length > 0) {
       try {
@@ -95,6 +102,18 @@ export function SyncPage() {
       } catch { /* ignore */ }
     }
   }, [transports])
+
+  const { data: settings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: api.getSettings,
+  })
+
+  // Cloud blob list for Import panel (fetched when a cloud source is selected)
+  const { data: cloudBlobList, isLoading: cloudBlobsLoading } = useQuery({
+    queryKey: ['cloud-list', importSource],
+    queryFn: () => api.cloud.list(importSource).then((r) => r.blobs),
+    enabled: importSource !== 'local',
+  })
 
   const disconnect = useMutation({
     mutationFn: async (transportId: string) => {
@@ -151,21 +170,21 @@ export function SyncPage() {
 
   // Returns the actual saved path/filename, or null if cancelled
   const triggerDownload = async (blob: Blob, filename: string): Promise<string | null> => {
-    // On desktop Tauri, show native file save dialog
     if (isTauri() && !isMobileDevice()) {
       try {
         const { save } = await import('@tauri-apps/plugin-dialog')
         const { downloadDir } = await import('@tauri-apps/api/path')
         let defaultPath = filename
         try {
-          const dlDir = await downloadDir()
-          defaultPath = `${dlDir}/${filename}`
+          // Prefer user-configured backup dir, fall back to system downloads
+          const baseDir = settings?.default_backup_dir || await downloadDir()
+          defaultPath = `${baseDir}/${filename}`
         } catch { /* fallback to just filename */ }
         const filePath = await save({
           defaultPath,
           filters: [{ name: 'TidyBill Backup', extensions: ['tidybill'] }],
         })
-        if (!filePath) return null // user cancelled
+        if (!filePath) return null
 
         const { writeFile } = await import('@tauri-apps/plugin-fs')
         const arrayBuffer = await blob.arrayBuffer()
@@ -175,7 +194,6 @@ export function SyncPage() {
         console.error('Native save dialog failed, falling back to download:', err)
       }
     }
-    // Fallback: browser-style download
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -192,6 +210,12 @@ export function SyncPage() {
     }
     setExporting(true)
     try {
+      if (exportDestination !== 'local') {
+        const passphrase = encryptExport ? exportPassphrase : undefined
+        await api.cloud.upload(exportDestination, passphrase || undefined)
+        notifications.show({ title: t('cloud.upload.success'), message: '', color: 'green' })
+        return
+      }
       const passphrase = encryptExport ? exportPassphrase : undefined
       const filename = `tidybill-backup-${new Date().toISOString().split('T')[0]}.tidybill`
       if (isTauri() && isMobileDevice()) {
@@ -201,8 +225,7 @@ export function SyncPage() {
       } else {
         const blob = await api.exportBackup(undefined, passphrase)
         const savedPath = await triggerDownload(blob, filename)
-        if (!savedPath) return // user cancelled
-        // Show the actual saved path (may differ from default filename)
+        if (!savedPath) return
         const savedName = savedPath.includes('/') ? savedPath.split('/').pop() : savedPath
         notifications.show({ title: t('backup.export_success'), message: savedName || '', color: 'green' })
       }
@@ -255,10 +278,8 @@ export function SyncPage() {
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    // Reset the input so the same file can be re-selected
     e.target.value = ''
 
-    // Check if encrypted by reading first 6 bytes
     const header = await file.slice(0, 6).arrayBuffer()
     const magic = new TextDecoder().decode(new Uint8Array(header).slice(0, 5))
     const isEncrypted = magic === 'TBILL'
@@ -266,7 +287,6 @@ export function SyncPage() {
     selectedFileRef.current = file
 
     if (isEncrypted) {
-      // Don't auto-preview — need passphrase first
       setImportPassphrase('')
       return
     }
@@ -275,6 +295,7 @@ export function SyncPage() {
     try {
       const report = await api.previewImport(file, undefined, importMode)
       setPreviewReport(report)
+      setIsCloudImportFlow(false)
       setPreviewModalOpen(true)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
@@ -290,6 +311,28 @@ export function SyncPage() {
     try {
       const report = await api.previewImport(selectedFileRef.current, importPassphrase, importMode)
       setPreviewReport(report)
+      setIsCloudImportFlow(false)
+      setPreviewModalOpen(true)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
+      notifications.show({ title: t('common.error'), message, color: 'red' })
+    } finally {
+      setPreviewLoading(false)
+    }
+  }
+
+  const handleCloudBlobPreview = async () => {
+    if (!selectedCloudBlob || importSource === 'local') return
+    setPreviewLoading(true)
+    try {
+      const report = await api.cloud.downloadPreview(
+        importSource,
+        selectedCloudBlob.id,
+        cloudImportPassphrase || undefined,
+        importMode,
+      )
+      setPreviewReport(report)
+      setIsCloudImportFlow(true)
       setPreviewModalOpen(true)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
@@ -300,21 +343,39 @@ export function SyncPage() {
   }
 
   const handleImportConfirm = async () => {
-    if (!selectedFileRef.current) return
     setImporting(true)
     setPreviewModalOpen(false)
     try {
-      const passphrase = fileEncrypted ? importPassphrase : undefined
-      const result = await api.importBackup(selectedFileRef.current, importMode, passphrase)
-      setImportResult(result)
-      setResultModalOpen(true)
-      notifications.show({ title: t('backup.import_success'), message: '', color: 'green' })
+      if (isCloudImportFlow && selectedCloudBlob) {
+        const result = await api.cloud.downloadApply(
+          importSource,
+          selectedCloudBlob.id,
+          cloudImportPassphrase || undefined,
+          importMode,
+        )
+        setImportResult(result)
+        setResultModalOpen(true)
+        notifications.show({ title: t('backup.import_success'), message: '', color: 'green' })
+      } else {
+        if (!selectedFileRef.current) return
+        const passphrase = fileEncrypted ? importPassphrase : undefined
+        const result = await api.importBackup(selectedFileRef.current, importMode, passphrase)
+        setImportResult(result)
+        setResultModalOpen(true)
+        notifications.show({ title: t('backup.import_success'), message: '', color: 'green' })
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
       notifications.show({ title: t('common.error'), message, color: 'red' })
     } finally {
       setImporting(false)
     }
+  }
+
+  const formatBlobSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`
   }
 
   const tableLabels: Record<string, string> = {
@@ -368,6 +429,8 @@ export function SyncPage() {
     )
   }
 
+  const connectedTransports = (transports ?? []).filter((tr) => tr.status.connected)
+
   return (
     <Container size="sm" py="xl">
       <Title order={isMobile ? 3 : 2} mb="lg">{t('backup.title')}</Title>
@@ -377,23 +440,47 @@ export function SyncPage() {
         <Stack gap="md">
           <Text fw={500}>{t('backup.export_title')}</Text>
           <Text c="dimmed" size="sm">{t('backup.export_desc')}</Text>
+
+          {/* Destination picker */}
+          <Radio.Group
+            label={t('backup.dest_label')}
+            value={exportDestination}
+            onChange={setExportDestination}
+          >
+            <Stack gap="xs" mt="xs">
+              <Radio value="local" label={t('backup.dest_local')} />
+              {connectedTransports.map((tr) => (
+                <Radio
+                  key={tr.id}
+                  value={tr.id}
+                  label={getTransportLabel(tr.id, t)}
+                />
+              ))}
+            </Stack>
+          </Radio.Group>
+
           <Group>
             <Button
-              leftSection={<IconDownload size={16} />}
+              leftSection={exportDestination === 'local' ? <IconDownload size={16} /> : <IconCloudUpload size={16} />}
               onClick={handleExportAll}
               loading={exporting}
               disabled={!passphraseValid}
             >
-              {t('backup.export_all')}
+              {exportDestination === 'local'
+                ? t('backup.export_all')
+                : t('cloud.upload_action')}
             </Button>
-            <Button
-              variant="light"
-              onClick={() => setFilterModalOpen(true)}
-              disabled={exporting || !passphraseValid}
-            >
-              {t('backup.export_filtered')}
-            </Button>
+            {exportDestination === 'local' && (
+              <Button
+                variant="light"
+                onClick={() => setFilterModalOpen(true)}
+                disabled={exporting || !passphraseValid}
+              >
+                {t('backup.export_filtered')}
+              </Button>
+            )}
           </Group>
+
           <Switch
             label={t('backup.encrypt')}
             checked={encryptExport}
@@ -456,6 +543,30 @@ export function SyncPage() {
           <Text fw={500}>{t('backup.import_title')}</Text>
           <Text c="dimmed" size="sm">{t('backup.import_desc')}</Text>
 
+          {/* Source picker */}
+          <Radio.Group
+            label={t('backup.source_label')}
+            value={importSource}
+            onChange={(val) => {
+              setImportSource(val)
+              setSelectedCloudBlob(null)
+              setCloudImportPassphrase('')
+              setFileEncrypted(false)
+              selectedFileRef.current = null
+            }}
+          >
+            <Stack gap="xs" mt="xs">
+              <Radio value="local" label={t('backup.source_local')} />
+              {connectedTransports.map((tr) => (
+                <Radio
+                  key={tr.id}
+                  value={tr.id}
+                  label={getTransportLabel(tr.id, t)}
+                />
+              ))}
+            </Stack>
+          </Radio.Group>
+
           <Radio.Group value={importMode} onChange={setImportMode}>
             <Stack gap="xs">
               <Radio value="merge" label={t('backup.import_mode_merge')} description={t('backup.import_mode_merge_desc')} />
@@ -464,42 +575,102 @@ export function SyncPage() {
             </Stack>
           </Radio.Group>
 
-          <input
-            type="file"
-            ref={fileInputRef}
-            accept=".tidybill"
-            style={{ display: 'none' }}
-            onChange={handleFileSelect}
-          />
-
-          <Button
-            leftSection={previewLoading ? <Loader size={16} /> : <IconUpload size={16} />}
-            variant="light"
-            onClick={() => fileInputRef.current?.click()}
-            loading={previewLoading || importing}
-          >
-            {t('backup.import_select')}
-          </Button>
-          {fileEncrypted && selectedFileRef.current && (
-            <Stack gap="xs">
-              <Alert icon={<IconAlertCircle size={16} />} color="blue">
-                {t('backup.file_encrypted')}
-              </Alert>
-              <PasswordInput
-                label={t('backup.import_passphrase')}
-                value={importPassphrase}
-                onChange={(e) => setImportPassphrase(e.currentTarget.value)}
+          {/* Local import */}
+          {importSource === 'local' && (
+            <>
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept=".tidybill"
+                style={{ display: 'none' }}
+                onChange={handleFileSelect}
               />
-              <Button onClick={handlePreviewEncrypted} disabled={!importPassphrase} loading={previewLoading}>
-                {t('backup.import_decrypt_preview')}
+              <Button
+                leftSection={previewLoading ? <Loader size={16} /> : <IconUpload size={16} />}
+                variant="light"
+                onClick={() => fileInputRef.current?.click()}
+                loading={previewLoading || importing}
+              >
+                {t('backup.import_select')}
               </Button>
+              {fileEncrypted && selectedFileRef.current && (
+                <Stack gap="xs">
+                  <Alert icon={<IconAlertCircle size={16} />} color="blue">
+                    {t('backup.file_encrypted')}
+                  </Alert>
+                  <PasswordInput
+                    label={t('backup.import_passphrase')}
+                    value={importPassphrase}
+                    onChange={(e) => setImportPassphrase(e.currentTarget.value)}
+                  />
+                  <Button onClick={handlePreviewEncrypted} disabled={!importPassphrase} loading={previewLoading}>
+                    {t('backup.import_decrypt_preview')}
+                  </Button>
+                </Stack>
+              )}
+            </>
+          )}
+
+          {/* Cloud import */}
+          {importSource !== 'local' && (
+            <Stack gap="sm">
+              {cloudBlobsLoading ? (
+                <Center><Loader size="sm" /></Center>
+              ) : !cloudBlobList || cloudBlobList.length === 0 ? (
+                <Text c="dimmed" size="sm">{t('cloud.restore.empty')}</Text>
+              ) : (
+                <Table highlightOnHover>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>File</Table.Th>
+                      <Table.Th>Date</Table.Th>
+                      <Table.Th>Size</Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {cloudBlobList.map((blob) => (
+                      <Table.Tr
+                        key={blob.id}
+                        style={{
+                          cursor: 'pointer',
+                          background: selectedCloudBlob?.id === blob.id ? 'var(--mantine-color-blue-light)' : undefined,
+                        }}
+                        onClick={() => setSelectedCloudBlob(blob)}
+                      >
+                        <Table.Td>{blob.filename}</Table.Td>
+                        <Table.Td>{new Date(blob.modified_at).toLocaleDateString()}</Table.Td>
+                        <Table.Td>{formatBlobSize(blob.size)}</Table.Td>
+                      </Table.Tr>
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              )}
+
+              {selectedCloudBlob && (
+                <Stack gap="xs">
+                  <PasswordInput
+                    label={t('cloud.restore.encrypted_prompt')}
+                    placeholder="Passphrase (if encrypted)"
+                    value={cloudImportPassphrase}
+                    onChange={(e) => setCloudImportPassphrase(e.currentTarget.value)}
+                  />
+                  <Button
+                    variant="light"
+                    leftSection={previewLoading ? <Loader size={16} /> : <IconDownload size={16} />}
+                    onClick={handleCloudBlobPreview}
+                    loading={previewLoading || importing}
+                  >
+                    {t('backup.cloud_load')}
+                  </Button>
+                </Stack>
+              )}
             </Stack>
           )}
         </Stack>
       </Paper>
 
       {/* Cloud Sync section */}
-      <Paper p="md" withBorder>
+      <Paper p="md" withBorder mt="md">
         <Stack gap="md">
           <Group justify="space-between">
             <Title order={4}>{t('cloud.title')}</Title>
@@ -511,8 +682,6 @@ export function SyncPage() {
           <CloudSyncPanel
             transports={transports ?? []}
             isLoading={transportsLoading}
-            onUpload={(id) => setUploadTarget(id)}
-            onRestore={(id) => setRestoreTarget(id)}
             onDisconnect={(id) => disconnect.mutate(id)}
           />
         </Stack>
@@ -522,16 +691,6 @@ export function SyncPage() {
         opened={connectOpen}
         onClose={() => setConnectOpen(false)}
         onConnected={() => qc.invalidateQueries({ queryKey: ['cloud-transports'] })}
-      />
-      <CloudRestoreModal
-        opened={restoreTarget !== null}
-        transportId={restoreTarget}
-        onClose={() => setRestoreTarget(null)}
-      />
-      <CloudUploadModal
-        opened={uploadTarget !== null}
-        transportId={uploadTarget}
-        onClose={() => setUploadTarget(null)}
       />
 
       {/* Export filter modal */}

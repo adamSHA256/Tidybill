@@ -757,5 +757,12 @@
   "cloud.restore.mode_force": "Vynutit (přepsat vše)",
   "cloud.restore.preview": "Náhled",
   "cloud.restore.apply": "Importovat",
-  "cloud.restore.success": "Data importována"
+  "cloud.restore.success": "Data importována",
+
+  "backup.dest_label": "Cíl",
+  "backup.dest_local": "Místní soubor",
+  "backup.source_label": "Zdroj",
+  "backup.source_local": "Soubor z disku",
+  "backup.cloud_load": "Náhled zálohy",
+  "settings.dir_backups": "Záložní složka"
 }

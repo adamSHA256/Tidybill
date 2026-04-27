@@ -757,5 +757,12 @@
   "cloud.restore.mode_force": "Vynútiť (prepísať všetko)",
   "cloud.restore.preview": "Náhľad",
   "cloud.restore.apply": "Importovať",
-  "cloud.restore.success": "Dáta importované"
+  "cloud.restore.success": "Dáta importované",
+
+  "backup.dest_label": "Cieľ",
+  "backup.dest_local": "Miestny súbor",
+  "backup.source_label": "Zdroj",
+  "backup.source_local": "Súbor z disku",
+  "backup.cloud_load": "Náhľad zálohy",
+  "settings.dir_backups": "Zálohovací priečinok"
 }
