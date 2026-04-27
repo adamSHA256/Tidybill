@@ -764,5 +764,6 @@
   "backup.source_label": "Zdroj",
   "backup.source_local": "Súbor z disku",
   "backup.cloud_load": "Náhľad zálohy",
+  "cloud.restore.passphrase_optional": "Heslo (nechajte prázdne, ak záloha nie je šifrovaná)",
   "settings.dir_backups": "Zálohovací priečinok"
 }

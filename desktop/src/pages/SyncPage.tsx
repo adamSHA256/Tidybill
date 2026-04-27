@@ -649,8 +649,7 @@ export function SyncPage() {
               {selectedCloudBlob && (
                 <Stack gap="xs">
                   <PasswordInput
-                    label={t('cloud.restore.encrypted_prompt')}
-                    placeholder="Passphrase (if encrypted)"
+                    label={t('cloud.restore.passphrase_optional')}
                     value={cloudImportPassphrase}
                     onChange={(e) => setCloudImportPassphrase(e.currentTarget.value)}
                   />

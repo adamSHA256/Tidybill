@@ -763,5 +763,6 @@
   "backup.source_label": "Source",
   "backup.source_local": "File from disk",
   "backup.cloud_load": "Preview backup",
+  "cloud.restore.passphrase_optional": "Passphrase (leave empty if not encrypted)",
   "settings.dir_backups": "Backup directory"
 }
