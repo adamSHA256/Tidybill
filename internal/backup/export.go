@@ -186,13 +186,23 @@ func (s *ExportService) ExportJSON(filters *ExportFilters) ([]byte, error) {
 }
 
 // ExportEncryptedJSON returns the export as an encrypted binary blob.
-// The passphrase is used to derive the encryption key via Argon2id.
+// The passphrase is used to derive the encryption key via Argon2id (v1 format).
 func (s *ExportService) ExportEncryptedJSON(filters *ExportFilters, passphrase string) ([]byte, error) {
 	jsonData, err := s.ExportJSON(filters)
 	if err != nil {
 		return nil, err
 	}
 	return EncryptExport(jsonData, passphrase)
+}
+
+// ExportMasterEncryptedJSON returns the export encrypted with the master key.
+// seed is the 64-byte BIP-39 seed (from keychain.GetMasterKey). Writes v2 format.
+func (s *ExportService) ExportMasterEncryptedJSON(filters *ExportFilters, seed []byte) ([]byte, error) {
+	jsonData, err := s.ExportJSON(filters)
+	if err != nil {
+		return nil, err
+	}
+	return EncryptExportMaster(jsonData, seed)
 }
 
 func (s *ExportService) getSchemaVersion() int {

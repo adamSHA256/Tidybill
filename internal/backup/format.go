@@ -143,9 +143,12 @@ const (
 // ImportOptions configures import behavior.
 type ImportOptions struct {
 	Mode                  string `json:"mode"`
-	PreviewMode           string `json:"preview_mode,omitempty"`   // which mode to simulate during preview
+	PreviewMode           string `json:"preview_mode,omitempty"`  // which mode to simulate during preview
 	InvoiceNumberConflict string `json:"invoice_number_conflict"` // "skip", "auto_suffix"
 	Passphrase            string `json:"passphrase,omitempty"`
+	// MasterSeed is the 64-byte BIP-39 seed used when the file is v2 mode 1.
+	// Set by the API handler after fetching from keychain. Not JSON-serialised.
+	MasterSeed []byte `json:"-"`
 }
 
 // ImportReport is returned after import completes (or after preview).
