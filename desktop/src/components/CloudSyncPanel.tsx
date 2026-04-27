@@ -1,17 +1,15 @@
 import { Stack, Text, Group, Button, Badge, Paper } from '@mantine/core'
-import { IconCloudUpload, IconDownload, IconUnlink } from '@tabler/icons-react'
+import { IconUnlink } from '@tabler/icons-react'
 import { useT } from '../i18n'
 import type { CloudTransportInfo } from '../api/client'
 
 interface CloudSyncPanelProps {
   transports: CloudTransportInfo[]
   isLoading?: boolean
-  onUpload: (transportId: string) => void
-  onRestore: (transportId: string) => void
   onDisconnect: (transportId: string) => void
 }
 
-export function CloudSyncPanel({ transports, isLoading, onUpload, onRestore, onDisconnect }: CloudSyncPanelProps) {
+export function CloudSyncPanel({ transports, isLoading, onDisconnect }: CloudSyncPanelProps) {
   const { t } = useT()
 
   if (transports.length === 0) {
@@ -45,37 +43,17 @@ export function CloudSyncPanel({ transports, isLoading, onUpload, onRestore, onD
                 <Text size="xs" c="red">{tr.status.detail}</Text>
               )}
             </Stack>
-            <Group gap="xs" wrap="nowrap">
+            {tr.id !== 'local' && (
               <Button
                 size="xs"
-                variant="light"
-                leftSection={<IconCloudUpload size={14} />}
-                onClick={() => onUpload(tr.id)}
-                disabled={!tr.status.connected}
+                variant="subtle"
+                color="red"
+                leftSection={<IconUnlink size={14} />}
+                onClick={() => onDisconnect(tr.id)}
               >
-                {t('cloud.upload_action')}
+                {t('cloud.disconnect_action')}
               </Button>
-              <Button
-                size="xs"
-                variant="light"
-                leftSection={<IconDownload size={14} />}
-                onClick={() => onRestore(tr.id)}
-                disabled={!tr.status.connected}
-              >
-                {t('cloud.restore_action')}
-              </Button>
-              {tr.id !== 'local' && (
-                <Button
-                  size="xs"
-                  variant="subtle"
-                  color="red"
-                  leftSection={<IconUnlink size={14} />}
-                  onClick={() => onDisconnect(tr.id)}
-                >
-                  {t('cloud.disconnect_action')}
-                </Button>
-              )}
-            </Group>
+            )}
           </Group>
         </Paper>
       ))}
