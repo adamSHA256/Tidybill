@@ -564,6 +564,8 @@ export interface AppSettings {
   default_pdf_dir?: string
   default_logo_dir?: string
   default_preview_dir?: string
+  default_backup_dir?: string
+  dir_backups?: string
   'email.default_subject'?: string
   'email.default_body'?: string
   'email.copy_subject'?: string

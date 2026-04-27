@@ -84,6 +84,7 @@ export function Settings() {
   const [dirLogos, setDirLogos] = useState('')
   const [dirPdfs, setDirPdfs] = useState('')
   const [dirPreviews, setDirPreviews] = useState('')
+  const [dirBackups, setDirBackups] = useState('')
   const [newUnitName, setNewUnitName] = useState('')
   const [checking, setChecking] = useState(false)
   const [enableAutoModalOpen, setEnableAutoModalOpen] = useState(false)
@@ -135,6 +136,7 @@ export function Settings() {
       setDirLogos(settings.dir_logos || settings.default_logo_dir || '')
       setDirPdfs(settings.dir_pdfs || settings.default_pdf_dir || '')
       setDirPreviews(settings.dir_previews || settings.default_preview_dir || '')
+      setDirBackups(settings.dir_backups || settings.default_backup_dir || '')
       setDashWidgets(parseWidgets(settings.dashboard_widgets))
     }
   }, [settings])
@@ -852,12 +854,27 @@ export function Settings() {
                 </ActionIcon>
               </Tooltip>
             </Group>
+            <Group align="end" gap="xs">
+              <TextInput
+                label={t('settings.dir_backups')}
+                placeholder={t('settings.dir_placeholder')}
+                value={dirBackups}
+                onChange={(e) => setDirBackups(e.currentTarget.value)}
+                style={{ flex: 1 }}
+              />
+              <Tooltip label={t('invoice.open_folder')} events={{ hover: true, focus: true, touch: true }}>
+                <ActionIcon variant="light" size="lg" onClick={() => { if (dirBackups) openInBrowser(dirBackups) }}>
+                  <IconFolderOpen size={18} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
             <Button
               w={200}
               onClick={() => updateMutation.mutate({
                 dir_logos: dirLogos,
                 dir_pdfs: dirPdfs,
                 dir_previews: dirPreviews,
+                dir_backups: dirBackups,
               })}
               loading={updateMutation.isPending}
             >

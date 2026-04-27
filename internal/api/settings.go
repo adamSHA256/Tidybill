@@ -16,6 +16,7 @@ func (s *Server) getSettings(w http.ResponseWriter, r *http.Request) {
 	dirLogos, _ := s.settings.Get("dir.logos")
 	dirPdfs, _ := s.settings.Get("dir.pdfs")
 	dirPreviews, _ := s.settings.Get("dir.previews")
+	dirBackups, _ := s.settings.Get("dir.backups")
 	defaultCurrency, _ := s.settings.Get("default.currency")
 	if defaultCurrency == "" {
 		defaultCurrency = "CZK"
@@ -43,6 +44,7 @@ func (s *Server) getSettings(w http.ResponseWriter, r *http.Request) {
 		"dir_logos":            dirLogos,
 		"dir_pdfs":             dirPdfs,
 		"dir_previews":         dirPreviews,
+		"dir_backups":          dirBackups,
 		"default_currency":     defaultCurrency,
 		"default_due_days":     defaultDueDays,
 		"default_vat_rate":     defaultVatRate,
@@ -55,6 +57,7 @@ func (s *Server) getSettings(w http.ResponseWriter, r *http.Request) {
 		"default_pdf_dir":      s.cfg.PDFDir,
 		"default_logo_dir":     s.cfg.LogoDir,
 		"default_preview_dir":  s.cfg.PreviewDir,
+		"default_backup_dir":   s.cfg.ExportDir,
 		"email.default_subject": emailDefaultSubject,
 		"email.default_body":    emailDefaultBody,
 		"email.copy_subject":    emailCopySubject,
@@ -66,6 +69,7 @@ type UpdateSettingsRequest struct {
 	DirLogos         *string `json:"dir_logos"`
 	DirPdfs          *string `json:"dir_pdfs"`
 	DirPreviews      *string `json:"dir_previews"`
+	DirBackups       *string `json:"dir_backups"`
 	DefaultCurrency  *string `json:"default_currency"`
 	DefaultDueDays   *string `json:"default_due_days"`
 	DefaultVatRate     *string `json:"default_vat_rate"`
@@ -130,11 +134,13 @@ func (s *Server) updateSettings(w http.ResponseWriter, r *http.Request) {
 		"dir.logos":    req.DirLogos,
 		"dir.pdfs":     req.DirPdfs,
 		"dir.previews": req.DirPreviews,
+		"dir.backups":  req.DirBackups,
 	}
 	dirFields := map[string]*string{
 		"dir.logos":    &s.cfg.LogoDir,
 		"dir.pdfs":     &s.cfg.PDFDir,
 		"dir.previews": &s.cfg.PreviewDir,
+		"dir.backups":  &s.cfg.ExportDir,
 	}
 
 	for key, val := range dirSettings {
