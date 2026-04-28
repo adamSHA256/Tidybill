@@ -787,6 +787,7 @@ export function SyncPage() {
 
           {/* Auto-backup */}
           <Divider label={t('autobackup.section_title')} labelPosition="left" />
+          <Text size="sm">{t('autobackup.intro')}</Text>
           <Stack gap="xs">
             <Group gap="xs" align="center">
               <Switch
@@ -851,6 +852,7 @@ export function SyncPage() {
           </Stack>
 
           <Divider label={t('autosync.section_title')} labelPosition="left" />
+          <Text size="sm">{t('autosync.intro')}</Text>
           <Stack gap="xs">
             <Group gap="xs" align="center">
               <Switch
