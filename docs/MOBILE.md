@@ -45,38 +45,90 @@ export ANDROID_HOME="$HOME/Android/Sdk"
 export NDK_HOME="$ANDROID_HOME/ndk/27.1.12297006"
 ```
 
-### Build APK
+### Build APK (recommended path)
 
 ```bash
-# 1. Build Go shared library (from project root)
+# AAR + APK in one command. Make's dep tracking rebuilds the AAR
+# automatically whenever any Go file under internal/ or pkg/mobile/
+# is newer than the on-disk AAR.
+make android-build
+```
+
+This prints the path to the unsigned APK plus the sign + install commands. Run those manually:
+
+```bash
+# Sign with the local debug key
+apksigner sign \
+  --ks ~/.android/debug.keystore \
+  --ks-pass pass:android --key-pass pass:android \
+  --ks-key-alias androiddebugkey \
+  desktop/src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk
+
+# Install on a connected device
+adb install -r desktop/src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk
+```
+
+If the device already has TidyBill installed and was signed with a **different** keystore (e.g. release/upload key), `adb install` fails with `INSTALL_FAILED_UPDATE_INCOMPATIBLE`. Either uninstall first (`adb uninstall com.tidybill.desktop` — wipes app data) or sign with the same keystore as the existing install.
+
+### Make targets
+
+| Target | What it does |
+|--------|--------------|
+| `make android-aar` | Rebuilds `tidybill.aar` from current Go sources. Skipped if AAR is already up to date. |
+| `make android-apk` | Builds the unsigned APK. Depends on `android-aar` so the AAR is refreshed first if needed. |
+| `make android-build` | Convenience: same as `android-apk` with a final reminder of sign + install commands. |
+| `make android-check-aar` | Verifies the AAR is newer than every Go file under `internal/` and `pkg/mobile/`. Fails loudly if stale, with the fix command. Useful in CI / pre-push hooks. |
+
+Override the NDK path: `make android-aar ANDROID_NDK_HOME=/custom/path`.
+
+### Manual fallback (if Make is unavailable)
+
+```bash
+# 1. Rebuild Go AAR
 export ANDROID_NDK_HOME="$HOME/Android/Sdk/ndk/27.1.12297006"
 gomobile bind -v \
   -o desktop/src-tauri/gen/android/app/libs/tidybill.aar \
   -target=android/arm64 -androidapi 24 \
   ./pkg/mobile
 
-# 2. Build APK (from desktop/ dir, arm64 only to limit RAM usage)
+# 2. Build APK (from desktop/, arm64 only to limit RAM)
 cd desktop
 npx tauri android build --apk --target aarch64
-
-# 3. Sign with debug key
-apksigner sign \
-  --ks ~/.android/debug.keystore \
-  --ks-pass pass:android --key-pass pass:android \
-  --ks-key-alias androiddebugkey \
-  src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk
-
-# 4. Install
-adb install -r <path-to-signed.apk>
 ```
 
-### Important: rebuild AAR when Go code changes
+### CRITICAL: rebuild AAR when Go code changes
 
-If you change any Go code (`internal/`, `pkg/mobile/`), you MUST rebuild the AAR (step 1) before rebuilding the APK (step 2). The APK bundles whatever AAR is in `libs/`.
+The APK bundles whatever AAR is in `libs/` at build time. If you change any Go code under `internal/` or `pkg/mobile/` and only rebuild the APK (step 2), the new APK ships an old Go binary — the React frontend will hit `404 page not found` on routes that were added since the AAR was last built. Symptom: a feature works on desktop but the same code path errors out on Android.
+
+`make android-build` and the per-target `$(ANDROID_AAR)` dependency in the Makefile handle this for you. If you build manually, **always run gomobile bind first** when Go changed.
 
 ### RAM warning
 
-Building for all architectures uses ~30-40GB RAM. Always use `--target aarch64` during development (builds for arm64 only, ~8GB RAM).
+Building for all architectures uses ~30-40 GB RAM. Always use `--target aarch64` during development (builds for arm64 only, ~8 GB RAM).
+
+## Troubleshooting
+
+### Symptom: `404 page not found` on Android only
+
+Cause: stale AAR. The Go binary inside the bundled AAR doesn't have the route the frontend is calling.
+
+Fix: `make android-aar && make android-apk`, then re-sign and reinstall. `make android-check-aar` would have caught this before install.
+
+### Symptom: `Chyba úložiště klíčů` / keychain errors
+
+The OS keychain (libsecret/D-Bus) is unavailable on Android, so the keychain falls back to an encrypted file at `<app filesDir>/credentials.enc`. Permission or ENOSPC errors on that path surface as keychain failures.
+
+Inspect the actual error via logcat — the fileStore wraps every error with the offending path:
+
+```bash
+adb logcat -s tidybill:* GoLog:* | grep -i keychain
+```
+
+The Go server also `log.Printf`s the underlying `kc.Set` error in `SetMasterKey`, so the cause appears in logcat without leaking the recovery phrase.
+
+### Symptom: `INSTALL_FAILED_UPDATE_INCOMPATIBLE` on `adb install`
+
+The currently-installed APK was signed with a different key than the one you're trying to install. Either sign the new APK with the same key, or `adb uninstall com.tidybill.desktop` first (wipes app data — user will need to re-import their cloud backup).
 
 ## Mobile Navigation
 
@@ -97,15 +149,15 @@ The app uses separate layout components for desktop and mobile (no shared condit
 - The "More" page shows all nav items not in the bottom bar (Customers, Suppliers, Templates, Items, Settings, theme toggle)
 - Active tab detection: `/invoices/new` highlights "New Invoice", other `/invoices/*` paths highlight "Invoices", all other non-root paths highlight "More"
 
-## Current Limitations (PoC)
+## Current Limitations
 
 - Port is hardcoded to 18080 (should be dynamic with Kotlin→Rust bridge)
-- Mobile UI is basic — bottom tab bar with 4 tabs, no responsive table/form adaptations yet
-- No PDF sharing (desktop uses "open folder", Android needs share intent)
-- No Android file picker adaptation
+- Mobile UI is basic — bottom tab bar with 4 tabs, limited responsive table/form adaptations
 - Default Android icon (no custom app icon)
 - Debug-signed APK only (needs proper keystore for Play Store)
 - Edge-to-edge disabled (see below)
+- Auto-backup uploads run in-process (no `WorkManager` integration); if Android kills the app for memory pressure between writes and the idle window, the upload happens on next launch instead of in the background
+- The keychain falls back to file-encrypted (`credentials.enc`) on Android since libsecret/D-Bus aren't available — credentials are protected by a per-machine derived key, not Android Keystore. Migrating to `EncryptedSharedPreferences` would require a Kotlin-side helper
 
 ## Possible Improvements
 

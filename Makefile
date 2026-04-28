@@ -20,7 +20,7 @@ else
   TRIPLE := x86_64-pc-windows-msvc
 endif
 
-.PHONY: build run clean build-linux build-windows build-all desktop desktop-sidecar desktop-dev desktop-fetch-rclone desktop-fetch-rclone-linux desktop-fetch-rclone-windows desktop-fetch-rclone-osx seed check
+.PHONY: build run clean build-linux build-windows build-all desktop desktop-sidecar desktop-dev desktop-fetch-rclone desktop-fetch-rclone-linux desktop-fetch-rclone-windows desktop-fetch-rclone-osx seed check android-aar android-apk android-build android-check-aar
 
 # === CLI targets (unchanged) ===
 build:
@@ -103,3 +103,63 @@ check:
 L ?= cs
 seed:
 	go run ./cmd/seed --lang $(L)
+
+# === Android (gomobile + Tauri) ===
+# Critical: when Go code under internal/ or pkg/mobile/ changes, the AAR
+# MUST be rebuilt before the APK, or the APK ships a stale Go binary
+# missing the new routes/handlers. android-build chains both correctly.
+ANDROID_NDK_HOME ?= $(HOME)/Android/Sdk/ndk/27.1.12297006
+ANDROID_AAR := desktop/src-tauri/gen/android/app/libs/tidybill.aar
+
+# Rebuild the Go AAR if any tracked Go source under internal/ or pkg/mobile/
+# is newer. The dep list is exhaustive on purpose — gomobile bind is slow
+# (~30-60s) and we don't want spurious rebuilds, but we DO want a stale Go
+# source under internal/ to trigger one.
+ANDROID_GO_SOURCES := $(shell find internal pkg/mobile -name '*.go' 2>/dev/null) go.mod go.sum
+
+$(ANDROID_AAR): $(ANDROID_GO_SOURCES)
+	@if [ ! -d "$(ANDROID_NDK_HOME)" ]; then \
+		echo "ERROR: ANDROID_NDK_HOME=$(ANDROID_NDK_HOME) does not exist."; \
+		echo "Set ANDROID_NDK_HOME to the path of your installed NDK or install the NDK via Android Studio SDK Manager."; \
+		exit 1; \
+	fi
+	@command -v gomobile >/dev/null 2>&1 || { echo "ERROR: gomobile not on PATH. Install: go install golang.org/x/mobile/cmd/gomobile@latest && gomobile init"; exit 1; }
+	ANDROID_NDK_HOME=$(ANDROID_NDK_HOME) gomobile bind -v \
+	  -o $(ANDROID_AAR) \
+	  -target=android/arm64 -androidapi 24 \
+	  ./pkg/mobile
+
+android-aar: $(ANDROID_AAR)
+
+# android-check-aar verifies the on-disk AAR is newer than every Go source
+# under internal/ and pkg/mobile/. Fails loudly with a fix command if
+# anything is newer — catches the "stale AAR shipped to phone" trap.
+android-check-aar:
+	@if [ ! -f $(ANDROID_AAR) ]; then \
+		echo "ERROR: $(ANDROID_AAR) not found. Run: make android-aar"; exit 1; \
+	fi
+	@stale=$$(find internal pkg/mobile go.mod go.sum -newer $(ANDROID_AAR) 2>/dev/null | head -5); \
+	if [ -n "$$stale" ]; then \
+		echo "ERROR: AAR is older than these Go sources:"; \
+		echo "$$stale"; \
+		echo "Fix: make android-aar"; \
+		exit 1; \
+	fi
+	@echo "AAR is up to date."
+
+# android-apk builds the universal APK (release, unsigned). Depends on a
+# fresh AAR — Make handles the rebuild order automatically.
+android-apk: $(ANDROID_AAR)
+	cd desktop && npx tauri android build --apk --target aarch64
+
+# android-build is the convenience target users invoke after editing Go
+# code: rebuilds AAR if needed, then builds the APK. Sign + install steps
+# remain manual (signing key choice depends on dev vs release).
+android-build: android-apk
+	@echo
+	@echo "Built unsigned APK at:"
+	@find desktop/src-tauri/gen/android/app/build/outputs/apk -name 'app-universal-release-unsigned.apk' -print 2>/dev/null
+	@echo
+	@echo "To sign with the local debug key + install:"
+	@echo "  apksigner sign --ks ~/.android/debug.keystore --ks-pass pass:android --key-pass pass:android --ks-key-alias androiddebugkey <apk>"
+	@echo "  adb install -r <apk>"
