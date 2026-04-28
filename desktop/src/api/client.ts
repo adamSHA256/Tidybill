@@ -356,6 +356,18 @@ export const api = {
       request<{ backends: Array<{ id: string; type: string; fields: Array<{ name: string; kind: string; required?: boolean; default?: string; options?: string[]; obscure?: boolean; generated?: boolean; transient?: boolean }> }> }>(
         '/cloud/rclone/backends'
       ),
+
+    autoBackupStatus: () =>
+      request<AutoBackupStatus>('/cloud/autobackup/status'),
+
+    updateAutoBackupSettings: (data: Partial<AutoBackupSettingsUpdate>) =>
+      request<{ ok: boolean }>('/cloud/autobackup/settings', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    triggerBackup: () =>
+      request<{ ok: boolean }>('/cloud/autobackup/trigger', { method: 'POST' }),
   },
 
   masterKey: {
@@ -723,6 +735,20 @@ export interface CloudStatus {
   connected: boolean
   account_label?: string
   detail?: string
+}
+
+export interface AutoBackupStatus {
+  enabled: boolean
+  transport_id: string
+  idle_minutes: number
+  last_run_at: string
+  last_error: string
+}
+
+export interface AutoBackupSettingsUpdate {
+  enabled?: boolean
+  transport_id?: string
+  idle_minutes?: number
 }
 
 export interface CloudTransportInfo {

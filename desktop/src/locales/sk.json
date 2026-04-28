@@ -806,5 +806,17 @@
   "backup.import_master_key_missing": "Táto záloha vyžaduje obnovovaciu frázu. Nastavte ju v Nastaveniach → Obnovovacia fráza.",
   "backup.import_wrong_master_key": "Táto záloha bola šifrovaná inou obnovovacou frázou.",
   "banner.no_master_key": "Šifrované zálohy sú zakázané.",
-  "banner.no_master_key_action": "Nastaviť obnovovaciu frázu"
+  "banner.no_master_key_action": "Nastaviť obnovovaciu frázu",
+  "autobackup.section_title": "Automatická záloha",
+  "autobackup.enabled_label": "Povoliť automatické zálohovanie",
+  "autobackup.transport_label": "Zálohovať do",
+  "autobackup.transport_placeholder": "Vybrať cieľové úložisko",
+  "autobackup.idle_minutes_label": "Zálohovať po nečinnosti",
+  "autobackup.idle_minutes_suffix": " min",
+  "autobackup.status_never": "Dosiaľ nezálohované",
+  "autobackup.status_last": "Posledná záloha",
+  "autobackup.status_failed": "Chyba",
+  "autobackup.trigger_btn": "Zálohovať teraz",
+  "autobackup.trigger_success": "Záloha spustená",
+  "autobackup.no_transport": "Nie je pripojené cloudové úložisko — najprv ho pripojte vyššie"
 }

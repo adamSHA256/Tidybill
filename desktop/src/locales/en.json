@@ -805,5 +805,17 @@
   "backup.import_master_key_missing": "This backup requires a recovery phrase. Set one up in Settings → Recovery Phrase.",
   "backup.import_wrong_master_key": "This backup was encrypted with a different recovery phrase.",
   "banner.no_master_key": "Encrypted backups disabled.",
-  "banner.no_master_key_action": "Set up recovery phrase"
+  "banner.no_master_key_action": "Set up recovery phrase",
+  "autobackup.section_title": "Auto-backup",
+  "autobackup.enabled_label": "Enable auto-backup",
+  "autobackup.transport_label": "Backup to",
+  "autobackup.transport_placeholder": "Select cloud target",
+  "autobackup.idle_minutes_label": "Backup after idle",
+  "autobackup.idle_minutes_suffix": " min",
+  "autobackup.status_never": "Never backed up",
+  "autobackup.status_last": "Last backup",
+  "autobackup.status_failed": "Failed",
+  "autobackup.trigger_btn": "Backup now",
+  "autobackup.trigger_success": "Backup started",
+  "autobackup.no_transport": "No cloud connected — connect one above first"
 }

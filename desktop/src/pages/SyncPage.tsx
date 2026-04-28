@@ -17,6 +17,8 @@ import {
   Loader,
   Center,
   Tooltip,
+  Select,
+  Divider,
 } from '@mantine/core'
 import { DateInput } from '@mantine/dates'
 import { notifications } from '@mantine/notifications'
@@ -28,6 +30,18 @@ import { useT } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
 import { CloudSyncPanel } from '../components/CloudSyncPanel'
 import { ConnectCloudModal } from '../components/ConnectCloudModal'
+
+function formatTimeAgo(isoStr: string): string {
+  if (!isoStr) return ''
+  const past = new Date(isoStr)
+  const diffMs = Date.now() - past.getTime()
+  const diffMin = Math.floor(diffMs / 60_000)
+  if (diffMin < 1) return '< 1 min ago'
+  if (diffMin < 60) return `${diffMin} min ago`
+  const diffH = Math.floor(diffMin / 60)
+  if (diffH < 24) return `${diffH} h ago`
+  return `${Math.floor(diffH / 24)} days ago`
+}
 
 function translateBackendError(msg: string, t: (key: string) => string): string {
   if (msg.includes('wrong passphrase or corrupted')) return t('error.wrong_passphrase')
@@ -81,6 +95,7 @@ export function SyncPage() {
 
   // Cloud sync state
   const [connectOpen, setConnectOpen] = useState(false)
+  const [triggeringBackup, setTriggeringBackup] = useState(false)
   const qc = useQueryClient()
 
   const { data: transports, isLoading: transportsLoading } = useQuery({
@@ -116,6 +131,17 @@ export function SyncPage() {
     refetchInterval: false,
   })
   const masterKeyConfigured = masterKeyStatus?.configured ?? false
+
+  const { data: autoBackupStatus, refetch: refetchAutoBackup } = useQuery({
+    queryKey: ['autobackup-status'],
+    queryFn: api.cloud.autoBackupStatus,
+    refetchInterval: 30_000,
+  })
+
+  const updateAutoBackup = useMutation({
+    mutationFn: api.cloud.updateAutoBackupSettings,
+    onSuccess: () => refetchAutoBackup(),
+  })
 
   // Cloud blob list for Import panel (fetched when a cloud source is selected)
   const { data: cloudBlobList, isLoading: cloudBlobsLoading } = useQuery({
@@ -321,6 +347,20 @@ export function SyncPage() {
       notifications.show({ title: t('common.error'), message: translateBackendError(raw, t), color: 'red' })
     } finally {
       setImporting(false)
+    }
+  }
+
+  const handleTriggerNow = async () => {
+    setTriggeringBackup(true)
+    try {
+      await api.cloud.triggerBackup()
+      notifications.show({ title: t('autobackup.trigger_success'), message: '', color: 'green' })
+      setTimeout(() => refetchAutoBackup(), 2000)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      notifications.show({ title: t('common.error'), message: msg, color: 'red' })
+    } finally {
+      setTriggeringBackup(false)
     }
   }
 
@@ -602,6 +642,62 @@ export function SyncPage() {
               {t('cloud.connect_button')}
             </Button>
           </Group>
+
+          {/* Auto-backup */}
+          <Divider label={t('autobackup.section_title')} labelPosition="left" />
+          <Stack gap="xs">
+            <Switch
+              label={t('autobackup.enabled_label')}
+              checked={autoBackupStatus?.enabled ?? false}
+              onChange={(e) => updateAutoBackup.mutate({ enabled: e.currentTarget.checked })}
+            />
+            {connectedTransports.length === 0 ? (
+              <Text size="xs" c="dimmed">{t('autobackup.no_transport')}</Text>
+            ) : (
+              <Select
+                label={t('autobackup.transport_label')}
+                placeholder={t('autobackup.transport_placeholder')}
+                data={connectedTransports.map((tr) => ({
+                  value: tr.id,
+                  label: getTransportLabel(tr.id, t),
+                }))}
+                value={autoBackupStatus?.transport_id || null}
+                onChange={(val) => val && updateAutoBackup.mutate({ transport_id: val })}
+                disabled={!autoBackupStatus?.enabled}
+              />
+            )}
+            <NumberInput
+              label={t('autobackup.idle_minutes_label')}
+              suffix={t('autobackup.idle_minutes_suffix')}
+              min={1}
+              max={60}
+              value={autoBackupStatus?.idle_minutes ?? 5}
+              onChange={(val) => typeof val === 'number' && val > 0 && updateAutoBackup.mutate({ idle_minutes: val })}
+              disabled={!autoBackupStatus?.enabled}
+              w={180}
+            />
+            <Group gap="sm" align="center">
+              <Text size="xs" c={autoBackupStatus?.last_error ? 'red' : 'dimmed'}>
+                {autoBackupStatus?.last_error
+                  ? `${t('autobackup.status_failed')}: ${autoBackupStatus.last_error}`
+                  : autoBackupStatus?.last_run_at
+                    ? `${t('autobackup.status_last')}: ${formatTimeAgo(autoBackupStatus.last_run_at)}`
+                    : t('autobackup.status_never')}
+              </Text>
+              <Button
+                size="compact-xs"
+                variant="light"
+                leftSection={<IconCloudUpload size={12} />}
+                onClick={handleTriggerNow}
+                loading={triggeringBackup}
+                disabled={!autoBackupStatus?.transport_id}
+              >
+                {t('autobackup.trigger_btn')}
+              </Button>
+            </Group>
+          </Stack>
+
+          <Divider />
           <CloudSyncPanel
             transports={transports ?? []}
             isLoading={transportsLoading}
