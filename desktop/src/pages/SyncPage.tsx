@@ -143,6 +143,33 @@ export function SyncPage() {
     onSuccess: () => refetchAutoBackup(),
   })
 
+  const { data: autoSyncStatus, refetch: refetchAutoSync } = useQuery({
+    queryKey: ['autosync-status'],
+    queryFn: api.cloud.autoSyncStatus,
+    refetchInterval: 30_000,
+  })
+
+  const updateAutoSync = useMutation({
+    mutationFn: api.cloud.updateAutoSyncSettings,
+    onSuccess: () => refetchAutoSync(),
+  })
+
+  const [autoSyncChecking, setAutoSyncChecking] = useState(false)
+  const [autoSyncPulling, setAutoSyncPulling] = useState(false)
+  const [autoSyncSkipping, setAutoSyncSkipping] = useState(false)
+  const [conflictModalOpen, setConflictModalOpen] = useState(false)
+
+  // Open the conflict modal whenever the backend reports a pending prompt.
+  // Don't reopen if the user just closed it for the same blob — only open
+  // for a provider_id we haven't already dismissed in this session.
+  const dismissedPromptRef = useRef<string | null>(null)
+  useEffect(() => {
+    const pending = autoSyncStatus?.pending
+    if (pending && pending.provider_id && dismissedPromptRef.current !== pending.provider_id) {
+      setConflictModalOpen(true)
+    }
+  }, [autoSyncStatus?.pending])
+
   // Cloud blob list for Import panel (fetched when a cloud source is selected)
   const { data: cloudBlobList, isLoading: cloudBlobsLoading, isFetching: cloudBlobsFetching, refetch: refetchCloudBlobs } = useQuery({
     queryKey: ['cloud-list', importSource],
@@ -361,6 +388,106 @@ export function SyncPage() {
       notifications.show({ title: t('common.error'), message: msg, color: 'red' })
     } finally {
       setTriggeringBackup(false)
+    }
+  }
+
+  const handleAutoSyncCheckNow = async () => {
+    setAutoSyncChecking(true)
+    try {
+      const res = await api.cloud.autoSyncCheck()
+      if (res.action === 'error') {
+        notifications.show({ title: t('common.error'), message: res.message ?? '', color: 'red' })
+      } else if (res.action === 'none') {
+        notifications.show({ title: t('autosync.check_up_to_date'), message: '', color: 'green' })
+      } else if (res.action === 'auto_pull') {
+        // Server returns auto_pull but POST /check intentionally does not pull;
+        // it leaves the call to the user. Promote to a regular prompt so the
+        // user can confirm before any local data is replaced.
+        if (res.provider_id) dismissedPromptRef.current = null
+        setConflictModalOpen(true)
+      } else if (res.action === 'prompt') {
+        if (res.provider_id) dismissedPromptRef.current = null
+        setConflictModalOpen(true)
+      } else if (res.action === 'skipped') {
+        notifications.show({ title: t('autosync.check_skipped_title'), message: t('autosync.check_skipped_msg'), color: 'gray' })
+      }
+      refetchAutoSync()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      notifications.show({ title: t('common.error'), message: msg, color: 'red' })
+    } finally {
+      setAutoSyncChecking(false)
+    }
+  }
+
+  const handleConflictPull = async () => {
+    const pending = autoSyncStatus?.pending
+    if (!pending) return
+    setAutoSyncPulling(true)
+    try {
+      await api.cloud.autoSyncPull(pending.provider_id)
+      notifications.show({ title: t('autosync.pull_success'), message: '', color: 'green' })
+      setConflictModalOpen(false)
+      // Refresh everything that depends on local data.
+      qc.invalidateQueries()
+      refetchAutoSync()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      notifications.show({ title: t('common.error'), message: translateBackendError(msg, t), color: 'red' })
+    } finally {
+      setAutoSyncPulling(false)
+    }
+  }
+
+  const handleConflictSaveThenPull = async () => {
+    const pending = autoSyncStatus?.pending
+    if (!pending) return
+    setAutoSyncPulling(true)
+    try {
+      const filename = `tidybill-backup-${new Date().toISOString().split('T')[0]}.tidybill`
+      // Always encrypt with master key when configured — never leave a plaintext
+      // safety backup on disk if the user has a recovery phrase.
+      const useMaster = masterKeyConfigured
+      if (isTauri() && isMobileDevice()) {
+        const result = await api.exportBackupToFile(undefined, undefined, useMaster || undefined)
+        await shareFile(result.path, result.filename)
+      } else {
+        const blob = await api.exportBackup(undefined, undefined, useMaster || undefined)
+        const saved = await triggerDownload(blob, filename)
+        if (!saved) {
+          // User cancelled the save dialog — abort the whole flow rather
+          // than silently overwriting local without the safety backup.
+          notifications.show({ title: t('autosync.save_cancelled'), message: '', color: 'yellow' })
+          return
+        }
+      }
+      await api.cloud.autoSyncPull(pending.provider_id)
+      notifications.show({ title: t('autosync.pull_success'), message: '', color: 'green' })
+      setConflictModalOpen(false)
+      qc.invalidateQueries()
+      refetchAutoSync()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      notifications.show({ title: t('common.error'), message: translateBackendError(msg, t), color: 'red' })
+    } finally {
+      setAutoSyncPulling(false)
+    }
+  }
+
+  const handleConflictSkip = async () => {
+    const pending = autoSyncStatus?.pending
+    if (!pending) return
+    setAutoSyncSkipping(true)
+    try {
+      await api.cloud.autoSyncSkip(pending.provider_id)
+      dismissedPromptRef.current = pending.provider_id
+      setConflictModalOpen(false)
+      refetchAutoSync()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      notifications.show({ title: t('common.error'), message: msg, color: 'red' })
+    } finally {
+      setAutoSyncSkipping(false)
     }
   }
 
@@ -723,6 +850,58 @@ export function SyncPage() {
             </Group>
           </Stack>
 
+          <Divider label={t('autosync.section_title')} labelPosition="left" />
+          <Stack gap="xs">
+            <Group gap="xs" align="center">
+              <Switch
+                label={t('autosync.enabled_label')}
+                checked={autoSyncStatus?.enabled ?? false}
+                onChange={(e) => updateAutoSync.mutate({ enabled: e.currentTarget.checked })}
+              />
+              <Tooltip label={t('autosync.enabled_tooltip')} multiline w={300} withArrow events={{ hover: true, focus: true, touch: true }}>
+                <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+              </Tooltip>
+            </Group>
+            <NumberInput
+              label={t('autosync.interval_minutes_label')}
+              description={t('autosync.interval_minutes_desc')}
+              suffix={t('autosync.interval_minutes_suffix')}
+              min={1}
+              max={1440}
+              value={autoSyncStatus?.interval_minutes ?? 60}
+              onChange={(val) => typeof val === 'number' && val > 0 && updateAutoSync.mutate({ interval_minutes: val })}
+              disabled={!autoSyncStatus?.enabled}
+              w={180}
+            />
+            <Switch
+              label={t('autosync.check_on_start_label')}
+              checked={autoSyncStatus?.check_on_start ?? true}
+              onChange={(e) => updateAutoSync.mutate({ check_on_start: e.currentTarget.checked })}
+              disabled={!autoSyncStatus?.enabled}
+            />
+            <Group gap="sm" align="center">
+              <Text size="xs" c={autoSyncStatus?.last_error ? 'red' : 'dimmed'}>
+                {autoSyncStatus?.last_error
+                  ? `${t('autosync.status_failed')}: ${autoSyncStatus.last_error}`
+                  : autoSyncStatus?.last_pulled_at
+                    ? `${t('autosync.status_last_pulled')}: ${formatTimeAgo(autoSyncStatus.last_pulled_at)}`
+                    : autoSyncStatus?.last_check_at
+                      ? `${t('autosync.status_last_checked')}: ${formatTimeAgo(autoSyncStatus.last_check_at)}`
+                      : t('autosync.status_never')}
+              </Text>
+              <Button
+                size="compact-xs"
+                variant="light"
+                onClick={handleAutoSyncCheckNow}
+                loading={autoSyncChecking}
+                disabled={!autoBackupStatus?.transport_id}
+              >
+                {t('autosync.check_now_btn')}
+              </Button>
+            </Group>
+            <Text size="xs" c="dimmed">{t('autosync.lww_disclaimer')}</Text>
+          </Stack>
+
           <Divider />
           <CloudSyncPanel
             transports={transports ?? []}
@@ -871,6 +1050,61 @@ export function SyncPage() {
           <Loader size="xl" />
         </Center>
       )}
+
+      {/* Auto-sync conflict prompt */}
+      <Modal
+        opened={conflictModalOpen && !!autoSyncStatus?.pending}
+        onClose={() => {
+          if (autoSyncStatus?.pending) dismissedPromptRef.current = autoSyncStatus.pending.provider_id
+          setConflictModalOpen(false)
+        }}
+        title={t('autosync.conflict_title')}
+        size="md"
+        closeOnClickOutside={false}
+      >
+        <Stack gap="md">
+          <Alert icon={<IconAlertCircle size={16} />} color="yellow">
+            <Stack gap={4}>
+              <Text size="sm">
+                {t('autosync.conflict_intro').replace(
+                  '{date}',
+                  autoSyncStatus?.pending?.cloud_modified_at
+                    ? new Date(autoSyncStatus.pending.cloud_modified_at).toLocaleString()
+                    : '',
+                )}
+              </Text>
+              <Text size="xs" c="dimmed">{t('autosync.lww_disclaimer')}</Text>
+            </Stack>
+          </Alert>
+          <Stack gap="xs">
+            <Button
+              variant="filled"
+              onClick={handleConflictSaveThenPull}
+              loading={autoSyncPulling}
+              disabled={autoSyncSkipping}
+            >
+              {t('autosync.action_save_then_pull')}
+            </Button>
+            <Button
+              variant="light"
+              color="red"
+              onClick={handleConflictPull}
+              loading={autoSyncPulling}
+              disabled={autoSyncSkipping}
+            >
+              {t('autosync.action_just_pull')}
+            </Button>
+            <Button
+              variant="default"
+              onClick={handleConflictSkip}
+              loading={autoSyncSkipping}
+              disabled={autoSyncPulling}
+            >
+              {t('autosync.action_skip')}
+            </Button>
+          </Stack>
+        </Stack>
+      </Modal>
     </Container>
   )
 }

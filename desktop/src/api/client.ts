@@ -368,6 +368,30 @@ export const api = {
 
     triggerBackup: () =>
       request<{ ok: boolean }>('/cloud/autobackup/trigger', { method: 'POST' }),
+
+    autoSyncStatus: () =>
+      request<AutoSyncStatus>('/cloud/autosync/status'),
+
+    updateAutoSyncSettings: (data: Partial<AutoSyncSettingsUpdate>) =>
+      request<{ ok: boolean }>('/cloud/autosync/settings', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    autoSyncCheck: () =>
+      request<AutoSyncCheckResult>('/cloud/autosync/check', { method: 'POST' }),
+
+    autoSyncPull: (provider_id: string) =>
+      request<{ ok: boolean }>('/cloud/autosync/pull', {
+        method: 'POST',
+        body: JSON.stringify({ provider_id }),
+      }),
+
+    autoSyncSkip: (provider_id: string) =>
+      request<{ ok: boolean }>('/cloud/autosync/skip', {
+        method: 'POST',
+        body: JSON.stringify({ provider_id }),
+      }),
   },
 
   masterKey: {
@@ -750,6 +774,39 @@ export interface AutoBackupSettingsUpdate {
   enabled?: boolean
   transport_id?: string
   idle_minutes?: number
+}
+
+export interface AutoSyncPending {
+  provider_id: string
+  filename: string
+  cloud_modified_at: string
+}
+
+export interface AutoSyncStatus {
+  enabled: boolean
+  interval_minutes: number
+  check_on_start: boolean
+  last_check_at: string
+  last_pulled_at: string
+  last_error: string
+  last_action?: string
+  pending: AutoSyncPending | null
+}
+
+export interface AutoSyncSettingsUpdate {
+  enabled?: boolean
+  interval_minutes?: number
+  check_on_start?: boolean
+}
+
+export interface AutoSyncCheckResult {
+  action: 'none' | 'auto_pull' | 'prompt' | 'skipped' | 'error'
+  provider_id?: string
+  filename?: string
+  cloud_modified_at?: string
+  local_modified_at?: string
+  last_synced_at?: string
+  message?: string
 }
 
 export interface CloudTransportInfo {
