@@ -23,6 +23,7 @@ import {
   IconInfoCircle,
   IconMail,
   IconDatabaseExport,
+  IconHelp,
 } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
@@ -61,6 +62,20 @@ const toolKeys = [
   { key: 'nav.automatizace', icon: IconMail, path: '/automatizace' },
   { key: 'nav.sync', icon: IconDatabaseExport, path: '/sync' },
 ]
+
+function anchorForNav(path: string): string | undefined {
+  switch (path) {
+    case '/': return 'nav-dashboard'
+    case '/invoices': return 'nav-invoices'
+    case '/customers': return 'nav-customers'
+    case '/suppliers': return 'nav-suppliers'
+    case '/templates': return 'nav-templates'
+    case '/items': return 'nav-items'
+    case '/automatizace': return 'nav-automatizace'
+    case '/sync': return 'nav-sync'
+    default: return undefined
+  }
+}
 
 export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation()
@@ -101,6 +116,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Group>
 
           <Button
+            data-tour="nav-new-invoice"
             fullWidth
             leftSection={<IconPlus size={16} />}
             mb="lg"
@@ -114,6 +130,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {navKeys.map((item) => (
             <NavLink
               key={item.path}
+              data-tour={anchorForNav(item.path)}
               label={getNavLabel(item)}
               leftSection={<item.icon size={18} />}
               active={location.pathname === item.path}
@@ -127,6 +144,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {toolKeys.map((item) => (
             <NavLink
               key={item.path}
+              data-tour={anchorForNav(item.path)}
               label={t(item.key)}
               leftSection={<item.icon size={18} />}
               active={location.pathname === item.path}
@@ -140,10 +158,18 @@ export function AppShell({ children }: { children: ReactNode }) {
         <MantineAppShell.Section>
           <Divider mb="sm" />
           <NavLink
+            data-tour="nav-settings"
             label={t('nav.settings')}
             leftSection={<IconSettings size={18} />}
             active={location.pathname === '/settings'}
             onClick={() => navigate('/settings')}
+          />
+          <NavLink
+            data-tour="nav-help"
+            label={t('tour.help_nav')}
+            leftSection={<IconHelp size={18} />}
+            active={location.pathname === '/help'}
+            onClick={() => navigate('/help')}
           />
           <NavLink
             label={t('about.title')}

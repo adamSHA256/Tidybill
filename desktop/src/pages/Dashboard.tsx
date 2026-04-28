@@ -105,7 +105,7 @@ export function Dashboard() {
         <Text c="dimmed" size="sm">{t('dashboard.subtitle')}</Text>
       </div>
 
-      <SimpleGrid cols={{ base: 1, xs: 2, md: 4 }}>
+      <SimpleGrid data-tour="dashboard-stats" cols={{ base: 1, xs: 2, md: 4 }}>
         {widgets.revenue && (
           <Paper p="md" radius="md" withBorder>
             <Text size="xs" c="dimmed">{t('dashboard.total_revenue')}</Text>
@@ -198,7 +198,7 @@ export function Dashboard() {
             <Paper p="md" radius="md" withBorder>
               <Text fw={500} mb="md">{t('dashboard.quick_actions')}</Text>
               <Stack gap="sm">
-                <Button fullWidth leftSection={<IconPlus size={16} />} onClick={() => navigate('/invoices/new')}>
+                <Button data-tour="dashboard-create-invoice-btn" fullWidth leftSection={<IconPlus size={16} />} onClick={() => navigate('/invoices/new')}>
                   {t('dashboard.create_invoice')}
                 </Button>
                 <Button fullWidth variant="default" onClick={() => navigate('/customers')}>

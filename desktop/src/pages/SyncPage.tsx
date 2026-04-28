@@ -554,7 +554,7 @@ export function SyncPage() {
   const connectedTransports = (transports ?? []).filter((tr) => tr.status.connected)
 
   return (
-    <Container size="sm" py="xl">
+    <Container data-tour="page-sync" size="sm" py="xl">
       <Title order={isMobile ? 3 : 2} mb="lg">{t('backup.title')}</Title>
 
       {!masterKeyConfigured && (

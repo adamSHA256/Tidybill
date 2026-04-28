@@ -171,7 +171,7 @@ export function ItemCatalog() {
   const categoryOptions = (categories || []).map((c) => ({ value: c, label: c }))
 
   return (
-    <Stack gap="lg">
+    <Stack data-tour="page-items" gap="lg">
       <Group justify="space-between" wrap="wrap">
         <div>
           <Title order={isMobile ? 3 : 2}>{t('item.title')}</Title>

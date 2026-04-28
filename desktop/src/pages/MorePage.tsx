@@ -19,6 +19,7 @@ import {
   IconInfoCircle,
   IconMail,
   IconDatabaseExport,
+  IconHelp,
 } from '@tabler/icons-react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
@@ -47,6 +48,8 @@ export function MorePage() {
   const toolItems = [
     { key: 'nav.templates', icon: IconTemplate, path: '/templates' },
     { key: 'nav.items', icon: IconPackage, path: '/items' },
+    { key: 'nav.automatizace', icon: IconMail, path: '/automatizace' },
+    { key: 'nav.sync', icon: IconDatabaseExport, path: '/sync' },
   ]
 
   return (
@@ -81,19 +84,15 @@ export function MorePage() {
       <Divider />
 
       <NavLink
-        label={t('nav.automatizace')}
-        leftSection={<IconMail size={20} />}
-        onClick={() => navigate('/automatizace')}
-      />
-      <NavLink
-        label={t('nav.sync')}
-        leftSection={<IconDatabaseExport size={20} />}
-        onClick={() => navigate('/sync')}
-      />
-      <NavLink
+        data-tour="m-more-settings"
         label={t('nav.settings')}
         leftSection={<IconSettings size={20} />}
         onClick={() => navigate('/settings')}
+      />
+      <NavLink
+        label={t('tour.help_nav')}
+        leftSection={<IconHelp size={20} />}
+        onClick={() => navigate('/help')}
       />
       <NavLink
         label={t('about.title')}

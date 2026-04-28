@@ -1,19 +1,20 @@
 import type { ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Box, UnstyledButton, Text } from '@mantine/core'
+import { Box, UnstyledButton, Text, ActionIcon } from '@mantine/core'
 import {
   IconDashboard,
   IconFileInvoice,
   IconPlus,
   IconDots,
+  IconHelp,
 } from '@tabler/icons-react'
 import { useT } from '../i18n'
 
 const tabs = [
-  { key: 'nav.dashboard', icon: IconDashboard, path: '/' },
-  { key: 'nav.invoices', icon: IconFileInvoice, path: '/invoices' },
-  { key: 'nav.new_invoice', icon: IconPlus, path: '/invoices/new' },
-  { key: 'nav.more', icon: IconDots, path: '/more' },
+  { key: 'nav.dashboard', icon: IconDashboard, path: '/', anchor: 'm-tab-dashboard' },
+  { key: 'nav.invoices', icon: IconFileInvoice, path: '/invoices', anchor: 'm-tab-invoices' },
+  { key: 'nav.new_invoice', icon: IconPlus, path: '/invoices/new', anchor: 'm-tab-new-invoice' },
+  { key: 'nav.more', icon: IconDots, path: '/more', anchor: 'm-tab-more' },
 ]
 
 export function MobileShell({ children }: { children: ReactNode }) {
@@ -30,12 +31,20 @@ export function MobileShell({ children }: { children: ReactNode }) {
   }
 
   const activeTab = getActiveTab()
+  const showHelpIcon = location.pathname === '/'
 
   return (
     <Box style={{
       minHeight: '100vh',
       paddingBottom: 64,
     }}>
+      {showHelpIcon && (
+        <Box style={{ position: 'fixed', top: 12, right: 12, zIndex: 90 }}>
+          <ActionIcon variant="light" size="lg" onClick={() => navigate('/help')} aria-label={t('tour.help_aria')}>
+            <IconHelp size={20} />
+          </ActionIcon>
+        </Box>
+      )}
       <Box p="md">
         {children}
       </Box>
@@ -59,6 +68,7 @@ export function MobileShell({ children }: { children: ReactNode }) {
           return (
             <UnstyledButton
               key={tab.path}
+              data-tour={tab.anchor}
               onClick={() => navigate(tab.path)}
               style={{
                 flex: 1,

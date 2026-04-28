@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### New
+- Add in-app guided tour with three paths (create-invoice, just-show-me, advanced) reachable from a Help button in the sidebar.
+
 ## v0.4.3
 
 ### New
