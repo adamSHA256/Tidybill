@@ -3,7 +3,7 @@
     <img src="desktop/src/assets/tidybill_logo.png" alt="TidyBill" width="280" />
   </a>
   <p><strong>Clean invoices, zero clutter.</strong></p>
-  <p>Local-first invoice manager for freelancers — CLI, Desktop & Android, 3 languages.</p>
+  <p>Local-first invoice manager for freelancers — CLI, Desktop & Android, with optional encrypted cloud sync, in 3 languages.</p>
   <p>
     <a href="https://github.com/adamSHA256/Tidybill/releases/latest">
       <img src="https://img.shields.io/github/v/release/adamSHA256/Tidybill?label=Download&style=for-the-badge&color=4A9E8E" alt="Download" />
@@ -12,6 +12,12 @@
 </div>
 
 ---
+
+## Why TidyBill?
+
+- **Local-first** — your invoices live in a single SQLite file on your device. No server outage can take your data away.
+- **No subscription** — free and open source (AGPL-3.0). Pay nothing, ever.
+- **Multi-device** — desktop, mobile, and CLI sharing the same encrypted data via your own cloud storage.
 
 ## Desktop App
 
@@ -151,21 +157,31 @@
 
 ## Features
 
-- **Full CLI + Desktop GUI** — terminal for power users, Tauri-based desktop app for everyone else
+- **Full CLI + Desktop GUI + Android** — terminal for power users, Tauri-based desktop app for everyone else, native-feel mobile app
 - **PDF generation** — professional invoices with QR payment codes (SPAYD, EPC/GiroCode, Pay by Square)
 - **Send invoices by email** — SMTP integration with customizable templates per customer, placeholder variables, and send-copy option
+- **Encrypted cloud sync** — sync your data to your own Google Drive, OneDrive, Dropbox, S3, SFTP, WebDAV, etc. via rclone, end-to-end encrypted with your master key
+- **Auto-backup** — scheduled backups to your cloud with grandfather-father-son retention (daily / weekly / monthly pruning)
+- **Auto-sync** — pull most recent backup on startup with conflict resolution prompt when local and cloud diverge
+- **Master key & recovery phrase** — a single 12-word BIP-39 mnemonic protects all your encrypted data and works across every device
+- **Encrypted backup files** — export/import your full database as a single `.tidybill` file (XChaCha20-Poly1305 + Argon2id) with 4 import modes (smart merge, replace, force, preview)
 - **Multi-language** — Czech, Slovak, and English (UI + PDF output)
 - **Items catalog** — reusable items with smart suggestions and customer price history
 - **Multi-supplier** — manage multiple companies from one installation
 - **Multi-currency** — CZK, EUR, GBP and others with per-supplier bank accounts
 - **Status tracking** — draft, sent, paid, overdue, cancelled with unpaid overview
 - **Smart numbering** — automatic invoice numbers with configurable prefix
-- **Multiple PDF templates** — classic, modern, minimal with live preview
+- **Multiple PDF templates** — classic, modern, minimal, table with live preview
 - **Duplicate invoice** — quick-copy or edit-before-save
-- **Encrypted backup & restore** — export/import your full database as a `.tidybill` file with optional encryption (XChaCha20-Poly1305 + Argon2id), BIP-39 recovery mnemonics, and 4 import modes (smart merge, replace, force, preview)
+- **Guided tour** — interactive walkthrough on first run, with separate flows for desktop and mobile
+- **In-app Help** — accordion-style help hub answering common questions, accessible from any page
 - **Update notifications** — opt-in automatic check for new versions, privacy-friendly (never connects without your permission)
 - **SQLite database** — single-file storage, fast and portable
 - **Cross-platform** — Linux, Windows, macOS, and Android
+
+## Privacy
+
+Your invoice data stays on your device by default. Optional cloud sync uses **your own** cloud account (Google Drive, OneDrive, Dropbox, S3, SFTP, etc.) and is encrypted client-side with a 12-word recovery phrase that only you control — TidyBill servers never see your files or your encryption key. No telemetry, no analytics, no account required.
 
 ## Tech Stack
 
@@ -174,9 +190,11 @@
 | Backend | Go |
 | Database | SQLite (pure Go, `modernc.org/sqlite`) |
 | PDF | Maroto v2 (pure Go, built-in QR codes) |
+| Cloud sync | rclone (sidecar binary, RC HTTP protocol) |
+| Mobile | Tauri 2 mobile + gomobile (Go shipped as AAR) |
 | Desktop | Tauri 2 (Rust shell + webview) |
-| Frontend | React 19, TypeScript, Mantine 8 |
-| Distribution | CLI: single binary / Desktop: deb, rpm (AppImage: local build only) |
+| Frontend | React 19, TypeScript, Mantine 8, driver.js (guided tour) |
+| Distribution | CLI: single binary / Desktop: `.deb`, `.rpm`, `.exe`, `.dmg`, `.app.tar.gz` / Android: `.apk` |
 
 ## Quick Start
 
@@ -199,6 +217,10 @@ Requires: Go, Node.js, pnpm, Rust toolchain, Tauri 2 CLI.
 
 **AppImage**: Not included in releases due to GPU compatibility issues across distributions. Build locally with `make desktop` — the AppImage will be in `desktop/src-tauri/target/release/bundle/appimage/`.
 
+### Android
+
+Download the APK from the [latest release](https://github.com/adamSHA256/Tidybill/releases/latest), enable "Install from unknown sources" in your phone settings, and open the downloaded file. The release pipeline builds a signed universal APK (arm64) on every tag.
+
 ### Data location
 
 | OS | Path |
@@ -206,23 +228,32 @@ Requires: Go, Node.js, pnpm, Rust toolchain, Tauri 2 CLI.
 | Linux | `~/.config/tidybill/` |
 | Windows | `%APPDATA%\TidyBill\` |
 | macOS | `~/Library/Application Support/TidyBill/` |
+| Android | `/data/data/com.tidybill.desktop/files/` |
 
-## Roadmap
+## What's next
 
-- [x] CLI core (suppliers, customers, invoices, database)
-- [x] PDF generation with Maroto + QR codes
-- [x] Full CLI features (items catalog, duplicate, edit draft, filters, bank accounts)
-- [x] Internationalization (CS/SK/EN)
-- [x] Desktop app (Tauri 2 + React GUI with Go sidecar)
-- [x] PDF templates (classic, modern, minimal) + Linux packages
-- [x] Android app (Tauri 2 mobile + Go via gomobile)
-- [x] Send invoices by email (SMTP, templates, automation)
-- [x] Update notifications (opt-in, privacy-friendly)
-- [x] Encrypted export/import for device sync
+- **Android cloud sync** — desktop currently ships with full rclone-based cloud sync; the Android port is in progress for the next minor release. Mobile users get every other feature today.
+
+## Recent highlights
+
+See [CHANGELOG.md](CHANGELOG.md) for full details.
+
+- **Cloud sync (desktop)** — rclone-backed sync to Google Drive / OneDrive / Dropbox / S3 / SFTP / WebDAV with master-key encryption, auto-backup, auto-sync, and conflict resolution
+- **Master key** — 12-word BIP-39 recovery phrase replacing per-backup passphrases
+- **Guided tour & Help hub** — first-run walkthrough plus an accordion help system on every page
+- **v0.4.3** — leave-confirmation on unsaved invoices, customer edit modal, dynamic validation messages, NSIS installer no longer wipes data on upgrade
+- **v0.4.0** — encrypted backup/restore (`.tidybill` file format), Sync page, Android share sheet integration
+
+## Contributing
+
+Issues and PRs welcome. See [CHANGELOG.md](CHANGELOG.md) for recent work and the open issues for what's currently being discussed.
 
 ## Acknowledgements
 
 - [Maroto v2](https://github.com/johnfercher/maroto) — PDF generation library for Go
+- [rclone](https://github.com/rclone/rclone) — cloud sync to ~50 backends
+- [Tauri](https://github.com/tauri-apps/tauri) — Rust-based cross-platform shell
+- [driver.js](https://github.com/kamranahmedse/driver.js) — guided product tour
 
 ## License
 
