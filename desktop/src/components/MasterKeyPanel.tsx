@@ -49,8 +49,13 @@ export function MasterKeyPanel() {
       const res = await api.masterKey.generate()
       setGeneratedPhrase(res.phrase)
       qc.invalidateQueries({ queryKey: ['master-key-status'] })
-    } catch {
-      notifications.show({ color: 'red', message: t('master_key.error_keychain') })
+    } catch (e: unknown) {
+      const detail = e instanceof Error ? e.message : String(e)
+      notifications.show({
+        color: 'red',
+        title: t('master_key.error_keychain'),
+        message: detail,
+      })
     } finally {
       setGenerating(false)
     }
@@ -89,8 +94,13 @@ export function MasterKeyPanel() {
           return c - 1
         })
       }, 1000)
-    } catch {
-      notifications.show({ color: 'red', message: t('master_key.error_keychain') })
+    } catch (e: unknown) {
+      const detail = e instanceof Error ? e.message : String(e)
+      notifications.show({
+        color: 'red',
+        title: t('master_key.error_keychain'),
+        message: detail,
+      })
     } finally {
       setRevealing(false)
     }
@@ -144,7 +154,11 @@ export function MasterKeyPanel() {
       if (msg.includes('invalid BIP-39')) {
         notifications.show({ color: 'red', message: t('master_key.error_invalid_phrase') })
       } else {
-        notifications.show({ color: 'red', message: t('master_key.error_keychain') })
+        notifications.show({
+          color: 'red',
+          title: t('master_key.error_keychain'),
+          message: msg,
+        })
       }
     } finally {
       setImporting(false)
@@ -159,8 +173,13 @@ export function MasterKeyPanel() {
       qc.invalidateQueries({ queryKey: ['master-key-status'] })
       setDeleteModalOpen(false)
     },
-    onError: () => {
-      notifications.show({ color: 'red', message: t('master_key.error_keychain') })
+    onError: (e: unknown) => {
+      const detail = e instanceof Error ? e.message : String(e)
+      notifications.show({
+        color: 'red',
+        title: t('master_key.error_keychain'),
+        message: detail,
+      })
     },
   })
 

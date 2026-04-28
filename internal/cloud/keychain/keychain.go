@@ -128,11 +128,21 @@ func newFileStore(dataDir string) (*fileStore, error) {
 		return nil, fmt.Errorf("keychain: empty dataDir for file fallback")
 	}
 	if err := os.MkdirAll(dataDir, 0o700); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("keychain fileStore: mkdir %q: %w", dataDir, err)
 	}
+	// Write probe — fail fast if Android filesDir or any other dataDir
+	// returns EACCES / EROFS / ENOSPC, so the keychain init returns a
+	// useful error instead of every later Set() reporting it. Keeps the
+	// "Chyba úložiště klíčů" branch firing at startup with a precise
+	// reason rather than mid-flow during phrase generation.
+	probePath := filepath.Join(dataDir, ".keychain-probe")
+	if err := os.WriteFile(probePath, []byte("ok"), 0o600); err != nil {
+		return nil, fmt.Errorf("keychain fileStore: write probe %q: %w", probePath, err)
+	}
+	_ = os.Remove(probePath)
 	key, err := deriveMachineKey(dataDir)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("keychain fileStore: derive machine key: %w", err)
 	}
 	return &fileStore{
 		path:       filepath.Join(dataDir, "credentials.enc"),
@@ -164,17 +174,20 @@ func (s *fileStore) loadLocked() error {
 func (s *fileStore) saveLocked() error {
 	plain, err := json.Marshal(s.cached)
 	if err != nil {
-		return err
+		return fmt.Errorf("fileStore marshal: %w", err)
 	}
 	enc, err := backup.EncryptExport(plain, string(s.machineKey))
 	if err != nil {
-		return err
+		return fmt.Errorf("fileStore encrypt: %w", err)
 	}
 	tmp := s.path + ".tmp"
 	if err := os.WriteFile(tmp, enc, 0o600); err != nil {
-		return err
+		return fmt.Errorf("fileStore write %q: %w", tmp, err)
 	}
-	return os.Rename(tmp, s.path)
+	if err := os.Rename(tmp, s.path); err != nil {
+		return fmt.Errorf("fileStore rename %q -> %q: %w", tmp, s.path, err)
+	}
+	return nil
 }
 
 func (s *fileStore) Get(account string) (string, error) {
