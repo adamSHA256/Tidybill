@@ -23,7 +23,7 @@ import { IconFolderOpen, IconDownload, IconRefresh, IconCheck } from '@tabler/ic
 import { notifications } from '@mantine/notifications'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { api, openInBrowser, isMobileDevice, type Unit, type PDFTemplate, type VATRate, type CurrencyItem, type PaymentType, type DueDaysOption } from '../api/client'
 import { applyZoom } from '../utils/zoom'
 import { useT } from '../i18n'
@@ -70,7 +70,14 @@ export function Settings() {
   const isMobile = useIsMobile()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const location = useLocation()
   const { t, setLang } = useT()
+
+  useEffect(() => {
+    if (location.hash === '#master-key') {
+      document.getElementById('master-key')?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [location.hash])
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ['settings'],
@@ -886,7 +893,7 @@ export function Settings() {
         )}
 
         {/* Recovery phrase (master key) */}
-        <Paper p="md" radius="md" withBorder>
+        <Paper id="master-key" p="md" radius="md" withBorder>
           <MasterKeyPanel />
         </Paper>
 

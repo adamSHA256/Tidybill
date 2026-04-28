@@ -21,8 +21,9 @@ import {
 } from '@mantine/core'
 import { DateInput } from '@mantine/dates'
 import { notifications } from '@mantine/notifications'
-import { IconDownload, IconUpload, IconAlertCircle, IconInfoCircle, IconCloudUpload } from '@tabler/icons-react'
+import { IconDownload, IconUpload, IconAlertCircle, IconInfoCircle, IconCloudUpload, IconShieldLock } from '@tabler/icons-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { api, isTauri, isMobileDevice, shareFile, type ExportFilters, type ImportReport, type CloudTransportInfo, type CloudBlobRef } from '../api/client'
 import { useT } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
@@ -49,6 +50,7 @@ function getTransportLabel(id: string, t: (key: string) => string): string {
 export function SyncPage() {
   const { t } = useT()
   const isMobile = useIsMobile()
+  const navigate = useNavigate()
 
   // Export state
   const [exporting, setExporting] = useState(false)
@@ -70,8 +72,6 @@ export function SyncPage() {
   const [previewReport, setPreviewReport] = useState<ImportReport | null>(null)
   const [importResult, setImportResult] = useState<ImportReport | null>(null)
   const [resultModalOpen, setResultModalOpen] = useState(false)
-  const [importPassphrase, setImportPassphrase] = useState('')
-  const [fileEncrypted, setFileEncrypted] = useState(false)
   const selectedFileRef = useRef<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -253,58 +253,10 @@ export function SyncPage() {
     if (!file) return
     e.target.value = ''
 
-    const header = await file.slice(0, 7).arrayBuffer()
-    const bytes = new Uint8Array(header)
-    const magic5 = new TextDecoder().decode(bytes.slice(0, 5))
-    const isEncrypted = magic5 === 'TBILL'
-    // v2 mode 1: byte[5]=0x02 (v2 magic), byte[6]=0x01 (master-key mode)
-    const isMasterEncrypted = isEncrypted && bytes[5] === 0x02 && bytes[6] === 0x01
-
     selectedFileRef.current = file
-
-    if (isMasterEncrypted) {
-      // Backend auto-uses master key — proceed directly to preview
-      setFileEncrypted(false)
-      setPreviewLoading(true)
-      try {
-        const report = await api.previewImport(file, undefined, importMode)
-        setPreviewReport(report)
-        setIsCloudImportFlow(false)
-        setPreviewModalOpen(true)
-      } catch (err: unknown) {
-        const raw = err instanceof Error ? err.message : String(err)
-        notifications.show({ title: t('common.error'), message: translateBackendError(raw, t), color: 'red' })
-      } finally {
-        setPreviewLoading(false)
-      }
-      return
-    }
-
-    setFileEncrypted(isEncrypted)
-    if (isEncrypted) {
-      setImportPassphrase('')
-      return
-    }
-
     setPreviewLoading(true)
     try {
       const report = await api.previewImport(file, undefined, importMode)
-      setPreviewReport(report)
-      setIsCloudImportFlow(false)
-      setPreviewModalOpen(true)
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      notifications.show({ title: t('common.error'), message, color: 'red' })
-    } finally {
-      setPreviewLoading(false)
-    }
-  }
-
-  const handlePreviewEncrypted = async () => {
-    if (!selectedFileRef.current) return
-    setPreviewLoading(true)
-    try {
-      const report = await api.previewImport(selectedFileRef.current, importPassphrase, importMode)
       setPreviewReport(report)
       setIsCloudImportFlow(false)
       setPreviewModalOpen(true)
@@ -353,8 +305,7 @@ export function SyncPage() {
         notifications.show({ title: t('backup.import_success'), message: '', color: 'green' })
       } else {
         if (!selectedFileRef.current) return
-        const passphrase = fileEncrypted ? importPassphrase : undefined
-        const result = await api.importBackup(selectedFileRef.current, importMode, passphrase)
+        const result = await api.importBackup(selectedFileRef.current, importMode, undefined)
         setImportResult(result)
         setResultModalOpen(true)
         notifications.show({ title: t('backup.import_success'), message: '', color: 'green' })
@@ -430,6 +381,22 @@ export function SyncPage() {
     <Container size="sm" py="xl">
       <Title order={isMobile ? 3 : 2} mb="lg">{t('backup.title')}</Title>
 
+      {!masterKeyConfigured && (
+        <Alert icon={<IconShieldLock size={16} />} color="yellow" mb="md">
+          <Group gap="xs" wrap="nowrap">
+            <span>{t('banner.no_master_key')}</span>
+            <Button
+              size="compact-xs"
+              variant="subtle"
+              color="yellow"
+              onClick={() => navigate('/settings#master-key')}
+            >
+              {t('banner.no_master_key_action')}
+            </Button>
+          </Group>
+        </Alert>
+      )}
+
       {/* Export section */}
       <Paper p="md" radius="md" withBorder>
         <Stack gap="md">
@@ -503,7 +470,6 @@ export function SyncPage() {
               setImportSource(val)
               setSelectedCloudBlob(null)
               setCloudImportPassphrase('')
-              setFileEncrypted(false)
               selectedFileRef.current = null
             }}
           >
@@ -545,21 +511,6 @@ export function SyncPage() {
               >
                 {t('backup.import_select')}
               </Button>
-              {fileEncrypted && selectedFileRef.current && (
-                <Stack gap="xs">
-                  <Alert icon={<IconAlertCircle size={16} />} color="blue">
-                    {t('backup.file_encrypted')}
-                  </Alert>
-                  <PasswordInput
-                    label={t('backup.import_passphrase')}
-                    value={importPassphrase}
-                    onChange={(e) => setImportPassphrase(e.currentTarget.value)}
-                  />
-                  <Button onClick={handlePreviewEncrypted} disabled={!importPassphrase} loading={previewLoading}>
-                    {t('backup.import_decrypt_preview')}
-                  </Button>
-                </Stack>
-              )}
             </>
           )}
 
