@@ -1,9 +1,40 @@
 # Changelog
 
-## Unreleased
+## v0.5.0
 
 ### New
-- Add in-app guided tour with three paths (create-invoice, just-show-me, advanced) reachable from a Help button in the sidebar.
+- **Cloud Sync** — sync your data to your own Google Drive, OneDrive, Dropbox, S3, SFTP, WebDAV, or Proton Drive via rclone, end-to-end encrypted with your master key. Configure once in Settings, then upload/restore from the unified Cloud panel.
+- **Auto-backup** — scheduled backups to your cloud with grandfather-father-son retention (keeps every backup from the last week, then daily for a month, weekly for half a year, monthly forever). Pruning runs after each successful backup; the most recent backup is always kept.
+- **Auto-sync** — on startup, TidyBill checks your cloud for a more recent backup and prompts before applying when local and cloud diverge.
+- **Master key & 12-word recovery phrase** — a single BIP-39 mnemonic protects all your encrypted data and works across every device. Replaces per-backup passphrases for both export/import and cloud sync.
+- **Guided tour** — interactive walkthrough on first run with three paths (create-invoice, just-show-me, advanced), reachable from a Help button in the sidebar. Separate flows for desktop and mobile.
+- **In-app Help hub** — accordion-style help page with section guides and an FAQ (e.g., "QR code isn't showing on my invoice"), accessible from any page.
+- **Welcome dialog** — first-run picker for which guided flow to start with; the "don't show again" checkbox is unchecked by default.
+- **Default backup directory** — configurable in Settings.
+- Plain-language intros and tooltips on Cloud Sync, auto-backup, and auto-sync sections for non-technical users.
+- rclone form i18n — labels, help text, and button strings translated across all cloud backends.
+- Refresh button on cloud file list in the Import panel.
+
+### Fixed
+- rclone `operations/stat` unmarshal: Size and ModTime came back as zero values silently because the response is wrapped in `{"item": {…}}`. Upload now returns the correct metadata.
+- Cancel in-flight cloud upload on shutdown; expose in-progress state to the UI.
+- Recovery phrase copy/cancel/change-phrase warning flows now match what actually happens.
+- Cloud import passphrase: dropped the field where unused, kept where needed (gated on `blob.encrypted`), with actionable error alerts instead of confusing dialogs.
+- Proton Drive anti-abuse system: identify as TidyBill (not rclone) in `app_version` so uploads aren't blocked; rate-limit error (Code 2028) maps to an actionable message.
+- HTTP timeout for rcd: dropped short `ResponseHeaderTimeout`, raised total to 10 minutes — legitimate operations like large copyfile genuinely take that long.
+- copyfile with local files now uses split `srcFs`/`srcRemote` so absolute paths don't get joined to rcd's CWD.
+- ISO-8601 second-precision timestamp in upload filenames (no more colon characters that some backends reject).
+- Cloud transports cached in localStorage + "Connecting" badge + translated status strings.
+- Cloud upload modal locks while upload is in flight.
+- Mobile help icon restricted to dashboard; More-page tools grouped for clarity.
+- Tour no longer marks a flow completed when user closes the last step with X.
+- Keychain: phrase normalization (case + whitespace), backend errors surfaced, fail-fast on missing dataDir.
+
+### Build
+- CI: per-platform rclone sidecar fetch + GDrive OAuth credential injection in release pipeline; docs for required GitHub Actions secrets.
+- Makefile: auto-fetch rclone sidecar binary if missing; rclone binaries are gitignored.
+- Android: Make targets + dependency tracking + docs for AAR rebuilds via gomobile.
+- Stopped tracking auto-generated `gen/android/app/src/main/assets/tauri.conf.json` and `tauri.properties` — CI regenerates them.
 
 ## v0.4.3
 
