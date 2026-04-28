@@ -828,8 +828,11 @@ func (s *Server) reregisterRcloneRemotes(ctx context.Context) {
 	}
 }
 
-// ShutdownCloud stops the rclone manager if running.
+// ShutdownCloud stops the rclone manager and auto-backup goroutine.
 func (s *Server) ShutdownCloud() {
+	if s.autoBackup != nil {
+		close(s.autoBackup.stop)
+	}
 	if s.rcloneMgr != nil {
 		_ = s.rcloneMgr.Stop()
 	}
