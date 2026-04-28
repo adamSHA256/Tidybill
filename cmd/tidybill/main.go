@@ -50,6 +50,11 @@ func initDB() (*config.Config, *database.DB, *repository.SettingsRepository) {
 	settings.SetDefault("email.default_subject", "Faktura ((number))")
 	settings.SetDefault("email.default_body", "Dobrý den,\n\nv příloze zasílám fakturu č. ((number)) na částku ((total)).\nSplatnost: ((due_date)).\n\nS pozdravem\n((supplier))")
 	settings.SetDefault("email.copy_subject", "TidyBill - ((subject))")
+	settings.SetDefault("cloud.default_transport", "")
+	settings.SetDefault("cloud.default_encrypted", "1")
+	settings.SetDefault("cloud.passphrase_cache",  "session")
+	settings.SetDefault("cloud.gdrive.folder_id",  "")
+	settings.SetDefault("cloud.rclone.auto_start", "1")
 
 	return cfg, db, settings
 }
@@ -284,6 +289,7 @@ func main() {
 		go func() {
 			<-sigCh
 			log.Println("[tidybill] shutting down...")
+			srv.ShutdownCloud()
 			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 			httpServer.Shutdown(shutdownCtx)

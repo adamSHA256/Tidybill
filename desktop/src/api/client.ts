@@ -251,20 +251,20 @@ export const api = {
   // Backup
   generateMnemonic: () => request<{mnemonic: string}>('/backup/generate-mnemonic'),
 
-  exportBackup: async (filters?: ExportFilters, passphrase?: string): Promise<Blob> => {
+  exportBackup: async (filters?: ExportFilters, passphrase?: string, encryptMaster?: boolean): Promise<Blob> => {
     const response = await fetch(`${getApiBase()}/backup/export`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...filters, passphrase }),
+      body: JSON.stringify({ ...filters, passphrase, encrypt_master: encryptMaster }),
     })
     if (!response.ok) throw new Error(await response.text())
     return response.blob()
   },
 
-  exportBackupToFile: async (filters?: ExportFilters, passphrase?: string): Promise<{path: string, filename: string}> => {
+  exportBackupToFile: async (filters?: ExportFilters, passphrase?: string, encryptMaster?: boolean): Promise<{path: string, filename: string}> => {
     return request<{path: string, filename: string}>('/backup/export-file', {
       method: 'POST',
-      body: JSON.stringify({ ...filters, passphrase }),
+      body: JSON.stringify({ ...filters, passphrase, encrypt_master: encryptMaster }),
     })
   },
 
@@ -292,6 +292,129 @@ export const api = {
     })
     if (!response.ok) throw new Error(await response.text())
     return response.json()
+  },
+
+  cloud: {
+    transports: () =>
+      request<{ transports: CloudTransportInfo[] }>('/cloud/transports'),
+
+    gdriveConnect: () =>
+      request<{ auth_url: string; state: string }>('/cloud/gdrive/connect', { method: 'POST' }),
+
+    gdriveDisconnect: () =>
+      request<{ ok: true }>('/cloud/gdrive/disconnect', { method: 'POST' }),
+
+    rcloneConnect: (backend: string, body: RcloneConnectBody) =>
+      request<{ ok: true; account_label: string }>(
+        `/cloud/rclone/${encodeURIComponent(backend)}/connect`,
+        { method: 'POST', body: JSON.stringify(body) }
+      ),
+
+    rcloneDisconnect: (backend: string) =>
+      request<{ ok: true }>(
+        `/cloud/rclone/${encodeURIComponent(backend)}/disconnect`,
+        { method: 'POST' }
+      ),
+
+    upload: (transport_id: string, passphrase?: string, filters?: ExportFilters) =>
+      request<{ ok: true; blob_ref: CloudBlobRef }>('/cloud/upload', {
+        method: 'POST',
+        body: JSON.stringify({ transport_id, passphrase, filters }),
+      }),
+
+    list: (transport_id: string) =>
+      request<{ blobs: CloudBlobRef[] }>(
+        `/cloud/${encodeURIComponent(transport_id)}/list`
+      ),
+
+    downloadPreview: (transport_id: string, provider_id: string, passphrase?: string, preview_mode?: string) =>
+      request<ImportReport>(
+        `/cloud/${encodeURIComponent(transport_id)}/download-preview`,
+        {
+          method: 'POST',
+          // Wire-field name MUST be `preview_mode` — the Go handler reads
+          // that exact JSON tag (see Phase 8.3 handleCloudDownloadPreview).
+          // Do NOT rename this to `mode`; that is the wire name for
+          // download-apply only.
+          body: JSON.stringify({ provider_id, passphrase, preview_mode }),
+        }
+      ),
+
+    downloadApply: (transport_id: string, provider_id: string, passphrase: string | undefined, mode: string) =>
+      request<ImportReport>(
+        `/cloud/${encodeURIComponent(transport_id)}/download-apply`,
+        { method: 'POST', body: JSON.stringify({ provider_id, passphrase, mode }) }
+      ),
+
+    deleteBlob: (transport_id: string, provider_id: string) =>
+      request<{ ok: true }>(
+        `/cloud/${encodeURIComponent(transport_id)}/blob?provider_id=${encodeURIComponent(provider_id)}`,
+        { method: 'DELETE' }
+      ),
+
+    rcloneBackends: () =>
+      request<{ backends: Array<{ id: string; type: string; fields: Array<{ name: string; kind: string; required?: boolean; default?: string; options?: string[]; obscure?: boolean; generated?: boolean; transient?: boolean }> }> }>(
+        '/cloud/rclone/backends'
+      ),
+
+    autoBackupStatus: () =>
+      request<AutoBackupStatus>('/cloud/autobackup/status'),
+
+    updateAutoBackupSettings: (data: Partial<AutoBackupSettingsUpdate>) =>
+      request<{ ok: boolean }>('/cloud/autobackup/settings', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    triggerBackup: () =>
+      request<{ ok: boolean }>('/cloud/autobackup/trigger', { method: 'POST' }),
+
+    autoSyncStatus: () =>
+      request<AutoSyncStatus>('/cloud/autosync/status'),
+
+    updateAutoSyncSettings: (data: Partial<AutoSyncSettingsUpdate>) =>
+      request<{ ok: boolean }>('/cloud/autosync/settings', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    autoSyncCheck: () =>
+      request<AutoSyncCheckResult>('/cloud/autosync/check', { method: 'POST' }),
+
+    autoSyncPull: (provider_id: string) =>
+      request<{ ok: boolean }>('/cloud/autosync/pull', {
+        method: 'POST',
+        body: JSON.stringify({ provider_id }),
+      }),
+
+    autoSyncSkip: (provider_id: string) =>
+      request<{ ok: boolean }>('/cloud/autosync/skip', {
+        method: 'POST',
+        body: JSON.stringify({ provider_id }),
+      }),
+  },
+
+  masterKey: {
+    status: () =>
+      request<{ configured: boolean }>('/master-key/status'),
+
+    generate: () =>
+      request<{ phrase: string }>('/master-key/generate', { method: 'POST' }),
+
+    import: (phrase: string) =>
+      request<{ ok: boolean }>('/master-key/import', {
+        method: 'POST',
+        body: JSON.stringify({ phrase }),
+      }),
+
+    revealToken: () =>
+      request<{ token: string; expires_at: string }>('/master-key/reveal-token'),
+
+    reveal: (token: string) =>
+      request<{ phrase: string }>(`/master-key/reveal?token=${encodeURIComponent(token)}`),
+
+    delete: () =>
+      request<{ ok: boolean }>('/master-key', { method: 'DELETE' }),
   },
 }
 
@@ -500,6 +623,8 @@ export interface AppSettings {
   default_pdf_dir?: string
   default_logo_dir?: string
   default_preview_dir?: string
+  default_backup_dir?: string
+  dir_backups?: string
   'email.default_subject'?: string
   'email.default_body'?: string
   'email.copy_subject'?: string
@@ -620,6 +745,95 @@ export interface ImportReport {
     description: string
     resolution: string
   }>
+}
+
+export interface CloudBlobRef {
+  id: string
+  filename: string
+  size: number
+  modified_at: string
+  encrypted: boolean
+}
+
+export interface CloudStatus {
+  connected: boolean
+  account_label?: string
+  detail?: string
+}
+
+export interface AutoBackupRetention {
+  enabled: boolean
+  keep_recent_days: number
+  keep_daily_days: number
+  keep_weekly_months: number
+  keep_monthly_months: number
+}
+
+export interface AutoBackupStatus {
+  enabled: boolean
+  transport_id: string
+  idle_minutes: number
+  last_run_at: string
+  last_error: string
+  in_progress: boolean
+  retention?: AutoBackupRetention
+}
+
+export interface AutoBackupRetentionUpdate {
+  enabled?: boolean
+  keep_recent_days?: number
+  keep_daily_days?: number
+  keep_weekly_months?: number
+  keep_monthly_months?: number
+}
+
+export interface AutoBackupSettingsUpdate {
+  enabled?: boolean
+  transport_id?: string
+  idle_minutes?: number
+  retention?: AutoBackupRetentionUpdate
+}
+
+export interface AutoSyncPending {
+  provider_id: string
+  filename: string
+  cloud_modified_at: string
+}
+
+export interface AutoSyncStatus {
+  enabled: boolean
+  interval_minutes: number
+  check_on_start: boolean
+  last_check_at: string
+  last_pulled_at: string
+  last_error: string
+  last_action?: string
+  pending: AutoSyncPending | null
+}
+
+export interface AutoSyncSettingsUpdate {
+  enabled?: boolean
+  interval_minutes?: number
+  check_on_start?: boolean
+}
+
+export interface AutoSyncCheckResult {
+  action: 'none' | 'auto_pull' | 'prompt' | 'skipped' | 'error'
+  provider_id?: string
+  filename?: string
+  cloud_modified_at?: string
+  local_modified_at?: string
+  last_synced_at?: string
+  message?: string
+}
+
+export interface CloudTransportInfo {
+  id: string
+  status: CloudStatus
+}
+
+export interface RcloneConnectBody {
+  [field: string]: string | number | undefined
 }
 
 export interface CreateInvoiceRequest {

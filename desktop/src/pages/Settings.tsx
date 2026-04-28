@@ -23,11 +23,12 @@ import { IconFolderOpen, IconDownload, IconRefresh, IconCheck } from '@tabler/ic
 import { notifications } from '@mantine/notifications'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { api, openInBrowser, isMobileDevice, type Unit, type PDFTemplate, type VATRate, type CurrencyItem, type PaymentType, type DueDaysOption } from '../api/client'
 import { applyZoom } from '../utils/zoom'
 import { useT } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
+import { MasterKeyPanel } from '../components/MasterKeyPanel'
 
 const langOptions = [
   { value: 'cs', label: 'Čeština' },
@@ -69,7 +70,14 @@ export function Settings() {
   const isMobile = useIsMobile()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const location = useLocation()
   const { t, setLang } = useT()
+
+  useEffect(() => {
+    if (location.hash === '#master-key') {
+      document.getElementById('master-key')?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [location.hash])
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ['settings'],
@@ -84,6 +92,7 @@ export function Settings() {
   const [dirLogos, setDirLogos] = useState('')
   const [dirPdfs, setDirPdfs] = useState('')
   const [dirPreviews, setDirPreviews] = useState('')
+  const [dirBackups, setDirBackups] = useState('')
   const [newUnitName, setNewUnitName] = useState('')
   const [checking, setChecking] = useState(false)
   const [enableAutoModalOpen, setEnableAutoModalOpen] = useState(false)
@@ -135,6 +144,7 @@ export function Settings() {
       setDirLogos(settings.dir_logos || settings.default_logo_dir || '')
       setDirPdfs(settings.dir_pdfs || settings.default_pdf_dir || '')
       setDirPreviews(settings.dir_previews || settings.default_preview_dir || '')
+      setDirBackups(settings.dir_backups || settings.default_backup_dir || '')
       setDashWidgets(parseWidgets(settings.dashboard_widgets))
     }
   }, [settings])
@@ -852,12 +862,27 @@ export function Settings() {
                 </ActionIcon>
               </Tooltip>
             </Group>
+            <Group align="end" gap="xs">
+              <TextInput
+                label={t('settings.dir_backups')}
+                placeholder={t('settings.dir_placeholder')}
+                value={dirBackups}
+                onChange={(e) => setDirBackups(e.currentTarget.value)}
+                style={{ flex: 1 }}
+              />
+              <Tooltip label={t('invoice.open_folder')} events={{ hover: true, focus: true, touch: true }}>
+                <ActionIcon variant="light" size="lg" onClick={() => { if (dirBackups) openInBrowser(dirBackups) }}>
+                  <IconFolderOpen size={18} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
             <Button
               w={200}
               onClick={() => updateMutation.mutate({
                 dir_logos: dirLogos,
                 dir_pdfs: dirPdfs,
                 dir_previews: dirPreviews,
+                dir_backups: dirBackups,
               })}
               loading={updateMutation.isPending}
             >
@@ -866,6 +891,11 @@ export function Settings() {
           </Stack>
         </Paper>
         )}
+
+        {/* Recovery phrase (master key) */}
+        <Paper id="master-key" p="md" radius="md" withBorder>
+          <MasterKeyPanel />
+        </Paper>
 
         {/* Update check */}
         <Paper p="md" radius="md" withBorder>

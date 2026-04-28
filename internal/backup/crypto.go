@@ -14,7 +14,16 @@ import (
 )
 
 // File format constants.
-var magicBytes = []byte("TBILL\x01")
+//
+// v1 layout: magic(6) + salt(16) + time(4,LE) + mem(4,LE) + threads(1) + nonce(24) + ciphertext+tag
+// v2 layout: magic(6) + mode(1) + salt(16) + time(4,LE) + mem(4,LE) + threads(1) + nonce(24) + ciphertext+tag
+//
+// v1 magic is "TBILL\x01"; v2 magic is "TBILL\x02".
+// v1 is read-only (legacy). New exports always use v2 mode 1 (master-key).
+var (
+	magicBytesV1 = []byte("TBILL\x01")
+	magicBytesV2 = []byte("TBILL\x02")
+)
 
 const (
 	magicLen   = 6
@@ -23,8 +32,19 @@ const (
 	memoryLen  = 4
 	threadsLen = 1
 	nonceLen   = chacha20poly1305.NonceSizeX // 24
-	headerLen  = magicLen + saltLen + timeLen + memoryLen + threadsLen + nonceLen // 55
-	keyLen     = chacha20poly1305.KeySize // 32
+	// v1 header: no mode byte.
+	headerLen = magicLen + saltLen + timeLen + memoryLen + threadsLen + nonceLen // 55
+	// v2 header: one extra mode byte after magic.
+	headerLenV2 = headerLen + 1 // 56
+	keyLen      = chacha20poly1305.KeySize // 32
+)
+
+// EncryptMode describes how a v2 blob was encrypted.
+type EncryptMode byte
+
+const (
+	EncryptModeLegacy EncryptMode = 0 // Argon2id from user passphrase
+	EncryptModeMaster EncryptMode = 1 // Argon2id from BIP-39 seed bytes
 )
 
 // KDFParams holds Argon2id parameters.
@@ -37,6 +57,11 @@ type KDFParams struct {
 // ErrHighMemory is a sentinel error returned when the file header requests
 // more memory than is considered safe for the current device.
 var ErrHighMemory = errors.New("file requests high memory for decryption")
+
+// ErrWrongDecryptFunc is returned when the caller uses the wrong decrypt
+// function for the file's encryption mode (e.g. calling DecryptExport on a
+// v2 master-key blob, or DecryptExportMaster on a passphrase blob).
+var ErrWrongDecryptFunc = errors.New("wrong decrypt function for this encryption mode")
 
 // HighMemoryError provides details about the memory mismatch.
 type HighMemoryError struct {
@@ -61,51 +86,84 @@ func defaultParams() KDFParams {
 	return KDFParams{Time: 1, Memory: 32 * 1024, Threads: 4}
 }
 
-// IsEncrypted checks if a byte slice starts with the TidyBill encryption magic bytes.
+// IsEncrypted checks if a byte slice starts with a valid TidyBill encryption magic (v1 or v2).
 func IsEncrypted(data []byte) bool {
 	if len(data) < magicLen {
 		return false
 	}
-	return string(data[:magicLen]) == string(magicBytes)
+	return string(data[:magicLen]) == string(magicBytesV1) ||
+		string(data[:magicLen]) == string(magicBytesV2)
+}
+
+// DetectEncryptMode returns the encryption mode of an encrypted blob without
+// decrypting it. Returns an error if the data is not a valid TidyBill file.
+func DetectEncryptMode(data []byte) (EncryptMode, error) {
+	if len(data) < magicLen {
+		return 0, errors.New("not a valid encrypted TidyBill file")
+	}
+	switch string(data[:magicLen]) {
+	case string(magicBytesV1):
+		return EncryptModeLegacy, nil
+	case string(magicBytesV2):
+		if len(data) < magicLen+1 {
+			return 0, errors.New("file is too short or corrupted")
+		}
+		return EncryptMode(data[magicLen]), nil
+	default:
+		return 0, errors.New("not a valid encrypted TidyBill file")
+	}
 }
 
 // EncryptExport encrypts JSON export data with a user-supplied passphrase.
+// Writes v1 format for backwards compatibility with the keychain file-store fallback.
 // Returns the encrypted binary blob in .tidybill format:
 // magic(6) + salt(16) + time(4,LE) + memory(4,LE) + threads(1) + nonce(24) + ciphertext+tag
 func EncryptExport(jsonData []byte, passphrase string) ([]byte, error) {
 	if len(passphrase) < 8 {
 		return nil, fmt.Errorf("passphrase must be at least 8 characters")
 	}
+	return encryptWithKey(jsonData, []byte(passphrase), magicBytesV1, nil)
+}
 
+// EncryptExportMaster encrypts JSON export data using 64 bytes of BIP-39 seed
+// material as the Argon2id input. Writes v2 format with mode byte = 1.
+// seed must be at least 32 bytes (bip39.NewSeed returns 64 bytes).
+func EncryptExportMaster(jsonData []byte, seed []byte) ([]byte, error) {
+	if len(seed) < 32 {
+		return nil, fmt.Errorf("seed must be at least 32 bytes")
+	}
+	modeByte := []byte{byte(EncryptModeMaster)}
+	return encryptWithKey(jsonData, seed, magicBytesV2, modeByte)
+}
+
+// encryptWithKey is the shared encrypt implementation.
+// extraHeader bytes (e.g. mode byte for v2) are inserted between magic and salt.
+func encryptWithKey(jsonData, key, magic, extraHeader []byte) ([]byte, error) {
 	params := defaultParams()
 
-	// Generate random salt.
 	salt := make([]byte, saltLen)
 	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
 		return nil, fmt.Errorf("generate salt: %w", err)
 	}
 
-	// Derive key with Argon2id.
-	key := argon2.IDKey([]byte(passphrase), salt, params.Time, params.Memory, params.Threads, keyLen)
+	derivedKey := argon2.IDKey(key, salt, params.Time, params.Memory, params.Threads, keyLen)
 
-	// Create XChaCha20-Poly1305 AEAD.
-	aead, err := chacha20poly1305.NewX(key)
+	aead, err := chacha20poly1305.NewX(derivedKey)
 	if err != nil {
 		return nil, fmt.Errorf("create cipher: %w", err)
 	}
 
-	// Generate random nonce.
 	nonce := make([]byte, nonceLen)
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return nil, fmt.Errorf("generate nonce: %w", err)
 	}
 
-	// Encrypt (Seal appends ciphertext + 16-byte Poly1305 tag).
 	ciphertext := aead.Seal(nil, nonce, jsonData, nil)
 
-	// Build output: header + ciphertext.
-	out := make([]byte, 0, headerLen+len(ciphertext))
-	out = append(out, magicBytes...)
+	capacity := magicLen + len(extraHeader) + saltLen + timeLen + memoryLen + threadsLen + nonceLen + len(ciphertext)
+	out := make([]byte, 0, capacity)
+	out = append(out, magic...)
+	out = append(out, extraHeader...)
 	out = append(out, salt...)
 	out = binary.LittleEndian.AppendUint32(out, params.Time)
 	out = binary.LittleEndian.AppendUint32(out, params.Memory)
@@ -113,68 +171,108 @@ func EncryptExport(jsonData []byte, passphrase string) ([]byte, error) {
 	out = append(out, nonce...)
 	out = append(out, ciphertext...)
 
-	// Best-effort memory wipe of key.
-	for i := range key {
-		key[i] = 0
+	for i := range derivedKey {
+		derivedKey[i] = 0
 	}
 
 	return out, nil
 }
 
-// DecryptExport decrypts an encrypted .tidybill file using a user-supplied passphrase.
-// Returns the decrypted JSON data.
-// Returns ErrHighMemory (as *HighMemoryError) if the file's memory parameter exceeds
-// a safe threshold for the current device.
+// DecryptExport decrypts a v1 or v2-mode-0 blob using a user-supplied passphrase.
+// Returns ErrWrongDecryptFunc if the blob is v2 mode 1 (master-key); call
+// DecryptExportMaster instead.
 func DecryptExport(encData []byte, passphrase string) ([]byte, error) {
 	if len(passphrase) < 8 {
 		return nil, fmt.Errorf("passphrase must be at least 8 characters")
 	}
 
-	// Validate minimum size: header + at least 1 byte ciphertext + 16-byte tag.
-	if len(encData) < headerLen+chacha20poly1305.Overhead {
+	minLen := headerLen + chacha20poly1305.Overhead
+	if len(encData) < minLen {
 		return nil, errors.New("file is too short or corrupted")
 	}
 
-	// Verify magic bytes.
-	if string(encData[:magicLen]) != string(magicBytes) {
+	switch string(encData[:magicLen]) {
+	case string(magicBytesV1):
+		// v1: no mode byte, passphrase-derived key.
+		return decryptPayload(encData[magicLen:], []byte(passphrase))
+
+	case string(magicBytesV2):
+		if len(encData) < headerLenV2+chacha20poly1305.Overhead {
+			return nil, errors.New("file is too short or corrupted")
+		}
+		mode := EncryptMode(encData[magicLen])
+		if mode == EncryptModeMaster {
+			return nil, ErrWrongDecryptFunc
+		}
+		// v2 mode 0: mode byte present, passphrase-derived key.
+		return decryptPayload(encData[magicLen+1:], []byte(passphrase))
+
+	default:
 		return nil, errors.New("not a valid encrypted TidyBill file")
 	}
+}
 
-	// Parse header.
-	offset := magicLen
-	salt := encData[offset : offset+saltLen]
+// DecryptExportMaster decrypts a v2-mode-1 blob using BIP-39 seed bytes.
+// Returns ErrWrongDecryptFunc if the blob is v1 or v2 mode 0.
+func DecryptExportMaster(encData []byte, seed []byte) ([]byte, error) {
+	if len(seed) < 32 {
+		return nil, fmt.Errorf("seed must be at least 32 bytes")
+	}
+
+	if len(encData) < headerLenV2+chacha20poly1305.Overhead {
+		return nil, errors.New("file is too short or corrupted")
+	}
+
+	if string(encData[:magicLen]) != string(magicBytesV2) {
+		return nil, ErrWrongDecryptFunc
+	}
+	mode := EncryptMode(encData[magicLen])
+	if mode != EncryptModeMaster {
+		return nil, ErrWrongDecryptFunc
+	}
+
+	return decryptPayload(encData[magicLen+1:], seed)
+}
+
+// decryptPayload parses salt+kdfparams+nonce+ciphertext and decrypts.
+// payload starts right after the magic (and mode byte, if present).
+func decryptPayload(payload, key []byte) ([]byte, error) {
+	minPayload := saltLen + timeLen + memoryLen + threadsLen + nonceLen + chacha20poly1305.Overhead
+	if len(payload) < minPayload {
+		return nil, errors.New("file is too short or corrupted")
+	}
+
+	offset := 0
+	salt := payload[offset : offset+saltLen]
 	offset += saltLen
 
-	timeParam := binary.LittleEndian.Uint32(encData[offset : offset+timeLen])
+	timeParam := binary.LittleEndian.Uint32(payload[offset : offset+timeLen])
 	offset += timeLen
 
-	memoryParam := binary.LittleEndian.Uint32(encData[offset : offset+memoryLen])
+	memoryParam := binary.LittleEndian.Uint32(payload[offset : offset+memoryLen])
 	offset += memoryLen
 
-	threads := encData[offset]
+	threads := payload[offset]
 	offset += threadsLen
 
-	nonce := encData[offset : offset+nonceLen]
+	nonce := payload[offset : offset+nonceLen]
 	offset += nonceLen
 
-	ciphertext := encData[offset:]
+	ciphertext := payload[offset:]
 
-	// Validate Argon2id params (sanity checks to prevent abuse).
 	if timeParam == 0 || timeParam > 10 {
 		return nil, fmt.Errorf("invalid KDF time parameter: %d", timeParam)
 	}
-	if memoryParam < 1024 || memoryParam > 1024*1024 { // 1 MiB to 1 GiB
+	if memoryParam < 1024 || memoryParam > 1024*1024 {
 		return nil, fmt.Errorf("invalid KDF memory parameter: %d KiB", memoryParam)
 	}
 	if threads == 0 || threads > 16 {
 		return nil, fmt.Errorf("invalid KDF threads parameter: %d", threads)
 	}
 
-	// Pre-decryption safety check: warn if file header requests more memory
-	// than is safe for the current device.
-	safeMemoryKiB := uint32(256 * 1024) // 256 MiB for desktop
+	safeMemoryKiB := uint32(256 * 1024)
 	if runtime.GOOS == "android" {
-		safeMemoryKiB = 64 * 1024 // 64 MiB for mobile
+		safeMemoryKiB = 64 * 1024
 	}
 	if memoryParam > safeMemoryKiB {
 		return nil, &HighMemoryError{
@@ -183,25 +281,20 @@ func DecryptExport(encData []byte, passphrase string) ([]byte, error) {
 		}
 	}
 
-	// Derive key using params from the file header.
-	key := argon2.IDKey([]byte(passphrase), salt, timeParam, memoryParam, threads, keyLen)
+	derivedKey := argon2.IDKey(key, salt, timeParam, memoryParam, threads, keyLen)
 
-	// Create XChaCha20-Poly1305 AEAD.
-	aead, err := chacha20poly1305.NewX(key)
+	aead, err := chacha20poly1305.NewX(derivedKey)
 	if err != nil {
 		return nil, fmt.Errorf("create cipher: %w", err)
 	}
 
-	// Decrypt + authenticate.
 	plaintext, err := aead.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		// Poly1305 authentication failed -- wrong passphrase or corrupted file.
 		return nil, errors.New("decryption failed: wrong passphrase or corrupted file")
 	}
 
-	// Best-effort memory wipe of key.
-	for i := range key {
-		key[i] = 0
+	for i := range derivedKey {
+		derivedKey[i] = 0
 	}
 
 	return plaintext, nil

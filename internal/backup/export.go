@@ -1,7 +1,6 @@
 package backup
 
 import (
-	"context"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
@@ -53,17 +52,12 @@ func NewExportService(
 }
 
 // Export produces a full or filtered ExportFile.
-// A read-only transaction is used to ensure a consistent snapshot across all tables.
+// The DB pool is limited to a single connection (SetMaxOpenConns(1)), so all
+// reads/writes are serialized through one connection — no concurrent writer
+// can interleave between the export queries below. We therefore do NOT wrap
+// this in BeginTx: doing so would pin the only pool connection to the tx
+// while the queries here ask the pool for a connection, deadlocking the app.
 func (s *ExportService) Export(filters *ExportFilters) (*ExportFile, error) {
-	tx, err := s.db.BeginTx(context.Background(), &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, fmt.Errorf("begin export transaction: %w", err)
-	}
-	defer tx.Rollback() //nolint:errcheck // read-only tx, rollback is fine
-
-	_ = tx // tx holds the SQLite read lock for snapshot consistency; queries below use s.db
-	       // which shares the same connection under SQLite's single-writer model.
-
 	file := &ExportFile{
 		Metadata: ExportMetadata{
 			FormatVersion: FormatVersion,
@@ -192,13 +186,23 @@ func (s *ExportService) ExportJSON(filters *ExportFilters) ([]byte, error) {
 }
 
 // ExportEncryptedJSON returns the export as an encrypted binary blob.
-// The passphrase is used to derive the encryption key via Argon2id.
+// The passphrase is used to derive the encryption key via Argon2id (v1 format).
 func (s *ExportService) ExportEncryptedJSON(filters *ExportFilters, passphrase string) ([]byte, error) {
 	jsonData, err := s.ExportJSON(filters)
 	if err != nil {
 		return nil, err
 	}
 	return EncryptExport(jsonData, passphrase)
+}
+
+// ExportMasterEncryptedJSON returns the export encrypted with the master key.
+// seed is the 64-byte BIP-39 seed (from keychain.GetMasterKey). Writes v2 format.
+func (s *ExportService) ExportMasterEncryptedJSON(filters *ExportFilters, seed []byte) ([]byte, error) {
+	jsonData, err := s.ExportJSON(filters)
+	if err != nil {
+		return nil, err
+	}
+	return EncryptExportMaster(jsonData, seed)
 }
 
 func (s *ExportService) getSchemaVersion() int {

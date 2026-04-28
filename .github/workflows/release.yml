@@ -70,7 +70,15 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: "0"
-        run: go build -ldflags="-s -w -X github.com/adamSHA256/tidybill/internal/config.Version=${{ github.ref_name }}" -o tidybill-${{ matrix.suffix }} ./cmd/tidybill/
+          GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
+          GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
+        shell: bash
+        run: |
+          GDRIVE_LDFLAGS=""
+          if [ -n "$GDRIVE_CLIENT_ID" ]; then
+            GDRIVE_LDFLAGS="-X github.com/adamSHA256/tidybill/internal/cloud/gdrive.ClientID=$GDRIVE_CLIENT_ID -X github.com/adamSHA256/tidybill/internal/cloud/gdrive.ClientSecret=$GDRIVE_CLIENT_SECRET"
+          fi
+          go build -ldflags="-s -w -X github.com/adamSHA256/tidybill/internal/config.Version=${{ github.ref_name }} ${GDRIVE_LDFLAGS}" -o tidybill-${{ matrix.suffix }} ./cmd/tidybill/
 
       - name: Upload CLI artifact
         uses: actions/upload-artifact@v7
@@ -161,11 +169,29 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: "0"
+          GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
+          GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
         shell: bash
         run: |
           mkdir -p desktop/src-tauri/binaries
-          go build -ldflags="-s -w -X github.com/adamSHA256/tidybill/internal/config.Version=${{ github.ref_name }}" \
+          GDRIVE_LDFLAGS=""
+          if [ -n "$GDRIVE_CLIENT_ID" ]; then
+            GDRIVE_LDFLAGS="-X github.com/adamSHA256/tidybill/internal/cloud/gdrive.ClientID=$GDRIVE_CLIENT_ID -X github.com/adamSHA256/tidybill/internal/cloud/gdrive.ClientSecret=$GDRIVE_CLIENT_SECRET"
+          else
+            echo "::warning::GDRIVE_CLIENT_ID secret not set — Connect to Google Drive will fail at runtime"
+          fi
+          go build -ldflags="-s -w -X github.com/adamSHA256/tidybill/internal/config.Version=${{ github.ref_name }} ${GDRIVE_LDFLAGS}" \
             -o "desktop/src-tauri/binaries/tidybill-${{ matrix.rust-target }}${{ matrix.ext }}" ./cmd/tidybill/
+
+      - name: Fetch rclone sidecar binary for target platform
+        shell: bash
+        env:
+          # scripts/fetch-rclone.sh expects --only <linux|windows|osx>
+          # Map our matrix's goos to the script's vocabulary.
+          ONLY_OS: ${{ matrix.goos == 'darwin' && 'osx' || matrix.goos }}
+        run: |
+          ./scripts/fetch-rclone.sh --only "${ONLY_OS}"
+          ls -la desktop/src-tauri/binaries/
 
       - name: Set version from git tag
         shell: bash
@@ -242,9 +268,16 @@ jobs:
       - name: Build Go shared library (AAR)
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.1.12297006
+          GDRIVE_CLIENT_ID: ${{ secrets.GDRIVE_CLIENT_ID }}
+          GDRIVE_CLIENT_SECRET: ${{ secrets.GDRIVE_CLIENT_SECRET }}
         run: |
           mkdir -p desktop/src-tauri/gen/android/app/libs
+          GDRIVE_LDFLAGS=""
+          if [ -n "$GDRIVE_CLIENT_ID" ]; then
+            GDRIVE_LDFLAGS="-X github.com/adamSHA256/tidybill/internal/cloud/gdrive.ClientID=$GDRIVE_CLIENT_ID -X github.com/adamSHA256/tidybill/internal/cloud/gdrive.ClientSecret=$GDRIVE_CLIENT_SECRET"
+          fi
           gomobile bind -v \
+            -ldflags="${GDRIVE_LDFLAGS}" \
             -o desktop/src-tauri/gen/android/app/libs/tidybill.aar \
             -target=android/arm64 -androidapi 24 \
             ./pkg/mobile

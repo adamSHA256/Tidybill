@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import {
   Container,
   Paper,
@@ -17,22 +17,59 @@ import {
   Loader,
   Center,
   Tooltip,
-  PasswordInput,
+  Select,
+  Divider,
+  Collapse,
+  UnstyledButton,
 } from '@mantine/core'
 import { DateInput } from '@mantine/dates'
 import { notifications } from '@mantine/notifications'
-import { IconDownload, IconUpload, IconCloudOff, IconAlertCircle, IconInfoCircle, IconKey } from '@tabler/icons-react'
-import { useQuery } from '@tanstack/react-query'
-import { api, isTauri, isMobileDevice, shareFile, type ExportFilters, type ImportReport } from '../api/client'
+import { IconDownload, IconUpload, IconAlertCircle, IconInfoCircle, IconCloudUpload, IconShieldLock, IconChevronDown, IconChevronRight } from '@tabler/icons-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
+import { api, isTauri, isMobileDevice, shareFile, type ExportFilters, type ImportReport, type CloudTransportInfo, type CloudBlobRef } from '../api/client'
 import { useT } from '../i18n'
 import { useIsMobile } from '../hooks/useIsMobile'
+import { CloudSyncPanel } from '../components/CloudSyncPanel'
+import { ConnectCloudModal } from '../components/ConnectCloudModal'
+
+function formatTimeAgo(isoStr: string): string {
+  if (!isoStr) return ''
+  const past = new Date(isoStr)
+  const diffMs = Date.now() - past.getTime()
+  const diffMin = Math.floor(diffMs / 60_000)
+  if (diffMin < 1) return '< 1 min ago'
+  if (diffMin < 60) return `${diffMin} min ago`
+  const diffH = Math.floor(diffMin / 60)
+  if (diffH < 24) return `${diffH} h ago`
+  return `${Math.floor(diffH / 24)} days ago`
+}
+
+function translateBackendError(msg: string, t: (key: string) => string): string {
+  if (msg.includes('wrong passphrase or corrupted')) return t('error.wrong_passphrase')
+  if (msg.includes('passphrase required')) return t('error.passphrase_required')
+  if (msg.includes('passphrase must be at least')) return t('error.passphrase_too_short')
+  return msg
+}
+
+function getTransportLabel(id: string, t: (key: string) => string): string {
+  if (id === 'local') return t('cloud.local.label')
+  if (id === 'gdrive') return t('cloud.gdrive.label')
+  if (id.startsWith('rclone:')) {
+    const backend = id.replace('rclone:', '')
+    return t(`cloud.rclone.${backend}.label`) || id
+  }
+  return id
+}
 
 export function SyncPage() {
   const { t } = useT()
   const isMobile = useIsMobile()
+  const navigate = useNavigate()
 
   // Export state
   const [exporting, setExporting] = useState(false)
+  const [exportDestination, setExportDestination] = useState('local')
   const [filterModalOpen, setFilterModalOpen] = useState(false)
   const [filterSupplierIds, setFilterSupplierIds] = useState<string[]>([])
   const [filterSkipPaidYears, setFilterSkipPaidYears] = useState<number | ''>('')
@@ -40,12 +77,9 @@ export function SyncPage() {
   const [filterDateTo, setFilterDateTo] = useState<Date | null>(null)
   const [filterExcludeSettings, setFilterExcludeSettings] = useState(false)
   const [encryptExport, setEncryptExport] = useState(false)
-  const [exportPassphrase, setExportPassphrase] = useState('')
-  const [exportPassphraseConfirm, setExportPassphraseConfirm] = useState('')
-  const [generatedMnemonic, setGeneratedMnemonic] = useState<string | null>(null)
-  const [generatingMnemonic, setGeneratingMnemonic] = useState(false)
 
   // Import state
+  const [importSource, setImportSource] = useState('local')
   const [importMode, setImportMode] = useState('merge')
   const [importing, setImporting] = useState(false)
   const [previewLoading, setPreviewLoading] = useState(false)
@@ -53,10 +87,111 @@ export function SyncPage() {
   const [previewReport, setPreviewReport] = useState<ImportReport | null>(null)
   const [importResult, setImportResult] = useState<ImportReport | null>(null)
   const [resultModalOpen, setResultModalOpen] = useState(false)
-  const [importPassphrase, setImportPassphrase] = useState('')
-  const [fileEncrypted, setFileEncrypted] = useState(false)
   const selectedFileRef = useRef<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Cloud import state
+  const [selectedCloudBlob, setSelectedCloudBlob] = useState<CloudBlobRef | null>(null)
+  const [cloudImportError, setCloudImportError] = useState<'not_configured' | 'wrong_key' | null>(null)
+  const [isCloudImportFlow, setIsCloudImportFlow] = useState(false)
+
+  // Cloud sync state
+  const [connectOpen, setConnectOpen] = useState(false)
+  const [triggeringBackup, setTriggeringBackup] = useState(false)
+  const qc = useQueryClient()
+
+  const { data: transports, isLoading: transportsLoading } = useQuery({
+    queryKey: ['cloud-transports'],
+    queryFn: () => api.cloud.transports().then((r) => r.transports),
+    refetchInterval: 5_000,
+    placeholderData: () => {
+      try {
+        const cached = localStorage.getItem('cloud-transports-cache')
+        return cached ? (JSON.parse(cached) as CloudTransportInfo[]) : undefined
+      } catch {
+        return undefined
+      }
+    },
+  })
+
+  useEffect(() => {
+    if (transports && transports.length > 0) {
+      try {
+        localStorage.setItem('cloud-transports-cache', JSON.stringify(transports))
+      } catch { /* ignore */ }
+    }
+  }, [transports])
+
+  const { data: settings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: api.getSettings,
+  })
+
+  const { data: masterKeyStatus } = useQuery({
+    queryKey: ['master-key-status'],
+    queryFn: api.masterKey.status,
+    refetchInterval: false,
+  })
+  const masterKeyConfigured = masterKeyStatus?.configured ?? false
+
+  const { data: autoBackupStatus, refetch: refetchAutoBackup } = useQuery({
+    queryKey: ['autobackup-status'],
+    queryFn: api.cloud.autoBackupStatus,
+    refetchInterval: (query) => (query.state.data?.in_progress ? 5_000 : 30_000),
+  })
+
+  const updateAutoBackup = useMutation({
+    mutationFn: api.cloud.updateAutoBackupSettings,
+    onSuccess: () => refetchAutoBackup(),
+  })
+
+  const { data: autoSyncStatus, refetch: refetchAutoSync } = useQuery({
+    queryKey: ['autosync-status'],
+    queryFn: api.cloud.autoSyncStatus,
+    refetchInterval: 30_000,
+  })
+
+  const updateAutoSync = useMutation({
+    mutationFn: api.cloud.updateAutoSyncSettings,
+    onSuccess: () => refetchAutoSync(),
+  })
+
+  const [autoSyncChecking, setAutoSyncChecking] = useState(false)
+  const [autoSyncPulling, setAutoSyncPulling] = useState(false)
+  const [autoSyncSkipping, setAutoSyncSkipping] = useState(false)
+  const [conflictModalOpen, setConflictModalOpen] = useState(false)
+  const [retentionOpen, setRetentionOpen] = useState(false)
+
+  // Open the conflict modal whenever the backend reports a pending prompt.
+  // Don't reopen if the user just closed it for the same blob — only open
+  // for a provider_id we haven't already dismissed in this session.
+  const dismissedPromptRef = useRef<string | null>(null)
+  useEffect(() => {
+    const pending = autoSyncStatus?.pending
+    if (pending && pending.provider_id && dismissedPromptRef.current !== pending.provider_id) {
+      setConflictModalOpen(true)
+    }
+  }, [autoSyncStatus?.pending])
+
+  // Cloud blob list for Import panel (fetched when a cloud source is selected)
+  const { data: cloudBlobList, isLoading: cloudBlobsLoading, isFetching: cloudBlobsFetching, refetch: refetchCloudBlobs } = useQuery({
+    queryKey: ['cloud-list', importSource],
+    queryFn: () => api.cloud.list(importSource).then((r) => r.blobs),
+    enabled: importSource !== 'local',
+  })
+
+  const disconnect = useMutation({
+    mutationFn: async (transportId: string) => {
+      if (transportId === 'gdrive') {
+        return api.cloud.gdriveDisconnect()
+      }
+      const backend = transportId.replace('rclone:', '')
+      return api.cloud.rcloneDisconnect(backend)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['cloud-transports'] })
+    },
+  })
 
   const { data: suppliers } = useQuery({
     queryKey: ['suppliers'],
@@ -72,49 +207,23 @@ export function SyncPage() {
     return d.toISOString().split('T')[0]
   }
 
-  const validatePassphrase = (pass: string): string | null => {
-    if (pass.length < 8) return t('backup.passphrase_too_short')
-    if (!/[^a-zA-Z0-9]/.test(pass)) return t('backup.passphrase_needs_special')
-    return null
-  }
-
-  const passphraseValid = !encryptExport || (
-    !validatePassphrase(exportPassphrase) &&
-    exportPassphrase === exportPassphraseConfirm
-  )
-
-  const handleGenerateMnemonic = async () => {
-    setGeneratingMnemonic(true)
-    try {
-      const { mnemonic } = await api.generateMnemonic()
-      setExportPassphrase(mnemonic)
-      setExportPassphraseConfirm(mnemonic)
-      setGeneratedMnemonic(mnemonic)
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      notifications.show({ title: t('common.error'), message, color: 'red' })
-    } finally {
-      setGeneratingMnemonic(false)
-    }
-  }
-
   // Returns the actual saved path/filename, or null if cancelled
   const triggerDownload = async (blob: Blob, filename: string): Promise<string | null> => {
-    // On desktop Tauri, show native file save dialog
     if (isTauri() && !isMobileDevice()) {
       try {
         const { save } = await import('@tauri-apps/plugin-dialog')
         const { downloadDir } = await import('@tauri-apps/api/path')
         let defaultPath = filename
         try {
-          const dlDir = await downloadDir()
-          defaultPath = `${dlDir}/${filename}`
+          // Prefer user-configured backup dir, fall back to system downloads
+          const baseDir = settings?.default_backup_dir || await downloadDir()
+          defaultPath = `${baseDir}/${filename}`
         } catch { /* fallback to just filename */ }
         const filePath = await save({
           defaultPath,
           filters: [{ name: 'TidyBill Backup', extensions: ['tidybill'] }],
         })
-        if (!filePath) return null // user cancelled
+        if (!filePath) return null
 
         const { writeFile } = await import('@tauri-apps/plugin-fs')
         const arrayBuffer = await blob.arrayBuffer()
@@ -124,7 +233,6 @@ export function SyncPage() {
         console.error('Native save dialog failed, falling back to download:', err)
       }
     }
-    // Fallback: browser-style download
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -135,23 +243,22 @@ export function SyncPage() {
   }
 
   const handleExportAll = async () => {
-    if (encryptExport && exportPassphrase !== exportPassphraseConfirm) {
-      notifications.show({ title: t('common.error'), message: t('backup.passphrase_mismatch'), color: 'red' })
-      return
-    }
     setExporting(true)
     try {
-      const passphrase = encryptExport ? exportPassphrase : undefined
+      if (exportDestination !== 'local') {
+        await api.cloud.upload(exportDestination)
+        notifications.show({ title: t('cloud.upload.success'), message: '', color: 'green' })
+        return
+      }
       const filename = `tidybill-backup-${new Date().toISOString().split('T')[0]}.tidybill`
       if (isTauri() && isMobileDevice()) {
-        const result = await api.exportBackupToFile(undefined, passphrase)
+        const result = await api.exportBackupToFile(undefined, undefined, encryptExport || undefined)
         await shareFile(result.path, result.filename)
         notifications.show({ title: t('backup.export_success'), message: '', color: 'green' })
       } else {
-        const blob = await api.exportBackup(undefined, passphrase)
+        const blob = await api.exportBackup(undefined, undefined, encryptExport || undefined)
         const savedPath = await triggerDownload(blob, filename)
-        if (!savedPath) return // user cancelled
-        // Show the actual saved path (may differ from default filename)
+        if (!savedPath) return
         const savedName = savedPath.includes('/') ? savedPath.split('/').pop() : savedPath
         notifications.show({ title: t('backup.export_success'), message: savedName || '', color: 'green' })
       }
@@ -164,10 +271,6 @@ export function SyncPage() {
   }
 
   const handleExportFiltered = async () => {
-    if (encryptExport && exportPassphrase !== exportPassphraseConfirm) {
-      notifications.show({ title: t('common.error'), message: t('backup.passphrase_mismatch'), color: 'red' })
-      return
-    }
     setExporting(true)
     setFilterModalOpen(false)
     try {
@@ -180,14 +283,13 @@ export function SyncPage() {
       if (filterDateTo) filters.date_to = formatDateStr(filterDateTo)
       if (filterExcludeSettings) filters.exclude_settings = true
 
-      const passphrase = encryptExport ? exportPassphrase : undefined
       const filename = `tidybill-backup-${new Date().toISOString().split('T')[0]}.tidybill`
       if (isTauri() && isMobileDevice()) {
-        const result = await api.exportBackupToFile(filters, passphrase)
+        const result = await api.exportBackupToFile(filters, undefined, encryptExport || undefined)
         await shareFile(result.path, result.filename)
         notifications.show({ title: t('backup.export_success'), message: '', color: 'green' })
       } else {
-        const blob = await api.exportBackup(filters, passphrase)
+        const blob = await api.exportBackup(filters, undefined, encryptExport || undefined)
         const savedPath = await triggerDownload(blob, filename)
         if (!savedPath) return
         const savedName = savedPath.includes('/') ? savedPath.split('/').pop() : savedPath
@@ -204,66 +306,198 @@ export function SyncPage() {
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    // Reset the input so the same file can be re-selected
     e.target.value = ''
 
-    // Check if encrypted by reading first 6 bytes
-    const header = await file.slice(0, 6).arrayBuffer()
-    const magic = new TextDecoder().decode(new Uint8Array(header).slice(0, 5))
-    const isEncrypted = magic === 'TBILL'
-    setFileEncrypted(isEncrypted)
     selectedFileRef.current = file
-
-    if (isEncrypted) {
-      // Don't auto-preview — need passphrase first
-      setImportPassphrase('')
-      return
-    }
-
     setPreviewLoading(true)
     try {
       const report = await api.previewImport(file, undefined, importMode)
       setPreviewReport(report)
+      setIsCloudImportFlow(false)
       setPreviewModalOpen(true)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      notifications.show({ title: t('common.error'), message, color: 'red' })
+      const raw = err instanceof Error ? err.message : String(err)
+      notifications.show({ title: t('common.error'), message: translateBackendError(raw, t), color: 'red' })
     } finally {
       setPreviewLoading(false)
     }
   }
 
-  const handlePreviewEncrypted = async () => {
-    if (!selectedFileRef.current) return
+  const handleCloudBlobPreview = async () => {
+    if (!selectedCloudBlob || importSource === 'local') return
+    setCloudImportError(null)
     setPreviewLoading(true)
     try {
-      const report = await api.previewImport(selectedFileRef.current, importPassphrase, importMode)
+      const report = await api.cloud.downloadPreview(
+        importSource,
+        selectedCloudBlob.id,
+        undefined,
+        importMode,
+      )
       setPreviewReport(report)
+      setIsCloudImportFlow(true)
       setPreviewModalOpen(true)
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      notifications.show({ title: t('common.error'), message, color: 'red' })
+      const raw = err instanceof Error ? err.message : String(err)
+      if (raw.includes('passphrase required') || raw.includes('master_key_not_configured')) {
+        setCloudImportError('not_configured')
+      } else if (raw.includes('wrong passphrase or corrupted')) {
+        setCloudImportError('wrong_key')
+      } else {
+        notifications.show({ title: t('common.error'), message: raw, color: 'red' })
+      }
     } finally {
       setPreviewLoading(false)
     }
   }
 
   const handleImportConfirm = async () => {
-    if (!selectedFileRef.current) return
     setImporting(true)
     setPreviewModalOpen(false)
     try {
-      const passphrase = fileEncrypted ? importPassphrase : undefined
-      const result = await api.importBackup(selectedFileRef.current, importMode, passphrase)
-      setImportResult(result)
-      setResultModalOpen(true)
-      notifications.show({ title: t('backup.import_success'), message: '', color: 'green' })
+      if (isCloudImportFlow && selectedCloudBlob) {
+        const result = await api.cloud.downloadApply(
+          importSource,
+          selectedCloudBlob.id,
+          undefined,
+          importMode,
+        )
+        setImportResult(result)
+        setResultModalOpen(true)
+        notifications.show({ title: t('backup.import_success'), message: '', color: 'green' })
+      } else {
+        if (!selectedFileRef.current) return
+        const result = await api.importBackup(selectedFileRef.current, importMode, undefined)
+        setImportResult(result)
+        setResultModalOpen(true)
+        notifications.show({ title: t('backup.import_success'), message: '', color: 'green' })
+      }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      notifications.show({ title: t('common.error'), message, color: 'red' })
+      const raw = err instanceof Error ? err.message : String(err)
+      notifications.show({ title: t('common.error'), message: translateBackendError(raw, t), color: 'red' })
     } finally {
       setImporting(false)
     }
+  }
+
+  const handleTriggerNow = async () => {
+    setTriggeringBackup(true)
+    try {
+      await api.cloud.triggerBackup()
+      notifications.show({ title: t('autobackup.trigger_success'), message: '', color: 'green' })
+      setTimeout(() => refetchAutoBackup(), 2000)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      notifications.show({ title: t('common.error'), message: msg, color: 'red' })
+    } finally {
+      setTriggeringBackup(false)
+    }
+  }
+
+  const handleAutoSyncCheckNow = async () => {
+    setAutoSyncChecking(true)
+    try {
+      const res = await api.cloud.autoSyncCheck()
+      if (res.action === 'error') {
+        notifications.show({ title: t('common.error'), message: res.message ?? '', color: 'red' })
+      } else if (res.action === 'none') {
+        notifications.show({ title: t('autosync.check_up_to_date'), message: '', color: 'green' })
+      } else if (res.action === 'auto_pull') {
+        // Server returns auto_pull but POST /check intentionally does not pull;
+        // it leaves the call to the user. Promote to a regular prompt so the
+        // user can confirm before any local data is replaced.
+        if (res.provider_id) dismissedPromptRef.current = null
+        setConflictModalOpen(true)
+      } else if (res.action === 'prompt') {
+        if (res.provider_id) dismissedPromptRef.current = null
+        setConflictModalOpen(true)
+      } else if (res.action === 'skipped') {
+        notifications.show({ title: t('autosync.check_skipped_title'), message: t('autosync.check_skipped_msg'), color: 'gray' })
+      }
+      refetchAutoSync()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      notifications.show({ title: t('common.error'), message: msg, color: 'red' })
+    } finally {
+      setAutoSyncChecking(false)
+    }
+  }
+
+  const handleConflictPull = async () => {
+    const pending = autoSyncStatus?.pending
+    if (!pending) return
+    setAutoSyncPulling(true)
+    try {
+      await api.cloud.autoSyncPull(pending.provider_id)
+      notifications.show({ title: t('autosync.pull_success'), message: '', color: 'green' })
+      setConflictModalOpen(false)
+      // Refresh everything that depends on local data.
+      qc.invalidateQueries()
+      refetchAutoSync()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      notifications.show({ title: t('common.error'), message: translateBackendError(msg, t), color: 'red' })
+    } finally {
+      setAutoSyncPulling(false)
+    }
+  }
+
+  const handleConflictSaveThenPull = async () => {
+    const pending = autoSyncStatus?.pending
+    if (!pending) return
+    setAutoSyncPulling(true)
+    try {
+      const filename = `tidybill-backup-${new Date().toISOString().split('T')[0]}.tidybill`
+      // Always encrypt with master key when configured — never leave a plaintext
+      // safety backup on disk if the user has a recovery phrase.
+      const useMaster = masterKeyConfigured
+      if (isTauri() && isMobileDevice()) {
+        const result = await api.exportBackupToFile(undefined, undefined, useMaster || undefined)
+        await shareFile(result.path, result.filename)
+      } else {
+        const blob = await api.exportBackup(undefined, undefined, useMaster || undefined)
+        const saved = await triggerDownload(blob, filename)
+        if (!saved) {
+          // User cancelled the save dialog — abort the whole flow rather
+          // than silently overwriting local without the safety backup.
+          notifications.show({ title: t('autosync.save_cancelled'), message: '', color: 'yellow' })
+          return
+        }
+      }
+      await api.cloud.autoSyncPull(pending.provider_id)
+      notifications.show({ title: t('autosync.pull_success'), message: '', color: 'green' })
+      setConflictModalOpen(false)
+      qc.invalidateQueries()
+      refetchAutoSync()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      notifications.show({ title: t('common.error'), message: translateBackendError(msg, t), color: 'red' })
+    } finally {
+      setAutoSyncPulling(false)
+    }
+  }
+
+  const handleConflictSkip = async () => {
+    const pending = autoSyncStatus?.pending
+    if (!pending) return
+    setAutoSyncSkipping(true)
+    try {
+      await api.cloud.autoSyncSkip(pending.provider_id)
+      dismissedPromptRef.current = pending.provider_id
+      setConflictModalOpen(false)
+      refetchAutoSync()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      notifications.show({ title: t('common.error'), message: msg, color: 'red' })
+    } finally {
+      setAutoSyncSkipping(false)
+    }
+  }
+
+  const formatBlobSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`
   }
 
   const tableLabels: Record<string, string> = {
@@ -317,84 +551,88 @@ export function SyncPage() {
     )
   }
 
+  const connectedTransports = (transports ?? []).filter((tr) => tr.status.connected)
+
   return (
     <Container data-tour="page-sync" size="sm" py="xl">
       <Title order={isMobile ? 3 : 2} mb="lg">{t('backup.title')}</Title>
+
+      {!masterKeyConfigured && (
+        <Alert icon={<IconShieldLock size={16} />} color="yellow" mb="md">
+          <Group gap="xs" wrap="nowrap">
+            <span>{t('banner.no_master_key')}</span>
+            <Button
+              size="compact-xs"
+              variant="subtle"
+              color="yellow"
+              onClick={() => navigate('/settings#master-key')}
+            >
+              {t('banner.no_master_key_action')}
+            </Button>
+          </Group>
+        </Alert>
+      )}
 
       {/* Export section */}
       <Paper p="md" radius="md" withBorder>
         <Stack gap="md">
           <Text fw={500}>{t('backup.export_title')}</Text>
           <Text c="dimmed" size="sm">{t('backup.export_desc')}</Text>
+
+          {/* Destination picker */}
+          <Radio.Group
+            label={t('backup.dest_label')}
+            value={exportDestination}
+            onChange={setExportDestination}
+          >
+            <Stack gap="xs" mt="xs">
+              <Radio value="local" label={t('backup.dest_local')} />
+              {connectedTransports.map((tr) => (
+                <Radio
+                  key={tr.id}
+                  value={tr.id}
+                  label={getTransportLabel(tr.id, t)}
+                />
+              ))}
+            </Stack>
+          </Radio.Group>
+
           <Group>
             <Button
-              leftSection={<IconDownload size={16} />}
+              leftSection={exportDestination === 'local' ? <IconDownload size={16} /> : <IconCloudUpload size={16} />}
               onClick={handleExportAll}
               loading={exporting}
-              disabled={!passphraseValid}
+              disabled={encryptExport && !masterKeyConfigured}
             >
-              {t('backup.export_all')}
+              {exportDestination === 'local'
+                ? t('backup.export_all')
+                : t('cloud.upload_action')}
             </Button>
-            <Button
-              variant="light"
-              onClick={() => setFilterModalOpen(true)}
-              disabled={exporting || !passphraseValid}
-            >
-              {t('backup.export_filtered')}
-            </Button>
+            {exportDestination === 'local' && (
+              <Button
+                variant="light"
+                onClick={() => setFilterModalOpen(true)}
+                disabled={exporting || (encryptExport && !masterKeyConfigured)}
+              >
+                {t('backup.export_filtered')}
+              </Button>
+            )}
           </Group>
-          <Switch
-            label={t('backup.encrypt')}
-            checked={encryptExport}
-            onChange={(e) => {
-              setEncryptExport(e.currentTarget.checked)
-              if (!e.currentTarget.checked) {
-                setGeneratedMnemonic(null)
-              }
-            }}
-          />
-          {encryptExport && (
-            <Stack gap="xs">
-              <Group align="end">
-                <PasswordInput
-                  label={t('backup.passphrase')}
-                  description={t('backup.passphrase_rules')}
-                  value={exportPassphrase}
-                  onChange={(e) => {
-                    setExportPassphrase(e.currentTarget.value)
-                    setGeneratedMnemonic(null)
-                  }}
-                  error={exportPassphrase ? validatePassphrase(exportPassphrase) : undefined}
-                  style={{ flex: 1 }}
-                />
-                <Button
-                  variant="light"
-                  size="sm"
-                  leftSection={<IconKey size={16} />}
-                  onClick={handleGenerateMnemonic}
-                  loading={generatingMnemonic}
-                >
-                  {t('backup.generate_mnemonic')}
-                </Button>
-              </Group>
-              <PasswordInput
-                label={t('backup.passphrase_confirm')}
-                value={exportPassphraseConfirm}
-                onChange={(e) => setExportPassphraseConfirm(e.currentTarget.value)}
-                error={exportPassphrase !== exportPassphraseConfirm && exportPassphraseConfirm ? t('backup.passphrase_mismatch') : undefined}
-              />
-              {generatedMnemonic && (
-                <Alert icon={<IconAlertCircle size={16} />} color="yellow">
-                  <Text size="sm" fw={500} mb="xs">{t('backup.mnemonic_warning')}</Text>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px 16px' }}>
-                    {generatedMnemonic.split(' ').map((word, i) => (
-                      <Text key={i} size="sm" ff="monospace">{i + 1}. {word}</Text>
-                    ))}
-                  </div>
-                </Alert>
-              )}
-              <Text c="dimmed" size="xs">{t('backup.encrypt_warning')}</Text>
-            </Stack>
+
+          <Group gap="xs" align="center">
+            <Switch
+              label={t('backup.encrypt')}
+              checked={encryptExport}
+              onChange={(e) => setEncryptExport(e.currentTarget.checked)}
+            />
+            <Tooltip label={t('backup.encrypt_tooltip')} multiline w={260} withArrow events={{ hover: true, focus: true, touch: true }}>
+              <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+            </Tooltip>
+          </Group>
+          {encryptExport && !masterKeyConfigured && (
+            <Alert icon={<IconAlertCircle size={16} />} color="yellow">
+              {t('backup.encrypt_master_disabled')}
+            </Alert>
           )}
         </Stack>
       </Paper>
@@ -405,6 +643,29 @@ export function SyncPage() {
           <Text fw={500}>{t('backup.import_title')}</Text>
           <Text c="dimmed" size="sm">{t('backup.import_desc')}</Text>
 
+          {/* Source picker */}
+          <Radio.Group
+            label={t('backup.source_label')}
+            value={importSource}
+            onChange={(val) => {
+              setImportSource(val)
+              setSelectedCloudBlob(null)
+              setCloudImportError(null)
+              selectedFileRef.current = null
+            }}
+          >
+            <Stack gap="xs" mt="xs">
+              <Radio value="local" label={t('backup.source_local')} />
+              {connectedTransports.map((tr) => (
+                <Radio
+                  key={tr.id}
+                  value={tr.id}
+                  label={getTransportLabel(tr.id, t)}
+                />
+              ))}
+            </Stack>
+          </Radio.Group>
+
           <Radio.Group value={importMode} onChange={setImportMode}>
             <Stack gap="xs">
               <Radio value="merge" label={t('backup.import_mode_merge')} description={t('backup.import_mode_merge_desc')} />
@@ -413,50 +674,312 @@ export function SyncPage() {
             </Stack>
           </Radio.Group>
 
-          <input
-            type="file"
-            ref={fileInputRef}
-            accept=".tidybill"
-            style={{ display: 'none' }}
-            onChange={handleFileSelect}
-          />
-
-          <Button
-            leftSection={previewLoading ? <Loader size={16} /> : <IconUpload size={16} />}
-            variant="light"
-            onClick={() => fileInputRef.current?.click()}
-            loading={previewLoading || importing}
-          >
-            {t('backup.import_select')}
-          </Button>
-          {fileEncrypted && selectedFileRef.current && (
-            <Stack gap="xs">
-              <Alert icon={<IconAlertCircle size={16} />} color="blue">
-                {t('backup.file_encrypted')}
-              </Alert>
-              <PasswordInput
-                label={t('backup.import_passphrase')}
-                value={importPassphrase}
-                onChange={(e) => setImportPassphrase(e.currentTarget.value)}
+          {/* Local import */}
+          {importSource === 'local' && (
+            <>
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept=".tidybill"
+                style={{ display: 'none' }}
+                onChange={handleFileSelect}
               />
-              <Button onClick={handlePreviewEncrypted} disabled={!importPassphrase} loading={previewLoading}>
-                {t('backup.import_decrypt_preview')}
+              <Button
+                leftSection={previewLoading ? <Loader size={16} /> : <IconUpload size={16} />}
+                variant="light"
+                onClick={() => fileInputRef.current?.click()}
+                loading={previewLoading || importing}
+              >
+                {t('backup.import_select')}
               </Button>
+            </>
+          )}
+
+          {/* Cloud import */}
+          {importSource !== 'local' && (
+            <Stack gap="sm">
+              <Group justify="flex-end">
+                <Button
+                  size="compact-xs"
+                  variant="subtle"
+                  loading={cloudBlobsFetching}
+                  onClick={() => refetchCloudBlobs()}
+                >
+                  {t('common.refresh')}
+                </Button>
+              </Group>
+              {cloudBlobsLoading ? (
+                <Center><Loader size="sm" /></Center>
+              ) : !cloudBlobList || cloudBlobList.length === 0 ? (
+                <Text c="dimmed" size="sm">{t('cloud.restore.empty')}</Text>
+              ) : (
+                <Table highlightOnHover>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>File</Table.Th>
+                      <Table.Th>Date</Table.Th>
+                      <Table.Th>Size</Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {cloudBlobList.map((blob) => (
+                      <Table.Tr
+                        key={blob.id}
+                        style={{
+                          cursor: 'pointer',
+                          background: selectedCloudBlob?.id === blob.id ? 'var(--mantine-color-blue-light)' : undefined,
+                        }}
+                        onClick={() => setSelectedCloudBlob(blob)}
+                      >
+                        <Table.Td>{blob.filename}</Table.Td>
+                        <Table.Td>{new Date(blob.modified_at).toLocaleDateString()}</Table.Td>
+                        <Table.Td>{formatBlobSize(blob.size)}</Table.Td>
+                      </Table.Tr>
+                    ))}
+                  </Table.Tbody>
+                </Table>
+              )}
+
+              {selectedCloudBlob && (
+                <Stack gap="xs">
+                  {cloudImportError === 'not_configured' && (
+                    <Alert icon={<IconShieldLock size={16} />} color="yellow">
+                      <Group gap="xs" wrap="nowrap">
+                        <span>{t('cloud.restore.error_not_configured')}</span>
+                        <Button size="compact-xs" variant="subtle" color="yellow" onClick={() => navigate('/settings#master-key')}>
+                          {t('banner.no_master_key_action')}
+                        </Button>
+                      </Group>
+                    </Alert>
+                  )}
+                  {cloudImportError === 'wrong_key' && (
+                    <Alert icon={<IconAlertCircle size={16} />} color="red">
+                      <Group gap="xs" wrap="nowrap">
+                        <span>{t('cloud.restore.error_wrong_key')}</span>
+                        <Button size="compact-xs" variant="subtle" color="red" onClick={() => navigate('/settings#master-key')}>
+                          {t('master_key.change_btn')}
+                        </Button>
+                      </Group>
+                    </Alert>
+                  )}
+                  <Button
+                    variant="light"
+                    leftSection={previewLoading ? <Loader size={16} /> : <IconDownload size={16} />}
+                    onClick={handleCloudBlobPreview}
+                    loading={previewLoading || importing}
+                  >
+                    {t('backup.cloud_load')}
+                  </Button>
+                </Stack>
+              )}
             </Stack>
           )}
         </Stack>
       </Paper>
 
-      {/* Sync (coming soon) section */}
-      <Paper p="md" radius="md" withBorder mt="md">
-        <Stack gap="sm">
-          <Group gap="xs">
-            <IconCloudOff size={20} style={{ opacity: 0.5 }} />
-            <Text fw={500} c="dimmed">{t('backup.sync_title')}</Text>
+      {/* Cloud Sync section */}
+      <Paper p="md" withBorder mt="md">
+        <Stack gap="md">
+          <Group justify="space-between">
+            <Title order={4}>{t('cloud.title')}</Title>
+            <Button leftSection={<IconCloudUpload size={16} />}
+                    onClick={() => setConnectOpen(true)}>
+              {t('cloud.connect_button')}
+            </Button>
           </Group>
-          <Text c="dimmed" size="sm">{t('backup.sync_coming_soon')}</Text>
+
+          {/* Auto-backup */}
+          <Divider label={t('autobackup.section_title')} labelPosition="left" />
+          <Text size="sm">{t('autobackup.intro')}</Text>
+          <Stack gap="xs">
+            <Group gap="xs" align="center">
+              <Switch
+                label={t('autobackup.enabled_label')}
+                checked={autoBackupStatus?.enabled ?? false}
+                onChange={(e) => updateAutoBackup.mutate({ enabled: e.currentTarget.checked })}
+              />
+              <Tooltip label={t('autobackup.enabled_tooltip')} multiline w={300} withArrow events={{ hover: true, focus: true, touch: true }}>
+                <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+              </Tooltip>
+            </Group>
+            {connectedTransports.length === 0 ? (
+              <Text size="xs" c="dimmed">{t('autobackup.no_transport')}</Text>
+            ) : (
+              <Select
+                label={t('autobackup.transport_label')}
+                description={t('autobackup.transport_desc')}
+                placeholder={t('autobackup.transport_placeholder')}
+                data={connectedTransports.map((tr) => ({
+                  value: tr.id,
+                  label: getTransportLabel(tr.id, t),
+                }))}
+                value={autoBackupStatus?.transport_id || null}
+                onChange={(val) => val && updateAutoBackup.mutate({ transport_id: val })}
+                disabled={!autoBackupStatus?.enabled}
+              />
+            )}
+            <NumberInput
+              label={t('autobackup.idle_minutes_label')}
+              description={t('autobackup.idle_minutes_desc')}
+              suffix={t('autobackup.idle_minutes_suffix')}
+              min={1}
+              max={60}
+              value={autoBackupStatus?.idle_minutes ?? 5}
+              onChange={(val) => typeof val === 'number' && val > 0 && updateAutoBackup.mutate({ idle_minutes: val })}
+              disabled={!autoBackupStatus?.enabled}
+              w={180}
+            />
+            <Group gap="sm" align="center">
+              <Text size="xs" c={autoBackupStatus?.last_error && !autoBackupStatus.in_progress ? 'red' : 'dimmed'}>
+                {autoBackupStatus?.in_progress
+                  ? t('autobackup.status_in_progress')
+                  : autoBackupStatus?.last_error
+                    ? `${t('autobackup.status_failed')}: ${autoBackupStatus.last_error}`
+                    : autoBackupStatus?.last_run_at
+                      ? `${t('autobackup.status_last')}: ${formatTimeAgo(autoBackupStatus.last_run_at)}`
+                      : t('autobackup.status_never')}
+              </Text>
+              <Tooltip label={t('autobackup.trigger_tooltip')} withArrow events={{ hover: true, focus: true, touch: true }}>
+                <Button
+                  size="compact-xs"
+                  variant="light"
+                  leftSection={<IconCloudUpload size={12} />}
+                  onClick={handleTriggerNow}
+                  loading={triggeringBackup}
+                  disabled={!autoBackupStatus?.transport_id}
+                >
+                  {t('autobackup.trigger_btn')}
+                </Button>
+              </Tooltip>
+            </Group>
+
+            {/* Advanced retention disclosure — defaults are sane, only power users open this */}
+            <UnstyledButton
+              onClick={() => setRetentionOpen((v) => !v)}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: 0.7 }}
+            >
+              {retentionOpen ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
+              <Text size="xs">{t('retention.section_title')}</Text>
+            </UnstyledButton>
+            <Collapse in={retentionOpen}>
+              <Stack gap="xs" pl="md" mt="xs">
+                <Text size="xs" c="dimmed">{t('retention.intro')}</Text>
+                <Switch
+                  label={t('retention.enabled_label')}
+                  checked={autoBackupStatus?.retention?.enabled ?? true}
+                  onChange={(e) => updateAutoBackup.mutate({ retention: { enabled: e.currentTarget.checked } })}
+                />
+                <NumberInput
+                  label={t('retention.keep_recent_days_label')}
+                  description={t('retention.keep_recent_days_desc')}
+                  min={1}
+                  max={365}
+                  value={autoBackupStatus?.retention?.keep_recent_days ?? 7}
+                  onChange={(v) => typeof v === 'number' && v >= 1 && updateAutoBackup.mutate({ retention: { keep_recent_days: v } })}
+                  disabled={!autoBackupStatus?.retention?.enabled}
+                  w={220}
+                />
+                <NumberInput
+                  label={t('retention.keep_daily_days_label')}
+                  description={t('retention.keep_daily_days_desc')}
+                  min={1}
+                  max={365}
+                  value={autoBackupStatus?.retention?.keep_daily_days ?? 30}
+                  onChange={(v) => typeof v === 'number' && v >= 1 && updateAutoBackup.mutate({ retention: { keep_daily_days: v } })}
+                  disabled={!autoBackupStatus?.retention?.enabled}
+                  w={220}
+                />
+                <NumberInput
+                  label={t('retention.keep_weekly_months_label')}
+                  description={t('retention.keep_weekly_months_desc')}
+                  min={0}
+                  max={60}
+                  value={autoBackupStatus?.retention?.keep_weekly_months ?? 6}
+                  onChange={(v) => typeof v === 'number' && v >= 0 && updateAutoBackup.mutate({ retention: { keep_weekly_months: v } })}
+                  disabled={!autoBackupStatus?.retention?.enabled}
+                  w={220}
+                />
+                <NumberInput
+                  label={t('retention.keep_monthly_months_label')}
+                  description={t('retention.keep_monthly_months_desc')}
+                  min={0}
+                  max={600}
+                  value={autoBackupStatus?.retention?.keep_monthly_months ?? 0}
+                  onChange={(v) => typeof v === 'number' && v >= 0 && updateAutoBackup.mutate({ retention: { keep_monthly_months: v } })}
+                  disabled={!autoBackupStatus?.retention?.enabled}
+                  w={220}
+                />
+              </Stack>
+            </Collapse>
+          </Stack>
+
+          <Divider label={t('autosync.section_title')} labelPosition="left" />
+          <Text size="sm">{t('autosync.intro')}</Text>
+          <Stack gap="xs">
+            <Group gap="xs" align="center">
+              <Switch
+                label={t('autosync.enabled_label')}
+                checked={autoSyncStatus?.enabled ?? false}
+                onChange={(e) => updateAutoSync.mutate({ enabled: e.currentTarget.checked })}
+              />
+              <Tooltip label={t('autosync.enabled_tooltip')} multiline w={300} withArrow events={{ hover: true, focus: true, touch: true }}>
+                <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+              </Tooltip>
+            </Group>
+            <NumberInput
+              label={t('autosync.interval_minutes_label')}
+              description={t('autosync.interval_minutes_desc')}
+              suffix={t('autosync.interval_minutes_suffix')}
+              min={1}
+              max={1440}
+              value={autoSyncStatus?.interval_minutes ?? 60}
+              onChange={(val) => typeof val === 'number' && val > 0 && updateAutoSync.mutate({ interval_minutes: val })}
+              disabled={!autoSyncStatus?.enabled}
+              w={180}
+            />
+            <Switch
+              label={t('autosync.check_on_start_label')}
+              checked={autoSyncStatus?.check_on_start ?? true}
+              onChange={(e) => updateAutoSync.mutate({ check_on_start: e.currentTarget.checked })}
+              disabled={!autoSyncStatus?.enabled}
+            />
+            <Group gap="sm" align="center">
+              <Text size="xs" c={autoSyncStatus?.last_error ? 'red' : 'dimmed'}>
+                {autoSyncStatus?.last_error
+                  ? `${t('autosync.status_failed')}: ${autoSyncStatus.last_error}`
+                  : autoSyncStatus?.last_pulled_at
+                    ? `${t('autosync.status_last_pulled')}: ${formatTimeAgo(autoSyncStatus.last_pulled_at)}`
+                    : autoSyncStatus?.last_check_at
+                      ? `${t('autosync.status_last_checked')}: ${formatTimeAgo(autoSyncStatus.last_check_at)}`
+                      : t('autosync.status_never')}
+              </Text>
+              <Button
+                size="compact-xs"
+                variant="light"
+                onClick={handleAutoSyncCheckNow}
+                loading={autoSyncChecking}
+                disabled={!autoBackupStatus?.transport_id}
+              >
+                {t('autosync.check_now_btn')}
+              </Button>
+            </Group>
+            <Text size="xs" c="dimmed">{t('autosync.lww_disclaimer')}</Text>
+          </Stack>
+
+          <Divider />
+          <CloudSyncPanel
+            transports={transports ?? []}
+            isLoading={transportsLoading}
+            onDisconnect={(id) => disconnect.mutate(id)}
+          />
         </Stack>
       </Paper>
+
+      <ConnectCloudModal
+        opened={connectOpen}
+        onClose={() => setConnectOpen(false)}
+        onConnected={() => qc.invalidateQueries({ queryKey: ['cloud-transports'] })}
+      />
 
       {/* Export filter modal */}
       <Modal
@@ -591,6 +1114,61 @@ export function SyncPage() {
           <Loader size="xl" />
         </Center>
       )}
+
+      {/* Auto-sync conflict prompt */}
+      <Modal
+        opened={conflictModalOpen && !!autoSyncStatus?.pending}
+        onClose={() => {
+          if (autoSyncStatus?.pending) dismissedPromptRef.current = autoSyncStatus.pending.provider_id
+          setConflictModalOpen(false)
+        }}
+        title={t('autosync.conflict_title')}
+        size="md"
+        closeOnClickOutside={false}
+      >
+        <Stack gap="md">
+          <Alert icon={<IconAlertCircle size={16} />} color="yellow">
+            <Stack gap={4}>
+              <Text size="sm">
+                {t('autosync.conflict_intro').replace(
+                  '{date}',
+                  autoSyncStatus?.pending?.cloud_modified_at
+                    ? new Date(autoSyncStatus.pending.cloud_modified_at).toLocaleString()
+                    : '',
+                )}
+              </Text>
+              <Text size="xs" c="dimmed">{t('autosync.lww_disclaimer')}</Text>
+            </Stack>
+          </Alert>
+          <Stack gap="xs">
+            <Button
+              variant="filled"
+              onClick={handleConflictSaveThenPull}
+              loading={autoSyncPulling}
+              disabled={autoSyncSkipping}
+            >
+              {t('autosync.action_save_then_pull')}
+            </Button>
+            <Button
+              variant="light"
+              color="red"
+              onClick={handleConflictPull}
+              loading={autoSyncPulling}
+              disabled={autoSyncSkipping}
+            >
+              {t('autosync.action_just_pull')}
+            </Button>
+            <Button
+              variant="default"
+              onClick={handleConflictSkip}
+              loading={autoSyncSkipping}
+              disabled={autoSyncPulling}
+            >
+              {t('autosync.action_skip')}
+            </Button>
+          </Stack>
+        </Stack>
+      </Modal>
     </Container>
   )
 }

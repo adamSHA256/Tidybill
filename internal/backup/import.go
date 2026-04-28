@@ -35,14 +35,30 @@ func (s *ImportService) Import(reader io.Reader, opts ImportOptions) (*ImportRep
 	// Check if the file is encrypted and decrypt if needed.
 	jsonData := rawData
 	if IsEncrypted(rawData) {
-		if opts.Passphrase == "" {
-			return nil, errors.New("file is encrypted, passphrase required")
+		mode, modeErr := DetectEncryptMode(rawData)
+		if modeErr != nil {
+			return nil, fmt.Errorf("reading file header: %w", modeErr)
 		}
-		decrypted, err := DecryptExport(rawData, opts.Passphrase)
-		if err != nil {
-			return nil, fmt.Errorf("decryption failed: %w", err)
+		switch mode {
+		case EncryptModeMaster:
+			if len(opts.MasterSeed) == 0 {
+				return nil, errors.New("master_key_not_configured: this backup requires the master recovery phrase")
+			}
+			decrypted, err := DecryptExportMaster(rawData, opts.MasterSeed)
+			if err != nil {
+				return nil, fmt.Errorf("decryption failed: %w", err)
+			}
+			jsonData = decrypted
+		default:
+			if opts.Passphrase == "" {
+				return nil, errors.New("file is encrypted, passphrase required")
+			}
+			decrypted, err := DecryptExport(rawData, opts.Passphrase)
+			if err != nil {
+				return nil, fmt.Errorf("decryption failed: %w", err)
+			}
+			jsonData = decrypted
 		}
-		jsonData = decrypted
 	}
 
 	// 1. Decode JSON

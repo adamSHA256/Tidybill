@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"testing"
+
+	"github.com/tyler-smith/go-bip39"
 )
 
 func TestEncryptDecryptRoundTrip(t *testing.T) {
@@ -16,9 +18,12 @@ func TestEncryptDecryptRoundTrip(t *testing.T) {
 		t.Fatalf("EncryptExport: %v", err)
 	}
 
-	// Should start with magic bytes.
+	// Should start with v1 magic bytes.
 	if !IsEncrypted(encrypted) {
 		t.Fatal("encrypted data should start with magic bytes")
+	}
+	if string(encrypted[:magicLen]) != string(magicBytesV1) {
+		t.Fatal("EncryptExport should write v1 magic")
 	}
 
 	// Should be larger than original (header + tag overhead).
@@ -26,7 +31,6 @@ func TestEncryptDecryptRoundTrip(t *testing.T) {
 		t.Fatalf("encrypted (%d bytes) should be larger than original (%d bytes)", len(encrypted), len(original))
 	}
 
-	// Header must be exactly 55 bytes.
 	if len(encrypted) < headerLen {
 		t.Fatalf("encrypted data (%d bytes) shorter than header (%d bytes)", len(encrypted), headerLen)
 	}
@@ -38,6 +42,108 @@ func TestEncryptDecryptRoundTrip(t *testing.T) {
 
 	if !bytes.Equal(original, decrypted) {
 		t.Fatalf("decrypted data doesn't match original")
+	}
+}
+
+func TestEncryptDecryptMasterRoundTrip(t *testing.T) {
+	original := []byte(`{"invoices":[{"id":"abc","number":"VF26-00002"}]}`)
+
+	mnemonic, err := GenerateRecoveryMnemonic()
+	if err != nil {
+		t.Fatalf("GenerateRecoveryMnemonic: %v", err)
+	}
+	seed := bip39.NewSeed(mnemonic, "")
+
+	encrypted, err := EncryptExportMaster(original, seed)
+	if err != nil {
+		t.Fatalf("EncryptExportMaster: %v", err)
+	}
+
+	// Should start with v2 magic bytes.
+	if !IsEncrypted(encrypted) {
+		t.Fatal("encrypted data should be recognised as encrypted")
+	}
+	if string(encrypted[:magicLen]) != string(magicBytesV2) {
+		t.Fatal("EncryptExportMaster should write v2 magic")
+	}
+	if encrypted[magicLen] != byte(EncryptModeMaster) {
+		t.Fatalf("expected mode byte %d, got %d", EncryptModeMaster, encrypted[magicLen])
+	}
+
+	decrypted, err := DecryptExportMaster(encrypted, seed)
+	if err != nil {
+		t.Fatalf("DecryptExportMaster: %v", err)
+	}
+
+	if !bytes.Equal(original, decrypted) {
+		t.Fatalf("decrypted data doesn't match original")
+	}
+}
+
+func TestDetectEncryptMode(t *testing.T) {
+	mnemonic, err := GenerateRecoveryMnemonic()
+	if err != nil {
+		t.Fatalf("GenerateRecoveryMnemonic: %v", err)
+	}
+	seed := bip39.NewSeed(mnemonic, "")
+
+	v1, _ := EncryptExport([]byte(`{}`), "passphrase123")
+	v2master, _ := EncryptExportMaster([]byte(`{}`), seed)
+
+	mode, err := DetectEncryptMode(v1)
+	if err != nil {
+		t.Fatalf("DetectEncryptMode v1: %v", err)
+	}
+	if mode != EncryptModeLegacy {
+		t.Fatalf("v1 should detect as legacy, got %d", mode)
+	}
+
+	mode, err = DetectEncryptMode(v2master)
+	if err != nil {
+		t.Fatalf("DetectEncryptMode v2master: %v", err)
+	}
+	if mode != EncryptModeMaster {
+		t.Fatalf("v2 master should detect as master, got %d", mode)
+	}
+
+	_, err = DetectEncryptMode([]byte(`{"not":"encrypted"}`))
+	if err == nil {
+		t.Fatal("expected error for plain JSON")
+	}
+}
+
+func TestDecryptWrongFunction(t *testing.T) {
+	mnemonic, _ := GenerateRecoveryMnemonic()
+	seed := bip39.NewSeed(mnemonic, "")
+	data := []byte(`{"test": true}`)
+
+	// Encrypt with master, try to decrypt with passphrase.
+	masterBlob, _ := EncryptExportMaster(data, seed)
+	_, err := DecryptExport(masterBlob, "passphrase123")
+	if !errors.Is(err, ErrWrongDecryptFunc) {
+		t.Fatalf("expected ErrWrongDecryptFunc, got %v", err)
+	}
+
+	// Encrypt with passphrase (v1), try to decrypt with master.
+	v1blob, _ := EncryptExport(data, "passphrase123")
+	_, err = DecryptExportMaster(v1blob, seed)
+	if !errors.Is(err, ErrWrongDecryptFunc) {
+		t.Fatalf("expected ErrWrongDecryptFunc for v1 blob, got %v", err)
+	}
+}
+
+func TestDecryptMasterWrongSeed(t *testing.T) {
+	mnemonic1, _ := GenerateRecoveryMnemonic()
+	mnemonic2, _ := GenerateRecoveryMnemonic()
+	seed1 := bip39.NewSeed(mnemonic1, "")
+	seed2 := bip39.NewSeed(mnemonic2, "")
+
+	data := []byte(`{"test": true}`)
+	encrypted, _ := EncryptExportMaster(data, seed1)
+
+	_, err := DecryptExportMaster(encrypted, seed2)
+	if err == nil {
+		t.Fatal("expected error decrypting with wrong seed")
 	}
 }
 
@@ -120,7 +226,8 @@ func TestIsEncrypted(t *testing.T) {
 		data []byte
 		want bool
 	}{
-		{"encrypted", []byte("TBILL\x01restofdata..."), true},
+		{"v1 encrypted", []byte("TBILL\x01restofdata..."), true},
+		{"v2 encrypted", []byte("TBILL\x02\x01restofdata..."), true},
 		{"plain json", []byte(`{"invoices":[]}`), false},
 		{"empty", []byte{}, false},
 		{"too short", []byte("TBI"), false},
@@ -145,7 +252,6 @@ func TestDifferentEncryptionsProduceDifferentOutput(t *testing.T) {
 		t.Fatal("two encryptions of the same data should produce different output (random salt + nonce)")
 	}
 
-	// But both should decrypt to the same thing.
 	dec1, _ := DecryptExport(enc1, passphrase)
 	dec2, _ := DecryptExport(enc2, passphrase)
 
@@ -155,13 +261,17 @@ func TestDifferentEncryptionsProduceDifferentOutput(t *testing.T) {
 }
 
 func TestHeaderLength(t *testing.T) {
-	// Verify the header is exactly 55 bytes: magic(6) + salt(16) + time(4) + memory(4) + threads(1) + nonce(24).
+	// v1 header: magic(6) + salt(16) + time(4) + memory(4) + threads(1) + nonce(24) = 55.
 	expected := 6 + 16 + 4 + 4 + 1 + 24
 	if headerLen != expected {
 		t.Fatalf("headerLen = %d, want %d", headerLen, expected)
 	}
 	if headerLen != 55 {
 		t.Fatalf("headerLen = %d, want 55", headerLen)
+	}
+	// v2 header is one byte longer (mode byte).
+	if headerLenV2 != 56 {
+		t.Fatalf("headerLenV2 = %d, want 56", headerLenV2)
 	}
 }
 
@@ -171,13 +281,11 @@ func TestGenerateRecoveryMnemonic(t *testing.T) {
 		t.Fatalf("GenerateRecoveryMnemonic: %v", err)
 	}
 
-	// Should be 12 words.
 	words := bytes.Fields([]byte(mnemonic))
 	if len(words) != 12 {
 		t.Fatalf("expected 12 words, got %d: %s", len(words), mnemonic)
 	}
 
-	// Should be valid.
 	if !ValidateMnemonic(mnemonic) {
 		t.Fatalf("generated mnemonic should be valid: %s", mnemonic)
 	}
@@ -201,7 +309,6 @@ func TestValidateMnemonic(t *testing.T) {
 		})
 	}
 
-	// Generate a valid mnemonic and confirm it validates.
 	mnemonic, err := GenerateRecoveryMnemonic()
 	if err != nil {
 		t.Fatalf("GenerateRecoveryMnemonic: %v", err)
@@ -219,13 +326,11 @@ func TestMnemonicCanBeUsedAsPassphrase(t *testing.T) {
 		t.Fatalf("GenerateRecoveryMnemonic: %v", err)
 	}
 
-	// Encrypt with the mnemonic as passphrase.
 	encrypted, err := EncryptExport(original, mnemonic)
 	if err != nil {
 		t.Fatalf("EncryptExport: %v", err)
 	}
 
-	// Decrypt with the same mnemonic.
 	decrypted, err := DecryptExport(encrypted, mnemonic)
 	if err != nil {
 		t.Fatalf("DecryptExport: %v", err)
@@ -243,11 +348,10 @@ func TestHighMemoryDetection(t *testing.T) {
 		t.Fatalf("EncryptExport: %v", err)
 	}
 
-	// Modify the memory param in the header to something huge (512 MiB = 524288 KiB).
+	// Modify the memory param in the v1 header to something huge (512 MiB = 524288 KiB).
 	// Memory is at offset: magic(6) + salt(16) + time(4) = 26, 4 bytes, little-endian.
 	binary.LittleEndian.PutUint32(encrypted[26:30], 524288) // 512 MiB
 
-	// Attempt to decrypt -- should return HighMemoryError.
 	_, err = DecryptExport(encrypted, "testpassword!")
 	if err == nil {
 		t.Fatal("expected HighMemoryError, got nil")
@@ -262,8 +366,29 @@ func TestHighMemoryDetection(t *testing.T) {
 		t.Fatalf("expected RequestedMiB=512, got %d", highMemErr.RequestedMiB)
 	}
 
-	// Should also match the sentinel via errors.Is.
 	if !errors.Is(err, ErrHighMemory) {
 		t.Fatal("expected error to match ErrHighMemory sentinel")
+	}
+}
+
+func TestHighMemoryDetectionV2(t *testing.T) {
+	mnemonic, _ := GenerateRecoveryMnemonic()
+	seed := bip39.NewSeed(mnemonic, "")
+	data := []byte(`{"test": true}`)
+
+	encrypted, err := EncryptExportMaster(data, seed)
+	if err != nil {
+		t.Fatalf("EncryptExportMaster: %v", err)
+	}
+
+	// v2 memory is at offset: magic(6) + mode(1) + salt(16) + time(4) = 27, 4 bytes.
+	binary.LittleEndian.PutUint32(encrypted[27:31], 524288)
+
+	_, err = DecryptExportMaster(encrypted, seed)
+	if err == nil {
+		t.Fatal("expected HighMemoryError, got nil")
+	}
+	if !errors.Is(err, ErrHighMemory) {
+		t.Fatalf("expected ErrHighMemory, got %v", err)
 	}
 }

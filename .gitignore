@@ -24,3 +24,11 @@ vendor/
 
 # Generated files
 *.pdf
+
+# rclone sidecar cache (binaries fetched by scripts/fetch-rclone.sh, not committed)
+.rclone-cache/
+
+# rclone sidecar binaries — fetched per-platform via scripts/fetch-rclone.sh,
+# never committed. ~76 MB each (rclone is statically linked with all 70+
+# backend SDKs, hence the size).
+desktop/src-tauri/binaries/rclone-*

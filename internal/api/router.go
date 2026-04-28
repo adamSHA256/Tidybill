@@ -1,11 +1,19 @@
 package api
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
+	"log"
 	"net/http"
+	"sync"
 
 	"github.com/adamSHA256/tidybill/internal/backup"
+	"github.com/adamSHA256/tidybill/internal/cloud"
+	"github.com/adamSHA256/tidybill/internal/cloud/gdrive"
+	"github.com/adamSHA256/tidybill/internal/cloud/keychain"
+	"github.com/adamSHA256/tidybill/internal/cloud/rclone"
 	"github.com/adamSHA256/tidybill/internal/config"
 	"github.com/adamSHA256/tidybill/internal/database/repository"
 	"github.com/adamSHA256/tidybill/internal/email"
@@ -14,22 +22,31 @@ import (
 )
 
 type Server struct {
-	invoices     *repository.InvoiceRepository
-	invoiceItems *repository.InvoiceItemRepository
-	customers    *repository.CustomerRepository
-	suppliers    *repository.SupplierRepository
-	bankAccounts *repository.BankAccountRepository
-	settings     *repository.SettingsRepository
-	items        *repository.ItemRepository
-	custItems    *repository.CustomerItemRepository
-	templates    *repository.PDFTemplateRepository
-	smtpConfigs  *repository.SmtpConfigRepository
-	pdf          *service.PDFService
-	emailService *email.Service
-	cfg          *config.Config
-	updater      *update.Checker
-	backupExport *backup.ExportService
-	backupImport *backup.ImportService
+	invoices      *repository.InvoiceRepository
+	invoiceItems  *repository.InvoiceItemRepository
+	customers     *repository.CustomerRepository
+	suppliers     *repository.SupplierRepository
+	bankAccounts  *repository.BankAccountRepository
+	settings      *repository.SettingsRepository
+	items         *repository.ItemRepository
+	custItems     *repository.CustomerItemRepository
+	templates     *repository.PDFTemplateRepository
+	smtpConfigs   *repository.SmtpConfigRepository
+	pdf           *service.PDFService
+	emailService  *email.Service
+	cfg           *config.Config
+	updater       *update.Checker
+	backupExport  *backup.ExportService
+	backupImport  *backup.ImportService
+	cloudRegistry  *cloud.Registry
+	cloudConfigs   *repository.CloudConfigsRepository
+	kc             keychain.Store
+	rcloneMgr      *rclone.Manager
+	gdriveConnectMu     sync.Mutex
+	gdriveConnectStates map[string]pendingGDriveConnect
+	revealToken         revealTokenState
+	autoBackup          *AutoBackupService
+	autoSync            *AutoSyncService
 }
 
 func NewServer(db *sql.DB, cfg *config.Config) *Server {
@@ -46,27 +63,67 @@ func NewServer(db *sql.DB, cfg *config.Config) *Server {
 	updater := update.NewChecker(settings)
 	updater.StartAutoCheck()
 
+	reg := cloud.NewRegistry()
+
+	cloudConfigs := repository.NewCloudConfigsRepository(db)
+
 	s := &Server{
-		invoices:     invoices,
-		invoiceItems: invoiceItems,
-		customers:    customers,
-		suppliers:    suppliers,
-		bankAccounts: bankAccounts,
-		settings:     settings,
-		items:        items,
-		custItems:    custItems,
-		templates:    templates,
-		smtpConfigs:  smtpConfigs,
-		pdf:          service.NewPDFService(cfg.PDFDir, cfg.PreviewDir),
-		emailService: email.NewService(smtpConfigs, invoices, customers, suppliers, settings),
-		cfg:          cfg,
-		updater:      updater,
-		backupExport: backup.NewExportService(
+		invoices:      invoices,
+		invoiceItems:  invoiceItems,
+		customers:     customers,
+		suppliers:     suppliers,
+		bankAccounts:  bankAccounts,
+		settings:      settings,
+		items:         items,
+		custItems:     custItems,
+		templates:     templates,
+		smtpConfigs:   smtpConfigs,
+		pdf:           service.NewPDFService(cfg.PDFDir, cfg.PreviewDir),
+		emailService:  email.NewService(smtpConfigs, invoices, customers, suppliers, settings),
+		cfg:           cfg,
+		updater:       updater,
+		backupExport:  backup.NewExportService(
 			db, suppliers, bankAccounts, customers, invoices,
 			invoiceItems, items, custItems, templates, smtpConfigs, settings,
 		),
-		backupImport: backup.NewImportService(db),
+		backupImport:       backup.NewImportService(db),
+		cloudRegistry:      reg,
+		cloudConfigs:       cloudConfigs,
+		gdriveConnectStates: make(map[string]pendingGDriveConnect),
 	}
+
+	// Keychain (best-effort).
+	kc, err := keychain.New(cfg.DataDir)
+	if err != nil {
+		log.Printf("keychain unavailable: %v", err)
+	}
+	s.kc = kc
+
+	// Re-register gdrive if a refresh token is already in the keychain.
+	if kc != nil {
+		if t, err := gdrive.New(kc, settings); err == nil {
+			s.cloudRegistry.Register(t)
+		} else if !errors.Is(err, gdrive.ErrNotConnected) {
+			log.Printf("gdrive restore: %v", err)
+		}
+	}
+
+	// rclone manager — lazy-spawn (do not call EnsureRunning here).
+	if bin, err := rclone.LocateBinary(); err == nil {
+		s.rcloneMgr = rclone.NewManager(bin)
+		s.reregisterRcloneRemotes(context.Background())
+	} else {
+		log.Printf("rclone not available: %v", err)
+	}
+
+	// Auto-backup goroutine.
+	s.autoBackup = newAutoBackupService(settings, reg, s.backupExport, kc)
+	go s.autoBackup.Run()
+
+	// Auto-sync goroutine.
+	s.autoSync = newAutoSyncService(settings, reg, s.backupImport, kc)
+	go s.autoSync.Run()
+
 	return s
 }
 
@@ -189,6 +246,39 @@ func (s *Server) Router() http.Handler {
 	mux.HandleFunc("POST /api/backup/import", s.handleImport)
 	mux.HandleFunc("POST /api/backup/import/preview", s.handleImportPreview)
 	mux.HandleFunc("GET /api/backup/generate-mnemonic", s.handleGenerateMnemonic)
+
+	// Master recovery phrase management
+	mux.HandleFunc("GET /api/master-key/status", s.handleMasterKeyStatus)
+	mux.HandleFunc("POST /api/master-key/generate", s.handleMasterKeyGenerate)
+	mux.HandleFunc("POST /api/master-key/import", s.handleMasterKeyImport)
+	mux.HandleFunc("GET /api/master-key/reveal-token", s.handleMasterKeyRevealToken)
+	mux.HandleFunc("GET /api/master-key/reveal", s.handleMasterKeyReveal)
+	mux.HandleFunc("DELETE /api/master-key", s.handleMasterKeyDelete)
+
+	// Auto-backup
+	mux.HandleFunc("GET /api/cloud/autobackup/status", s.handleAutoBackupStatus)
+	mux.HandleFunc("PUT /api/cloud/autobackup/settings", s.handleAutoBackupSettingsUpdate)
+	mux.HandleFunc("POST /api/cloud/autobackup/trigger", s.handleAutoBackupTrigger)
+
+	// Auto-sync
+	mux.HandleFunc("GET /api/cloud/autosync/status", s.handleAutoSyncStatus)
+	mux.HandleFunc("PUT /api/cloud/autosync/settings", s.handleAutoSyncSettingsUpdate)
+	mux.HandleFunc("POST /api/cloud/autosync/check", s.handleAutoSyncCheck)
+	mux.HandleFunc("POST /api/cloud/autosync/pull", s.handleAutoSyncPull)
+	mux.HandleFunc("POST /api/cloud/autosync/skip", s.handleAutoSyncSkip)
+
+	// Cloud transports
+	mux.HandleFunc("GET /api/cloud/transports", s.handleCloudTransports)
+	mux.HandleFunc("GET /api/cloud/rclone/backends", s.handleCloudRcloneBackends)
+	mux.HandleFunc("POST /api/cloud/gdrive/connect", s.handleCloudGDriveConnect)
+	mux.HandleFunc("POST /api/cloud/gdrive/disconnect", s.handleCloudGDriveDisconnect)
+	mux.HandleFunc("POST /api/cloud/rclone/{backend}/connect", s.handleCloudRcloneConnect)
+	mux.HandleFunc("POST /api/cloud/rclone/{backend}/disconnect", s.handleCloudRcloneDisconnect)
+	mux.HandleFunc("POST /api/cloud/upload", s.handleCloudUpload)
+	mux.HandleFunc("GET /api/cloud/{transport_id}/list", s.handleCloudList)
+	mux.HandleFunc("POST /api/cloud/{transport_id}/download-preview", s.handleCloudDownloadPreview)
+	mux.HandleFunc("POST /api/cloud/{transport_id}/download-apply", s.handleCloudDownloadApply)
+	mux.HandleFunc("DELETE /api/cloud/{transport_id}/blob", s.handleCloudDeleteBlob)
 
 	return corsMiddleware(mux)
 }
