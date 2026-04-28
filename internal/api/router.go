@@ -46,6 +46,7 @@ type Server struct {
 	gdriveConnectStates map[string]pendingGDriveConnect
 	revealToken         revealTokenState
 	autoBackup          *AutoBackupService
+	autoSync            *AutoSyncService
 }
 
 func NewServer(db *sql.DB, cfg *config.Config) *Server {
@@ -118,6 +119,10 @@ func NewServer(db *sql.DB, cfg *config.Config) *Server {
 	// Auto-backup goroutine.
 	s.autoBackup = newAutoBackupService(settings, reg, s.backupExport, kc)
 	go s.autoBackup.Run()
+
+	// Auto-sync goroutine.
+	s.autoSync = newAutoSyncService(settings, reg, s.backupImport, kc)
+	go s.autoSync.Run()
 
 	return s
 }
@@ -254,6 +259,13 @@ func (s *Server) Router() http.Handler {
 	mux.HandleFunc("GET /api/cloud/autobackup/status", s.handleAutoBackupStatus)
 	mux.HandleFunc("PUT /api/cloud/autobackup/settings", s.handleAutoBackupSettingsUpdate)
 	mux.HandleFunc("POST /api/cloud/autobackup/trigger", s.handleAutoBackupTrigger)
+
+	// Auto-sync
+	mux.HandleFunc("GET /api/cloud/autosync/status", s.handleAutoSyncStatus)
+	mux.HandleFunc("PUT /api/cloud/autosync/settings", s.handleAutoSyncSettingsUpdate)
+	mux.HandleFunc("POST /api/cloud/autosync/check", s.handleAutoSyncCheck)
+	mux.HandleFunc("POST /api/cloud/autosync/pull", s.handleAutoSyncPull)
+	mux.HandleFunc("POST /api/cloud/autosync/skip", s.handleAutoSyncSkip)
 
 	// Cloud transports
 	mux.HandleFunc("GET /api/cloud/transports", s.handleCloudTransports)
