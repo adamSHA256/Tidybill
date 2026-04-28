@@ -875,5 +875,16 @@
   "autosync.conflict_intro": "Záloha v cloudu z {date} je novější než vaše lokální data, ale od poslední synchronizace jste i lokálně provedli změny.",
   "autosync.action_save_then_pull": "Uložit aktuální stav jako jednorázovou zálohu a poté importovat cloud",
   "autosync.action_just_pull": "Jen importovat cloud (lokální změny budou nahrazeny)",
-  "autosync.action_skip": "Přeskočit — zatím ponechat lokální"
+  "autosync.action_skip": "Přeskočit — zatím ponechat lokální",
+  "retention.section_title": "Pokročilé udržování záloh",
+  "retention.intro": "Po každé úspěšné záloze TidyBill smaže starší zálohy v cloudu, aby složka nerostla donekonečna. Výchozí nastavení zachovává všechny zálohy z posledního týdne, pak jednu denně po dobu měsíce, jednu týdně po půl roce a jednu měsíčně navždy. Nejnovější záloha je vždy zachována bez ohledu na nastavení.",
+  "retention.enabled_label": "Automaticky mazat staré zálohy",
+  "retention.keep_recent_days_label": "Zachovat všechny zálohy posledních (dnů)",
+  "retention.keep_recent_days_desc": "V tomto období se zachovají všechny zálohy.",
+  "retention.keep_daily_days_label": "Zachovat jednu za den po dobu (dnů)",
+  "retention.keep_daily_days_desc": "Po nedávném období se zachová pouze nejnovější záloha každého UTC dne.",
+  "retention.keep_weekly_months_label": "Zachovat jednu za týden po dobu (měsíců)",
+  "retention.keep_weekly_months_desc": "Po denním období se zachová pouze nejnovější záloha každého ISO týdne. 0 přeskakuje týdenní úroveň.",
+  "retention.keep_monthly_months_label": "Zachovat jednu za měsíc po dobu (měsíců, 0 = navždy)",
+  "retention.keep_monthly_months_desc": "Po týdenním období se zachová pouze nejnovější záloha každého kalendářního měsíce. 0 = uchovávat měsíční zálohy navždy."
 }

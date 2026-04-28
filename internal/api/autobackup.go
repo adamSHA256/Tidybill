@@ -185,6 +185,12 @@ func (a *AutoBackupService) runBackup(t cloud.Transport, transportID string) {
 	_ = a.settings.Set("cloud.autobackup.last_run_at", now)
 	_ = a.settings.Set("cloud.autobackup.last_error", "")
 	log.Printf("autobackup: backup complete → %s", filename)
+
+	// Best-effort retention pass. A failure here doesn't undo the upload —
+	// the user still has their fresh backup, just with extra older files.
+	if err := a.pruneBackups(a.ctx, t); err != nil {
+		log.Printf("autobackup-prune: %v", err)
+	}
 }
 
 func (a *AutoBackupService) resolveSeed() ([]byte, error) {

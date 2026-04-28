@@ -19,10 +19,12 @@ import {
   Tooltip,
   Select,
   Divider,
+  Collapse,
+  UnstyledButton,
 } from '@mantine/core'
 import { DateInput } from '@mantine/dates'
 import { notifications } from '@mantine/notifications'
-import { IconDownload, IconUpload, IconAlertCircle, IconInfoCircle, IconCloudUpload, IconShieldLock } from '@tabler/icons-react'
+import { IconDownload, IconUpload, IconAlertCircle, IconInfoCircle, IconCloudUpload, IconShieldLock, IconChevronDown, IconChevronRight } from '@tabler/icons-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { api, isTauri, isMobileDevice, shareFile, type ExportFilters, type ImportReport, type CloudTransportInfo, type CloudBlobRef } from '../api/client'
@@ -158,6 +160,7 @@ export function SyncPage() {
   const [autoSyncPulling, setAutoSyncPulling] = useState(false)
   const [autoSyncSkipping, setAutoSyncSkipping] = useState(false)
   const [conflictModalOpen, setConflictModalOpen] = useState(false)
+  const [retentionOpen, setRetentionOpen] = useState(false)
 
   // Open the conflict modal whenever the backend reports a pending prompt.
   // Don't reopen if the user just closed it for the same blob — only open
@@ -849,6 +852,65 @@ export function SyncPage() {
                 </Button>
               </Tooltip>
             </Group>
+
+            {/* Advanced retention disclosure — defaults are sane, only power users open this */}
+            <UnstyledButton
+              onClick={() => setRetentionOpen((v) => !v)}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: 0.7 }}
+            >
+              {retentionOpen ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
+              <Text size="xs">{t('retention.section_title')}</Text>
+            </UnstyledButton>
+            <Collapse in={retentionOpen}>
+              <Stack gap="xs" pl="md" mt="xs">
+                <Text size="xs" c="dimmed">{t('retention.intro')}</Text>
+                <Switch
+                  label={t('retention.enabled_label')}
+                  checked={autoBackupStatus?.retention?.enabled ?? true}
+                  onChange={(e) => updateAutoBackup.mutate({ retention: { enabled: e.currentTarget.checked } })}
+                />
+                <NumberInput
+                  label={t('retention.keep_recent_days_label')}
+                  description={t('retention.keep_recent_days_desc')}
+                  min={1}
+                  max={365}
+                  value={autoBackupStatus?.retention?.keep_recent_days ?? 7}
+                  onChange={(v) => typeof v === 'number' && v >= 1 && updateAutoBackup.mutate({ retention: { keep_recent_days: v } })}
+                  disabled={!autoBackupStatus?.retention?.enabled}
+                  w={220}
+                />
+                <NumberInput
+                  label={t('retention.keep_daily_days_label')}
+                  description={t('retention.keep_daily_days_desc')}
+                  min={1}
+                  max={365}
+                  value={autoBackupStatus?.retention?.keep_daily_days ?? 30}
+                  onChange={(v) => typeof v === 'number' && v >= 1 && updateAutoBackup.mutate({ retention: { keep_daily_days: v } })}
+                  disabled={!autoBackupStatus?.retention?.enabled}
+                  w={220}
+                />
+                <NumberInput
+                  label={t('retention.keep_weekly_months_label')}
+                  description={t('retention.keep_weekly_months_desc')}
+                  min={0}
+                  max={60}
+                  value={autoBackupStatus?.retention?.keep_weekly_months ?? 6}
+                  onChange={(v) => typeof v === 'number' && v >= 0 && updateAutoBackup.mutate({ retention: { keep_weekly_months: v } })}
+                  disabled={!autoBackupStatus?.retention?.enabled}
+                  w={220}
+                />
+                <NumberInput
+                  label={t('retention.keep_monthly_months_label')}
+                  description={t('retention.keep_monthly_months_desc')}
+                  min={0}
+                  max={600}
+                  value={autoBackupStatus?.retention?.keep_monthly_months ?? 0}
+                  onChange={(v) => typeof v === 'number' && v >= 0 && updateAutoBackup.mutate({ retention: { keep_monthly_months: v } })}
+                  disabled={!autoBackupStatus?.retention?.enabled}
+                  w={220}
+                />
+              </Stack>
+            </Collapse>
           </Stack>
 
           <Divider label={t('autosync.section_title')} labelPosition="left" />

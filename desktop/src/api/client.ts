@@ -761,6 +761,14 @@ export interface CloudStatus {
   detail?: string
 }
 
+export interface AutoBackupRetention {
+  enabled: boolean
+  keep_recent_days: number
+  keep_daily_days: number
+  keep_weekly_months: number
+  keep_monthly_months: number
+}
+
 export interface AutoBackupStatus {
   enabled: boolean
   transport_id: string
@@ -768,12 +776,22 @@ export interface AutoBackupStatus {
   last_run_at: string
   last_error: string
   in_progress: boolean
+  retention?: AutoBackupRetention
+}
+
+export interface AutoBackupRetentionUpdate {
+  enabled?: boolean
+  keep_recent_days?: number
+  keep_daily_days?: number
+  keep_weekly_months?: number
+  keep_monthly_months?: number
 }
 
 export interface AutoBackupSettingsUpdate {
   enabled?: boolean
   transport_id?: string
   idle_minutes?: number
+  retention?: AutoBackupRetentionUpdate
 }
 
 export interface AutoSyncPending {

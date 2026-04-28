@@ -874,5 +874,16 @@
   "autosync.conflict_intro": "The cloud backup from {date} is newer than your local data, but you've also made changes locally since the last sync.",
   "autosync.action_save_then_pull": "Save current as one-off backup, then import cloud",
   "autosync.action_just_pull": "Just import cloud (your local changes will be replaced)",
-  "autosync.action_skip": "Skip — keep local for now"
+  "autosync.action_skip": "Skip — keep local for now",
+  "retention.section_title": "Advanced retention",
+  "retention.intro": "After every successful backup, TidyBill removes older backups from your cloud so the folder doesn't grow forever. The defaults keep all backups from the last week, then a daily snapshot for a month, weekly for half a year, and monthly forever. The most recent backup is always kept, no matter what these settings say.",
+  "retention.enabled_label": "Prune old backups automatically",
+  "retention.keep_recent_days_label": "Keep all backups from the last (days)",
+  "retention.keep_recent_days_desc": "Within this window every backup is preserved.",
+  "retention.keep_daily_days_label": "Keep one per day for (days)",
+  "retention.keep_daily_days_desc": "After the recent window, only the latest backup of each UTC day stays.",
+  "retention.keep_weekly_months_label": "Keep one per week for (months)",
+  "retention.keep_weekly_months_desc": "After daily, only the latest backup per ISO week stays. Set to 0 to skip the weekly bucket.",
+  "retention.keep_monthly_months_label": "Keep one per month for (months, 0 = forever)",
+  "retention.keep_monthly_months_desc": "After weekly, only the latest backup per calendar month stays. 0 keeps monthly snapshots forever."
 }
