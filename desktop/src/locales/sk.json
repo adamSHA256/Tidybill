@@ -759,6 +759,8 @@
   "cloud.restore.preview": "Náhľad",
   "cloud.restore.apply": "Importovať",
   "cloud.restore.success": "Dáta importované",
+  "cloud.restore.error_not_configured": "Táto záloha je zašifrovaná. Najprv nastavte obnovovaciu frázu.",
+  "cloud.restore.error_wrong_key": "Obnovovacia fráza nezodpovedá tejto zálohe.",
 
   "backup.dest_label": "Cieľ",
   "backup.dest_local": "Miestny súbor",

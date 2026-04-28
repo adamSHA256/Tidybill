@@ -17,7 +17,6 @@ import {
   Loader,
   Center,
   Tooltip,
-  PasswordInput,
 } from '@mantine/core'
 import { DateInput } from '@mantine/dates'
 import { notifications } from '@mantine/notifications'
@@ -77,7 +76,7 @@ export function SyncPage() {
 
   // Cloud import state
   const [selectedCloudBlob, setSelectedCloudBlob] = useState<CloudBlobRef | null>(null)
-  const [cloudImportPassphrase, setCloudImportPassphrase] = useState('')
+  const [cloudImportError, setCloudImportError] = useState<'not_configured' | 'wrong_key' | null>(null)
   const [isCloudImportFlow, setIsCloudImportFlow] = useState(false)
 
   // Cloud sync state
@@ -270,12 +269,13 @@ export function SyncPage() {
 
   const handleCloudBlobPreview = async () => {
     if (!selectedCloudBlob || importSource === 'local') return
+    setCloudImportError(null)
     setPreviewLoading(true)
     try {
       const report = await api.cloud.downloadPreview(
         importSource,
         selectedCloudBlob.id,
-        cloudImportPassphrase || undefined,
+        undefined,
         importMode,
       )
       setPreviewReport(report)
@@ -283,7 +283,13 @@ export function SyncPage() {
       setPreviewModalOpen(true)
     } catch (err: unknown) {
       const raw = err instanceof Error ? err.message : String(err)
-      notifications.show({ title: t('common.error'), message: translateBackendError(raw, t), color: 'red' })
+      if (raw.includes('passphrase required') || raw.includes('master_key_not_configured')) {
+        setCloudImportError('not_configured')
+      } else if (raw.includes('wrong passphrase or corrupted')) {
+        setCloudImportError('wrong_key')
+      } else {
+        notifications.show({ title: t('common.error'), message: raw, color: 'red' })
+      }
     } finally {
       setPreviewLoading(false)
     }
@@ -297,7 +303,7 @@ export function SyncPage() {
         const result = await api.cloud.downloadApply(
           importSource,
           selectedCloudBlob.id,
-          cloudImportPassphrase || undefined,
+          undefined,
           importMode,
         )
         setImportResult(result)
@@ -469,7 +475,7 @@ export function SyncPage() {
             onChange={(val) => {
               setImportSource(val)
               setSelectedCloudBlob(null)
-              setCloudImportPassphrase('')
+              setCloudImportError(null)
               selectedFileRef.current = null
             }}
           >
@@ -551,17 +557,31 @@ export function SyncPage() {
 
               {selectedCloudBlob && (
                 <Stack gap="xs">
-                  <PasswordInput
-                    label={t('cloud.restore.passphrase_optional')}
-                    value={cloudImportPassphrase}
-                    onChange={(e) => setCloudImportPassphrase(e.currentTarget.value)}
-                  />
+                  {cloudImportError === 'not_configured' && (
+                    <Alert icon={<IconShieldLock size={16} />} color="yellow">
+                      <Group gap="xs" wrap="nowrap">
+                        <span>{t('cloud.restore.error_not_configured')}</span>
+                        <Button size="compact-xs" variant="subtle" color="yellow" onClick={() => navigate('/settings#master-key')}>
+                          {t('banner.no_master_key_action')}
+                        </Button>
+                      </Group>
+                    </Alert>
+                  )}
+                  {cloudImportError === 'wrong_key' && (
+                    <Alert icon={<IconAlertCircle size={16} />} color="red">
+                      <Group gap="xs" wrap="nowrap">
+                        <span>{t('cloud.restore.error_wrong_key')}</span>
+                        <Button size="compact-xs" variant="subtle" color="red" onClick={() => navigate('/settings#master-key')}>
+                          {t('master_key.change_btn')}
+                        </Button>
+                      </Group>
+                    </Alert>
+                  )}
                   <Button
                     variant="light"
                     leftSection={previewLoading ? <Loader size={16} /> : <IconDownload size={16} />}
                     onClick={handleCloudBlobPreview}
                     loading={previewLoading || importing}
-                    disabled={selectedCloudBlob.encrypted && !cloudImportPassphrase && !masterKeyConfigured}
                   >
                     {t('backup.cloud_load')}
                   </Button>

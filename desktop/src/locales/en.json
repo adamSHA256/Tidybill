@@ -758,6 +758,8 @@
   "cloud.restore.preview": "Preview",
   "cloud.restore.apply": "Import",
   "cloud.restore.success": "Data imported",
+  "cloud.restore.error_not_configured": "This backup is encrypted. Set up a recovery phrase first.",
+  "cloud.restore.error_wrong_key": "Recovery phrase doesn't match this backup.",
 
   "backup.dest_label": "Destination",
   "backup.dest_local": "Local file",
