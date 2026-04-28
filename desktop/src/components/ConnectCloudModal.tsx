@@ -36,50 +36,72 @@ export function ConnectCloudModal({ opened, onClose, onConnected }: ConnectCloud
     handleClose()
   }
 
-  const options = [
+  type OptionStatus = 'recommended' | 'ready' | 'beta' | 'disabled' | 'coming_soon'
+  const options: Array<{
+    id: Step
+    label: string
+    icon: React.ReactNode
+    status: OptionStatus
+  }> = [
     {
-      id: 'gdrive' as Step,
-      label: t('cloud.gdrive.label'),
-      icon: <IconBrandGoogleDrive size={28} />,
-      disabled: false,
-    },
-    {
-      id: 'sftp' as Step,
-      label: t('cloud.rclone.sftp.label'),
-      icon: <IconServer size={28} />,
-      disabled: false,
-    },
-    {
-      id: 'webdav' as Step,
-      label: t('cloud.rclone.webdav.label'),
-      icon: <IconCloud size={28} />,
-      disabled: false,
-    },
-    {
-      id: 's3' as Step,
-      label: t('cloud.rclone.s3.label'),
-      icon: <IconCloud size={28} />,
-      disabled: false,
-    },
-    {
-      id: 'protondrive' as Step,
+      id: 'protondrive',
       label: t('cloud.rclone.protondrive.label'),
       icon: <IconCloud size={28} />,
-      disabled: false,
+      status: 'recommended',
     },
     {
-      id: 'dropbox' as Step,
+      id: 'sftp',
+      label: t('cloud.rclone.sftp.label'),
+      icon: <IconServer size={28} />,
+      status: 'beta',
+    },
+    {
+      id: 'webdav',
+      label: t('cloud.rclone.webdav.label'),
+      icon: <IconCloud size={28} />,
+      status: 'beta',
+    },
+    {
+      id: 's3',
+      label: t('cloud.rclone.s3.label'),
+      icon: <IconCloud size={28} />,
+      status: 'beta',
+    },
+    {
+      id: 'gdrive',
+      label: t('cloud.gdrive.label'),
+      icon: <IconBrandGoogleDrive size={28} />,
+      status: 'disabled',
+    },
+    {
+      id: 'dropbox',
       label: t('cloud.rclone.dropbox.label'),
       icon: <IconBrandDropbox size={28} />,
-      disabled: true,
+      status: 'coming_soon',
     },
     {
-      id: 'onedrive' as Step,
+      id: 'onedrive',
       label: t('cloud.rclone.onedrive.label'),
       icon: <IconBrandOnedrive size={28} />,
-      disabled: true,
+      status: 'coming_soon',
     },
   ]
+
+  const renderBadge = (status: OptionStatus) => {
+    if (status === 'recommended') {
+      return <Badge size="xs" color="green">{t('cloud.connect.badge_recommended')}</Badge>
+    }
+    if (status === 'beta') {
+      return <Badge size="xs" color="orange">{t('cloud.connect.badge_beta')}</Badge>
+    }
+    if (status === 'disabled') {
+      return <Badge size="xs" color="gray">{t('cloud.connect.badge_disabled')}</Badge>
+    }
+    if (status === 'coming_soon') {
+      return <Badge size="xs" color="gray">{t('cloud.connect.badge_coming_soon')}</Badge>
+    }
+    return null
+  }
 
   return (
     <Modal
@@ -90,22 +112,28 @@ export function ConnectCloudModal({ opened, onClose, onConnected }: ConnectCloud
     >
       {step === 'pick' && (
         <SimpleGrid cols={2} spacing="sm">
-          {options.map((opt) => (
-            <Card
-              key={opt.id}
-              withBorder
-              padding="sm"
-              radius="md"
-              style={{ cursor: opt.disabled ? 'not-allowed' : 'pointer', opacity: opt.disabled ? 0.5 : 1 }}
-              onClick={() => !opt.disabled && setStep(opt.id)}
-            >
-              <Stack align="center" gap="xs">
-                {opt.icon}
-                <Text size="sm" ta="center">{opt.label}</Text>
-                {opt.disabled && <Badge size="xs" color="gray">Coming soon</Badge>}
-              </Stack>
-            </Card>
-          ))}
+          {options.map((opt) => {
+            const isInteractive = opt.status === 'ready' || opt.status === 'beta' || opt.status === 'recommended'
+            return (
+              <Card
+                key={opt.id}
+                withBorder
+                padding="sm"
+                radius="md"
+                style={{
+                  cursor: isInteractive ? 'pointer' : 'not-allowed',
+                  opacity: isInteractive ? 1 : 0.5,
+                }}
+                onClick={() => isInteractive && setStep(opt.id)}
+              >
+                <Stack align="center" gap="xs">
+                  {opt.icon}
+                  <Text size="sm" ta="center">{opt.label}</Text>
+                  {renderBadge(opt.status)}
+                </Stack>
+              </Card>
+            )
+          })}
         </SimpleGrid>
       )}
 

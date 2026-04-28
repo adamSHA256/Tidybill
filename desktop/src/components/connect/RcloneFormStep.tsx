@@ -30,7 +30,7 @@ export function RcloneFormStep({ backendId, onClose, onConnected }: RcloneFormSt
 
   const backend = backendsData?.backends.find((b) => b.id === backendId)
   if (!backend) {
-    return <Alert color="red">Unknown backend: {backendId}</Alert>
+    return <Alert color="red">{t('cloud.connect.unknown_backend').replace('{backend}', backendId)}</Alert>
   }
 
   const handleSubmit = async () => {
@@ -39,8 +39,8 @@ export function RcloneFormStep({ backendId, onClose, onConnected }: RcloneFormSt
     try {
       const result = await api.cloud.rcloneConnect(backendId, values)
       notifications.show({
-        title: 'Connected',
-        message: `Connected to ${result.account_label}`,
+        title: t('cloud.connect.connected_title'),
+        message: t('cloud.connect.connected_message').replace('{target}', result.account_label),
         color: 'green',
       })
       onConnected()
@@ -71,13 +71,18 @@ export function RcloneFormStep({ backendId, onClose, onConnected }: RcloneFormSt
 
   const isProton = backendId === 'protondrive'
 
+  // Treat "t returned the key itself" as "translation missing", so we can
+  // fall through to a sensible default instead of showing a raw dotted key.
+  const tOpt = (key: string): string | undefined => {
+    const v = t(key)
+    return v === key ? undefined : v
+  }
+
   const renderField = (field: typeof backend.fields[number]) => {
     if (field.generated) return null
 
-    const label = t(`cloud.rclone.${backendId}.${field.name}.label`) ||
-                  t(`cloud.rclone.${backendId}.${field.name}`) ||
-                  field.name
-    const description = t(`cloud.rclone.${backendId}.${field.name}.help`) || undefined
+    const label = tOpt(`cloud.rclone.${backendId}.${field.name}.label`) ?? field.name
+    const description = tOpt(`cloud.rclone.${backendId}.${field.name}.help`)
 
     if (field.kind === 'password') {
       return (
@@ -155,7 +160,8 @@ export function RcloneFormStep({ backendId, onClose, onConnected }: RcloneFormSt
       {/* S3 bucket is a special field not from the backend schema */}
       {backendId === 's3' && (
         <TextInput
-          label={t('cloud.rclone.s3.bucket')}
+          label={tOpt('cloud.rclone.s3.bucket.label') ?? 'Bucket'}
+          description={tOpt('cloud.rclone.s3.bucket.help')}
           required
           value={values['bucket'] || ''}
           onChange={(e) => setValue('bucket', e.currentTarget.value)}
@@ -174,9 +180,9 @@ export function RcloneFormStep({ backendId, onClose, onConnected }: RcloneFormSt
         </>
       )}
       <Button onClick={handleSubmit} loading={connecting}>
-        {isProton && connecting ? t('cloud.rclone.protondrive.connecting') : 'Connect'}
+        {isProton && connecting ? t('cloud.rclone.protondrive.connecting') : t('cloud.connect.connect_btn')}
       </Button>
-      <Button variant="subtle" onClick={onClose}>Cancel</Button>
+      <Button variant="subtle" onClick={onClose}>{t('cloud.connect.cancel_btn')}</Button>
     </Stack>
   )
 }
