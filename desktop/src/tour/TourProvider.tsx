@@ -5,6 +5,7 @@ import type { Driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
 import './driver.css'
 import { useT } from '../i18n'
+import { useIsMobile } from '../hooks/useIsMobile'
 import { getFlow } from './flows'
 import type { FlowId, TourStep } from './types'
 import { markCompleted } from './persistence'
@@ -37,6 +38,7 @@ function safeDestroy(d: Driver | null) {
 export function TourProvider({ children }: { children: ReactNode }) {
   const { t } = useT()
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const driverRef = useRef<Driver | null>(null)
   const cancelledRef = useRef(false)
   const [currentFlowId, setCurrentFlowId] = useState<FlowId | null>(null)
@@ -47,7 +49,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const startFlow = useCallback((id: FlowId) => {
-    const flow = getFlow(id)
+    const flow = getFlow(id, isMobile)
     if (!flow) return
     safeDestroy(driverRef.current)
     cancelledRef.current = false
@@ -93,7 +95,9 @@ export function TourProvider({ children }: { children: ReactNode }) {
       animate: !prefersReduced,
       allowClose: true,
       overlayOpacity: 0.5,
-      stagePadding: 6,
+      stagePadding: isMobile ? 4 : 6,
+      smoothScroll: true,
+      popoverClass: isMobile ? 'tb-tour-mobile' : undefined,
       onDestroyed: () => {
         cancelledRef.current = true
         setIsRunning(false)
@@ -108,7 +112,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
     setCurrentFlowId(id)
     setIsRunning(true)
     runStep()
-  }, [navigate, t])
+  }, [navigate, t, isMobile])
 
   useEffect(() => () => { safeDestroy(driverRef.current) }, [])
 

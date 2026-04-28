@@ -704,8 +704,6 @@
   "tour.option_no_thanks_desc": "Kdykoliv se k průvodci můžete vrátit z postranního panelu.",
   "tour.do_not_show_again": "Příště po spuštění nezobrazovat",
   "tour.help_hint": "Průvodce můžete kdykoli otevřít přes Nápověda a průvodce v postranním panelu.",
-  "tour.mobile_title": "Jen na počítači",
-  "tour.mobile_body": "Průvodce je zatím dostupný pouze v desktopové verzi. Použijte větší obrazovku (počítač), nebo počkejte na budoucí aktualizaci.",
   "tour.next": "Další",
   "tour.prev": "Zpět",
   "tour.done": "Hotovo",
@@ -725,6 +723,7 @@
   "tour.create_invoice.step6.body": "Vyplňte, co jste dodali. Použijte \"Z katalogu\" pro opakované položky, nebo \"Přidat položku\" pro nový řádek.",
   "tour.create_invoice.step7.title": "Odeslat",
   "tour.create_invoice.step7.body": "Až bude vše v pořádku, klikněte na \"Vytvořit fakturu\". PDF se vygeneruje a uloží do nastaveného adresáře. To je vše — fakturováno.",
+  "tour.create_invoice.mobile.step1.body": "Nejrychlejší způsob. Tlačítko + ve spodní liště — vždy po ruce. Stiskněte Další a já ji za vás otevřu.",
 
   "tour.just_show_me.title": "Rychlý přehled",
   "tour.just_show_me.step1.title": "Přehled",
@@ -741,6 +740,8 @@
   "tour.just_show_me.step6.body": "Upravte, jak vypadá PDF faktura — logo, barvy, rozvržení.\n\nGenerovat všechny náhledy vám umožní vidět, jak jednotlivé šablony vypadají. Nastavením \"Výchozí\" pak nejvíce vyhovující vzhled začnete používat.",
   "tour.just_show_me.step7.title": "Nastavení",
   "tour.just_show_me.step7.body": "Jazyk, výchozí složka PDF, typy plateb, správa jednotek a další. Vše je kdykoliv změnitelné.",
+  "tour.just_show_me.mobile.step2.body": "Všechny vaše faktury — prohledávatelné a filtrovatelné podle stavu, dodavatele nebo odběratele. Karta Faktury ve spodní liště vás sem přepne.",
+  "tour.just_show_me.mobile.step7.body": "Jazyk, výchozí složka PDF, typy plateb, správa jednotek a další. V dolní liště otevřete kartu Více — zde najdete Nastavení i ostatní funkce. Vše je kdykoliv změnitelné.",
 
   "tour.advanced.title": "Průvodce pro pokročilé",
   "tour.advanced.step1.title": "Vlastní PDF šablony",

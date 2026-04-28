@@ -703,8 +703,6 @@
   "tour.option_no_thanks_desc": "You can always come back from the sidebar.",
   "tour.do_not_show_again": "Don't show this again on startup",
   "tour.help_hint": "You can reopen this anytime from Help & tour in the sidebar.",
-  "tour.mobile_title": "Desktop only for now",
-  "tour.mobile_body": "The guided tour is only available on the desktop app for now. Please use a larger screen (PC), or wait for a future update.",
   "tour.next": "Next",
   "tour.prev": "Back",
   "tour.done": "Done",
@@ -724,6 +722,7 @@
   "tour.create_invoice.step6.body": "Fill in what you delivered. Use \"From Catalog\" to reuse previous items, or \"Add Item\" for a new row.",
   "tour.create_invoice.step7.title": "Ship it",
   "tour.create_invoice.step7.body": "When everything looks right, hit \"Create Invoice\". The PDF is generated and saved to your configured folder. That's it — you've invoiced.",
+  "tour.create_invoice.mobile.step1.body": "The fastest way. The + button in the bottom tab bar — always one tap away. Press Next and I'll open it for you.",
 
   "tour.just_show_me.title": "Quick tour",
   "tour.just_show_me.step1.title": "The dashboard",
@@ -740,6 +739,8 @@
   "tour.just_show_me.step6.body": "Customize how your invoice PDF looks — logo, colors, layout.\n\nGenerating all previews lets you see how each template looks. Setting one as default is how you start using it for new invoices.",
   "tour.just_show_me.step7.title": "Settings",
   "tour.just_show_me.step7.body": "Language, default PDF folder, payment types, unit management, and more. Everything is reversible.",
+  "tour.just_show_me.mobile.step2.body": "Every invoice you've created — searchable and filterable by status, supplier, or customer. The Invoices tab in the bottom bar takes you here.",
+  "tour.just_show_me.mobile.step7.body": "Language, default PDF folder, payment types, unit management, and more. Open the More tab in the bottom bar to find Settings and the rest. Everything is reversible.",
 
   "tour.advanced.title": "Power-user tour",
   "tour.advanced.step1.title": "Custom PDF templates",

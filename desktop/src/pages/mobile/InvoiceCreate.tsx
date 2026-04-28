@@ -132,6 +132,7 @@ export function MobileInvoiceCreate() {
         <Text fw={500} mb="sm">{t('invoice.invoice_number')}</Text>
         <Stack gap="sm">
           <TextInput
+            data-tour="m-invoice-number"
             label={
               <Group gap={4}>
                 <span>{t('invoice.invoice_number')}</span>
@@ -145,6 +146,7 @@ export function MobileInvoiceCreate() {
             onChange={(e) => setInvoiceNumber(e.currentTarget.value)}
           />
           <DateInput
+            data-tour="m-invoice-dates"
             label={t('invoice.issue_date')}
             valueFormat="DD.MM.YYYY"
             value={issueDate}
@@ -228,7 +230,7 @@ export function MobileInvoiceCreate() {
       </Paper>
 
       {/* Supplier section */}
-      <Paper p="md" radius="md" withBorder>
+      <Paper data-tour="m-invoice-supplier" p="md" radius="md" withBorder>
         <Text fw={500} mb="sm">{t('invoice.supplier_you')}</Text>
         {suppliers && suppliers.length === 0 ? (
           <Paper
@@ -297,7 +299,7 @@ export function MobileInvoiceCreate() {
       </Paper>
 
       {/* Customer section */}
-      <Paper p="md" radius="md" withBorder>
+      <Paper data-tour="m-invoice-customer" p="md" radius="md" withBorder>
         <Text fw={500} mb="sm">{t('invoice.customer')}</Text>
         <Select
           label={t('invoice.select_customer')}
@@ -322,7 +324,7 @@ export function MobileInvoiceCreate() {
       </Paper>
 
       {/* Items section */}
-      <Paper p="md" radius="md" withBorder>
+      <Paper data-tour="m-invoice-items" p="md" radius="md" withBorder>
         <Group justify="space-between" mb="md">
           <Text fw={500}>{t('invoice.items')}</Text>
         </Group>
@@ -529,7 +531,7 @@ export function MobileInvoiceCreate() {
         <Button variant="default" onClick={() => form.navigate('/invoices')}>
           {t('common.cancel')}
         </Button>
-        <Button onClick={handleCreate} loading={createPending}>
+        <Button data-tour="m-invoice-create-submit" onClick={handleCreate} loading={createPending}>
           {t('invoice.create_button')}
         </Button>
       </Group>

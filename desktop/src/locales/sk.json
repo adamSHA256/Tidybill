@@ -704,8 +704,6 @@
   "tour.option_no_thanks_desc": "Kedykoľvek sa môžete k sprievodcovi vrátiť z bočného panela.",
   "tour.do_not_show_again": "Nabudúce po spustení nezobrazovať",
   "tour.help_hint": "Sprievodcu môžete kedykoľvek otvoriť cez Pomoc a sprievodca v bočnom paneli.",
-  "tour.mobile_title": "Len na počítači",
-  "tour.mobile_body": "Sprievodca je zatiaľ dostupný iba v desktopovej verzii. Použite väčšiu obrazovku (počítač), alebo počkajte na budúcu aktualizáciu.",
   "tour.next": "Ďalší",
   "tour.prev": "Späť",
   "tour.done": "Hotovo",
@@ -725,6 +723,7 @@
   "tour.create_invoice.step6.body": "Vyplňte, čo ste dodali. Použite \"Z katalógu\" pre opakované položky, alebo \"Pridať položku\" pre nový riadok.",
   "tour.create_invoice.step7.title": "Odoslať",
   "tour.create_invoice.step7.body": "Keď bude všetko v poriadku, kliknite na \"Vytvoriť faktúru\". PDF sa vygeneruje a uloží do nastaveného priečinka. To je všetko — vyfakturované.",
+  "tour.create_invoice.mobile.step1.body": "Najrýchlejší spôsob. Tlačidlo + v dolnej lište — vždy poruke. Stlačte Ďalej a ja ju za vás otvorím.",
 
   "tour.just_show_me.title": "Rýchly prehľad",
   "tour.just_show_me.step1.title": "Prehľad",
@@ -741,6 +740,8 @@
   "tour.just_show_me.step6.body": "Upravte, ako vyzerá PDF faktúra — logo, farby, rozloženie.\n\nGenerovanie všetkých náhľadov vám umožní vidieť, ako jednotlivé šablóny vyzerajú. Nastavením „Predvolená\" potom začnete používať najviac vyhovujúci vzhľad.",
   "tour.just_show_me.step7.title": "Nastavenia",
   "tour.just_show_me.step7.body": "Jazyk, predvolený priečinok PDF, typy platieb, správa jednotiek a ďalšie. Všetko je kedykoľvek zmeniteľné.",
+  "tour.just_show_me.mobile.step2.body": "Všetky vaše faktúry — prehľadávateľné a filtrovateľné podľa stavu, dodávateľa alebo odberateľa. Karta Faktúry v dolnej lište vás sem prepne.",
+  "tour.just_show_me.mobile.step7.body": "Jazyk, predvolený priečinok PDF, typy platieb, správa jednotiek a ďalšie. V dolnej lište otvorte kartu Viac — tam nájdete Nastavenia aj zvyšok funkcií. Všetko je kedykoľvek zmeniteľné.",
 
   "tour.advanced.title": "Sprievodca pre pokročilých",
   "tour.advanced.step1.title": "Vlastné PDF šablóny",

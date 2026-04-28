@@ -91,6 +91,7 @@ export function MorePage() {
         onClick={() => navigate('/sync')}
       />
       <NavLink
+        data-tour="m-more-settings"
         label={t('nav.settings')}
         leftSection={<IconSettings size={20} />}
         onClick={() => navigate('/settings')}

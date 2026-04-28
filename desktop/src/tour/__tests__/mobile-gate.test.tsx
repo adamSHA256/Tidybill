@@ -122,15 +122,20 @@ describe('mobile-gate', () => {
     await waitFor(() => expect(screen.getByText('Průvodce TidyBillem')).toBeInTheDocument())
   })
 
-  it('first run + mobile + welcomeSeen=false → dialog NOT visible', async () => {
+  it('first run + mobile + welcomeSeen=false → dialog visible after wizard completes', async () => {
     setMatchMedia(true)
     vi.mocked(api.getFirstRun).mockResolvedValue({ first_run: true })
     renderApp()
     const user = userEvent.setup()
     await waitFor(() => expect(screen.getByTestId('wizard-complete')).toBeInTheDocument())
     await user.click(screen.getByTestId('wizard-complete'))
-    await waitFor(() => expect(screen.getByTestId('home')).toBeInTheDocument())
-    expect(screen.queryByText('Průvodce TidyBillem')).toBeNull()
+    await waitFor(() => expect(screen.getByText('Průvodce TidyBillem')).toBeInTheDocument())
+  })
+
+  it('non-first-run + mobile + welcomeSeen=false → dialog visible automatically', async () => {
+    setMatchMedia(true)
+    renderApp()
+    await waitFor(() => expect(screen.getByText('Průvodce TidyBillem')).toBeInTheDocument())
   })
 
   it('non-first-run + desktop + welcomeSeen=false → dialog visible automatically', async () => {

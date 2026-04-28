@@ -11,10 +11,10 @@ import {
 import { useT } from '../i18n'
 
 const tabs = [
-  { key: 'nav.dashboard', icon: IconDashboard, path: '/' },
-  { key: 'nav.invoices', icon: IconFileInvoice, path: '/invoices' },
-  { key: 'nav.new_invoice', icon: IconPlus, path: '/invoices/new' },
-  { key: 'nav.more', icon: IconDots, path: '/more' },
+  { key: 'nav.dashboard', icon: IconDashboard, path: '/', anchor: 'm-tab-dashboard' },
+  { key: 'nav.invoices', icon: IconFileInvoice, path: '/invoices', anchor: 'm-tab-invoices' },
+  { key: 'nav.new_invoice', icon: IconPlus, path: '/invoices/new', anchor: 'm-tab-new-invoice' },
+  { key: 'nav.more', icon: IconDots, path: '/more', anchor: 'm-tab-more' },
 ]
 
 export function MobileShell({ children }: { children: ReactNode }) {
@@ -65,6 +65,7 @@ export function MobileShell({ children }: { children: ReactNode }) {
           return (
             <UnstyledButton
               key={tab.path}
+              data-tour={tab.anchor}
               onClick={() => navigate(tab.path)}
               style={{
                 flex: 1,

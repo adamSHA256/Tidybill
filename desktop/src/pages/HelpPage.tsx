@@ -8,23 +8,16 @@ import {
   IconFileInvoice, IconUsers, IconBuilding, IconRefresh, IconBug,
 } from '@tabler/icons-react'
 import { useT } from '../i18n'
-import { useIsMobile } from '../hooks/useIsMobile'
 import { WelcomeTourDialog } from '../tour/WelcomeTourDialog'
-import { MobileTourNotice } from '../tour/MobileTourNotice'
 
 type View = 'hub' | 'help'
 
 export function HelpPage() {
   const { t } = useT()
-  const isMobile = useIsMobile()
   const [view, setView] = useState<View>('hub')
   const [guideOpen, setGuideOpen] = useState(false)
-  const [mobileNoticeOpen, setMobileNoticeOpen] = useState(false)
 
-  const openGuide = () => {
-    if (isMobile) setMobileNoticeOpen(true)
-    else setGuideOpen(true)
-  }
+  const openGuide = () => setGuideOpen(true)
 
   if (view === 'help') {
     return <HelpContent onBack={() => setView('hub')} />
@@ -63,8 +56,7 @@ export function HelpPage() {
         </UnstyledButton>
       </SimpleGrid>
 
-      <WelcomeTourDialog opened={guideOpen && !isMobile} onClose={() => setGuideOpen(false)} />
-      <MobileTourNotice opened={mobileNoticeOpen} onClose={() => setMobileNoticeOpen(false)} />
+      <WelcomeTourDialog opened={guideOpen} onClose={() => setGuideOpen(false)} />
     </Stack>
   )
 }

@@ -46,3 +46,18 @@
 
 .driver-popover-progress-text { color: var(--mantine-color-dimmed); font-size: 0.75rem; }
 .driver-overlay { background: rgba(0,0,0,0.5); }
+
+/* Mobile: keep popover within the viewport on narrow screens. */
+.driver-popover.tb-tour-mobile {
+  max-width: calc(100vw - 24px);
+  min-width: 0;
+  width: max-content;
+}
+.driver-popover.tb-tour-mobile .driver-popover-description {
+  font-size: 0.8125rem;
+}
+@media (max-width: 48em) {
+  .driver-popover {
+    max-width: calc(100vw - 24px);
+  }
+}
