@@ -22,8 +22,9 @@ type AutoBackupService struct {
 	registry *cloud.Registry
 	export   *backup.ExportService
 	kc       keychain.Store
-	stop     chan struct{}
 	trigger  chan struct{} // buffered(1): signals an immediate backup
+	ctx      context.Context
+	cancel   context.CancelFunc
 }
 
 func newAutoBackupService(
@@ -32,14 +33,25 @@ func newAutoBackupService(
 	export *backup.ExportService,
 	kc keychain.Store,
 ) *AutoBackupService {
-	return &AutoBackupService{
+	ctx, cancel := context.WithCancel(context.Background())
+	a := &AutoBackupService{
 		settings: settings,
 		registry: registry,
 		export:   export,
 		kc:       kc,
-		stop:     make(chan struct{}),
 		trigger:  make(chan struct{}, 1),
+		ctx:      ctx,
+		cancel:   cancel,
 	}
+	// Clear any stale in-progress flag left by a previous crash.
+	_ = settings.Set("cloud.autobackup.in_progress", "0")
+	return a
+}
+
+// Shutdown cancels the goroutine and any in-progress upload.
+// Safe to call multiple times.
+func (a *AutoBackupService) Shutdown() {
+	a.cancel()
 }
 
 // TriggerNow enqueues an immediate backup, bypassing the idle window.
@@ -51,13 +63,13 @@ func (a *AutoBackupService) TriggerNow() {
 	}
 }
 
-// Run loops every 30 seconds and calls tick(). Exits when stop is closed.
+// Run loops every 30 seconds and calls tick(). Exits when ctx is cancelled.
 func (a *AutoBackupService) Run() {
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 	for {
 		select {
-		case <-a.stop:
+		case <-a.ctx.Done():
 			return
 		case <-a.trigger:
 			a.tick(true)
@@ -82,13 +94,11 @@ func (a *AutoBackupService) tick(forceNow bool) {
 
 	t, err := a.registry.Get(transportID)
 	if err != nil {
-		return // transport disconnected — no error stored; it'll work again once reconnected
+		return // transport disconnected — will retry naturally once reconnected
 	}
 
-	if !forceNow {
-		if !a.idleWindowPassed() {
-			return
-		}
+	if !forceNow && !a.idleWindowPassed() {
+		return
 	}
 
 	a.runBackup(t, transportID)
@@ -97,7 +107,7 @@ func (a *AutoBackupService) tick(forceNow bool) {
 // idleWindowPassed returns true when:
 //  1. At least one DB write has occurred (data.last_write_at is set)
 //  2. idle_minutes have elapsed since that last write (user is idle)
-//  3. The last write happened after the last backup (new data exists)
+//  3. The last write happened after the last successful backup (new data exists)
 func (a *AutoBackupService) idleWindowPassed() bool {
 	lastWriteStr, _ := a.settings.Get("data.last_write_at")
 	if lastWriteStr == "" {
@@ -124,15 +134,17 @@ func (a *AutoBackupService) idleWindowPassed() bool {
 	}
 	lastRun, err := time.Parse(time.RFC3339, lastRunStr)
 	if err != nil {
-		return true // can't parse — treat as stale
+		return true // unparseable — treat as stale
 	}
-	// Only run if there are writes that post-date the last backup.
 	return lastWrite.After(lastRun)
 }
 
-// runBackup performs the export + upload and records the result in settings.
+// runBackup performs export + upload and records the result in settings.
+// The upload context is derived from a.ctx, so closing the app cancels it cleanly.
 func (a *AutoBackupService) runBackup(t cloud.Transport, transportID string) {
 	log.Printf("autobackup: starting backup to %s", transportID)
+	_ = a.settings.Set("cloud.autobackup.in_progress", "1")
+	defer func() { _ = a.settings.Set("cloud.autobackup.in_progress", "0") }()
 
 	seed, err := a.resolveSeed()
 	if err != nil {
@@ -151,11 +163,20 @@ func (a *AutoBackupService) runBackup(t cloud.Transport, transportID string) {
 	}
 
 	filename := "tidybill-backup-" + time.Now().UTC().Format("2006-01-02T15-04-05Z") + ".tidybill"
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
 
-	_, err = t.Upload(ctx, filename, bytes.NewReader(data), int64(len(data)))
+	// Upload context: inherit cancellation from a.ctx (shutdown signal) but
+	// also cap at 5 minutes in case the remote hangs. If the app closes,
+	// a.ctx is cancelled, which propagates here and aborts the upload cleanly
+	// instead of leaving the goroutine blocked until the OS kills the process.
+	uploadCtx, uploadCancel := context.WithTimeout(a.ctx, 5*time.Minute)
+	defer uploadCancel()
+
+	_, err = t.Upload(uploadCtx, filename, bytes.NewReader(data), int64(len(data)))
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			log.Printf("autobackup: upload cancelled (app shutting down)")
+			return // don't record as an error — will retry next launch
+		}
 		a.setError("upload failed: " + err.Error())
 		return
 	}

@@ -14,6 +14,7 @@ func (s *Server) handleAutoBackupStatus(w http.ResponseWriter, r *http.Request) 
 	idleMinStr, _ := s.settings.Get("cloud.autobackup.idle_minutes")
 	lastRunAt, _ := s.settings.Get("cloud.autobackup.last_run_at")
 	lastError, _ := s.settings.Get("cloud.autobackup.last_error")
+	inProgress, _ := s.settings.Get("cloud.autobackup.in_progress")
 
 	idleMin := 5
 	if n, err := strconv.Atoi(idleMinStr); err == nil && n > 0 {
@@ -26,6 +27,7 @@ func (s *Server) handleAutoBackupStatus(w http.ResponseWriter, r *http.Request) 
 		"idle_minutes": idleMin,
 		"last_run_at":  lastRunAt,
 		"last_error":   lastError,
+		"in_progress":  inProgress == "1",
 	})
 }
 

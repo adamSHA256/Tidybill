@@ -135,7 +135,7 @@ export function SyncPage() {
   const { data: autoBackupStatus, refetch: refetchAutoBackup } = useQuery({
     queryKey: ['autobackup-status'],
     queryFn: api.cloud.autoBackupStatus,
-    refetchInterval: 30_000,
+    refetchInterval: (query) => (query.state.data?.in_progress ? 5_000 : 30_000),
   })
 
   const updateAutoBackup = useMutation({
@@ -687,12 +687,14 @@ export function SyncPage() {
               w={180}
             />
             <Group gap="sm" align="center">
-              <Text size="xs" c={autoBackupStatus?.last_error ? 'red' : 'dimmed'}>
-                {autoBackupStatus?.last_error
-                  ? `${t('autobackup.status_failed')}: ${autoBackupStatus.last_error}`
-                  : autoBackupStatus?.last_run_at
-                    ? `${t('autobackup.status_last')}: ${formatTimeAgo(autoBackupStatus.last_run_at)}`
-                    : t('autobackup.status_never')}
+              <Text size="xs" c={autoBackupStatus?.last_error && !autoBackupStatus.in_progress ? 'red' : 'dimmed'}>
+                {autoBackupStatus?.in_progress
+                  ? t('autobackup.status_in_progress')
+                  : autoBackupStatus?.last_error
+                    ? `${t('autobackup.status_failed')}: ${autoBackupStatus.last_error}`
+                    : autoBackupStatus?.last_run_at
+                      ? `${t('autobackup.status_last')}: ${formatTimeAgo(autoBackupStatus.last_run_at)}`
+                      : t('autobackup.status_never')}
               </Text>
               <Button
                 size="compact-xs"

@@ -743,6 +743,7 @@ export interface AutoBackupStatus {
   idle_minutes: number
   last_run_at: string
   last_error: string
+  in_progress: boolean
 }
 
 export interface AutoBackupSettingsUpdate {
