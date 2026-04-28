@@ -253,7 +253,7 @@ export function MasterKeyPanel() {
               {t('master_key.generate_modal_warn')}
             </Alert>
             <Group justify="flex-end">
-              <Button variant="default" onClick={closeGenerateModal}>{t('action.cancel')}</Button>
+              <Button variant="default" onClick={closeGenerateModal}>{t('common.cancel')}</Button>
               <Button loading={generating} onClick={handleGenerate}>
                 {t('master_key.generate_confirm')}
               </Button>
@@ -303,7 +303,7 @@ export function MasterKeyPanel() {
             {t('master_key.reveal_modal_warn')}
           </Alert>
           <Group justify="flex-end">
-            <Button variant="default" onClick={() => setRevealConfirmOpen(false)}>{t('action.cancel')}</Button>
+            <Button variant="default" onClick={() => setRevealConfirmOpen(false)}>{t('common.cancel')}</Button>
             <Button loading={revealing} leftSection={<IconEye size={14} />} onClick={handleReveal}>
               {t('master_key.reveal_confirm')}
             </Button>
@@ -321,6 +321,11 @@ export function MasterKeyPanel() {
       >
         <Stack>
           <Text size="sm" c="dimmed">{t('master_key.import_modal_desc')}</Text>
+          {configured && (
+            <Alert color="red" icon={<IconAlertTriangle size={16} />}>
+              {t('master_key.change_warn')}
+            </Alert>
+          )}
           <SimpleGrid cols={3} spacing="xs">
             {importWords.map((word, i) => (
               <TextInput
@@ -334,7 +339,7 @@ export function MasterKeyPanel() {
             ))}
           </SimpleGrid>
           <Group justify="flex-end">
-            <Button variant="default" onClick={() => setImportModalOpen(false)}>{t('action.cancel')}</Button>
+            <Button variant="default" onClick={() => setImportModalOpen(false)}>{t('common.cancel')}</Button>
             <Button
               loading={importing}
               disabled={importWords.some((w) => !w.trim())}
@@ -358,7 +363,7 @@ export function MasterKeyPanel() {
             {t('master_key.delete_modal_warn')}
           </Alert>
           <Group justify="flex-end">
-            <Button variant="default" onClick={() => setDeleteModalOpen(false)}>{t('action.cancel')}</Button>
+            <Button variant="default" onClick={() => setDeleteModalOpen(false)}>{t('common.cancel')}</Button>
             <Button
               color="red"
               loading={deleteMutation.isPending}
