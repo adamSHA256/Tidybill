@@ -15,6 +15,7 @@ import (
 
 const (
 	githubReleasesURL = "https://api.github.com/repos/adamSHA256/tidybill/releases/latest"
+	downloadPageURL   = "https://tidybill.mimind.me/#download"
 	checkCooldown     = 24 * time.Hour
 	httpTimeout       = 3 * time.Second
 	settingKey        = "check_updates"
@@ -113,7 +114,6 @@ func (c *Checker) cooldownElapsed() bool {
 
 type githubRelease struct {
 	TagName     string `json:"tag_name"`
-	HTMLURL     string `json:"html_url"`
 	Body        string `json:"body"`
 	PublishedAt string `json:"published_at"`
 }
@@ -148,7 +148,7 @@ func (c *Checker) doCheck() (*Result, error) {
 		Available:    compareSemver(latest, current) > 0,
 		CurrentVer:   current,
 		LatestVer:    latest,
-		ReleaseURL:   release.HTMLURL,
+		ReleaseURL:   downloadPageURL,
 		ReleaseNotes: release.Body,
 		PublishedAt:  release.PublishedAt,
 		CheckedAt:    time.Now().UTC().Format(time.RFC3339),
