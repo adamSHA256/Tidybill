@@ -132,10 +132,13 @@ func (t *Transport) Upload(ctx context.Context, filename string, body io.Reader,
 		return cloud.BlobRef{}, fmt.Errorf("copyfile: %w", err)
 	}
 
-	// Stat the uploaded file.
+	// Stat the uploaded file. rclone wraps the result in {"item": {...}} —
+	// don't unmarshal it as a flat struct or Size/ModTime come back zeroed.
 	var statResult struct {
-		Size    int64     `json:"Size"`
-		ModTime time.Time `json:"ModTime"`
+		Item struct {
+			Size    int64     `json:"Size"`
+			ModTime time.Time `json:"ModTime"`
+		} `json:"item"`
 	}
 	if err := rc.Call(ctx, "operations/stat", map[string]any{
 		"fs":     t.fs(),
@@ -152,8 +155,8 @@ func (t *Transport) Upload(ctx context.Context, filename string, body io.Reader,
 	return cloud.BlobRef{
 		ID:         t.bucketPath + "/" + filename,
 		Filename:   filename,
-		Size:       statResult.Size,
-		ModifiedAt: statResult.ModTime,
+		Size:       statResult.Item.Size,
+		ModifiedAt: statResult.Item.ModTime,
 		Encrypted:  encrypted,
 	}, nil
 }
@@ -282,15 +285,6 @@ func randomHex(n int) string {
 	b := make([]byte, n)
 	_, _ = rand.Read(b)
 	return hex.EncodeToString(b)
-}
-
-// rcStatResult is used in Upload for stat response deserialization.
-// Defined separately to make the JSON field mapping explicit.
-type rcStatResult struct {
-	Item struct {
-		Size    int64  `json:"Size"`
-		ModTime string `json:"ModTime"`
-	} `json:"item"`
 }
 
 // marshalPublicConfig returns the JSON for cloud_configs.public_config.
