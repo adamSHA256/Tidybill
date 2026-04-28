@@ -144,7 +144,7 @@ export function SyncPage() {
   })
 
   // Cloud blob list for Import panel (fetched when a cloud source is selected)
-  const { data: cloudBlobList, isLoading: cloudBlobsLoading } = useQuery({
+  const { data: cloudBlobList, isLoading: cloudBlobsLoading, isFetching: cloudBlobsFetching, refetch: refetchCloudBlobs } = useQuery({
     queryKey: ['cloud-list', importSource],
     queryFn: () => api.cloud.list(importSource).then((r) => r.blobs),
     enabled: importSource !== 'local',
@@ -563,6 +563,16 @@ export function SyncPage() {
           {/* Cloud import */}
           {importSource !== 'local' && (
             <Stack gap="sm">
+              <Group justify="flex-end">
+                <Button
+                  size="compact-xs"
+                  variant="subtle"
+                  loading={cloudBlobsFetching}
+                  onClick={() => refetchCloudBlobs()}
+                >
+                  {t('common.refresh')}
+                </Button>
+              </Group>
               {cloudBlobsLoading ? (
                 <Center><Loader size="sm" /></Center>
               ) : !cloudBlobList || cloudBlobList.length === 0 ? (
