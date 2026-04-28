@@ -31,17 +31,20 @@ export function MobileShell({ children }: { children: ReactNode }) {
   }
 
   const activeTab = getActiveTab()
+  const showHelpIcon = location.pathname === '/'
 
   return (
     <Box style={{
       minHeight: '100vh',
       paddingBottom: 64,
     }}>
-      <Box style={{ position: 'fixed', top: 12, right: 12, zIndex: 90 }}>
-        <ActionIcon variant="light" size="lg" onClick={() => navigate('/help')} aria-label={t('tour.help_aria')}>
-          <IconHelp size={20} />
-        </ActionIcon>
-      </Box>
+      {showHelpIcon && (
+        <Box style={{ position: 'fixed', top: 12, right: 12, zIndex: 90 }}>
+          <ActionIcon variant="light" size="lg" onClick={() => navigate('/help')} aria-label={t('tour.help_aria')}>
+            <IconHelp size={20} />
+          </ActionIcon>
+        </Box>
+      )}
       <Box p="md">
         {children}
       </Box>
