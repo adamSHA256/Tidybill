@@ -489,11 +489,16 @@ export function SyncPage() {
             )}
           </Group>
 
-          <Switch
-            label={t('backup.encrypt')}
-            checked={encryptExport}
-            onChange={(e) => setEncryptExport(e.currentTarget.checked)}
-          />
+          <Group gap="xs" align="center">
+            <Switch
+              label={t('backup.encrypt')}
+              checked={encryptExport}
+              onChange={(e) => setEncryptExport(e.currentTarget.checked)}
+            />
+            <Tooltip label={t('backup.encrypt_tooltip')} multiline w={260} withArrow events={{ hover: true, focus: true, touch: true }}>
+              <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+            </Tooltip>
+          </Group>
           {encryptExport && !masterKeyConfigured && (
             <Alert icon={<IconAlertCircle size={16} />} color="yellow">
               {t('backup.encrypt_master_disabled')}
@@ -656,16 +661,22 @@ export function SyncPage() {
           {/* Auto-backup */}
           <Divider label={t('autobackup.section_title')} labelPosition="left" />
           <Stack gap="xs">
-            <Switch
-              label={t('autobackup.enabled_label')}
-              checked={autoBackupStatus?.enabled ?? false}
-              onChange={(e) => updateAutoBackup.mutate({ enabled: e.currentTarget.checked })}
-            />
+            <Group gap="xs" align="center">
+              <Switch
+                label={t('autobackup.enabled_label')}
+                checked={autoBackupStatus?.enabled ?? false}
+                onChange={(e) => updateAutoBackup.mutate({ enabled: e.currentTarget.checked })}
+              />
+              <Tooltip label={t('autobackup.enabled_tooltip')} multiline w={300} withArrow events={{ hover: true, focus: true, touch: true }}>
+                <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+              </Tooltip>
+            </Group>
             {connectedTransports.length === 0 ? (
               <Text size="xs" c="dimmed">{t('autobackup.no_transport')}</Text>
             ) : (
               <Select
                 label={t('autobackup.transport_label')}
+                description={t('autobackup.transport_desc')}
                 placeholder={t('autobackup.transport_placeholder')}
                 data={connectedTransports.map((tr) => ({
                   value: tr.id,
@@ -678,6 +689,7 @@ export function SyncPage() {
             )}
             <NumberInput
               label={t('autobackup.idle_minutes_label')}
+              description={t('autobackup.idle_minutes_desc')}
               suffix={t('autobackup.idle_minutes_suffix')}
               min={1}
               max={60}
@@ -696,16 +708,18 @@ export function SyncPage() {
                       ? `${t('autobackup.status_last')}: ${formatTimeAgo(autoBackupStatus.last_run_at)}`
                       : t('autobackup.status_never')}
               </Text>
-              <Button
-                size="compact-xs"
-                variant="light"
-                leftSection={<IconCloudUpload size={12} />}
-                onClick={handleTriggerNow}
-                loading={triggeringBackup}
-                disabled={!autoBackupStatus?.transport_id}
-              >
-                {t('autobackup.trigger_btn')}
-              </Button>
+              <Tooltip label={t('autobackup.trigger_tooltip')} withArrow events={{ hover: true, focus: true, touch: true }}>
+                <Button
+                  size="compact-xs"
+                  variant="light"
+                  leftSection={<IconCloudUpload size={12} />}
+                  onClick={handleTriggerNow}
+                  loading={triggeringBackup}
+                  disabled={!autoBackupStatus?.transport_id}
+                >
+                  {t('autobackup.trigger_btn')}
+                </Button>
+              </Tooltip>
             </Group>
           </Stack>
 

@@ -664,6 +664,7 @@
   "nav.sync": "Data Sync",
 
   "backup.encrypt": "Encrypt backup",
+  "backup.encrypt_tooltip": "Locks the file with your master key. Only someone with the same master key can open this backup — keep it safe.",
   "backup.passphrase": "Encryption passphrase",
   "backup.passphrase_confirm": "Confirm passphrase",
   "backup.passphrase_mismatch": "Passphrases don't match",
@@ -844,5 +845,9 @@
   "autobackup.trigger_btn": "Backup now",
   "autobackup.trigger_success": "Backup started",
   "autobackup.no_transport": "No cloud connected — connect one above first",
-  "autobackup.status_in_progress": "Backing up…"
+  "autobackup.status_in_progress": "Backing up…",
+  "autobackup.enabled_tooltip": "TidyBill silently uploads an encrypted backup to your cloud account once you stop making changes for the set time. No manual steps needed.",
+  "autobackup.transport_desc": "Which connected cloud account receives the automatic backup files.",
+  "autobackup.idle_minutes_desc": "Waits this long after your last change before uploading — so a half-finished session is never sent.",
+  "autobackup.trigger_tooltip": "Upload a backup right now, without waiting for the idle time to pass."
 }

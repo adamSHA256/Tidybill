@@ -665,6 +665,7 @@
   "nav.sync": "Synchronizácia dát",
 
   "backup.encrypt": "Šifrovať zálohu",
+  "backup.encrypt_tooltip": "Uzamkne súbor vaším hlavným kľúčom. Zálohu môže otvoriť iba niekto s rovnakým hlavným kľúčom — uchovajte ho bezpečne.",
   "backup.passphrase": "Heslo pre šifrovanie",
   "backup.passphrase_confirm": "Potvrdenie hesla",
   "backup.passphrase_mismatch": "Heslá sa nezhodujú",
@@ -845,5 +846,9 @@
   "autobackup.trigger_btn": "Zálohovať teraz",
   "autobackup.trigger_success": "Záloha spustená",
   "autobackup.no_transport": "Nie je pripojené cloudové úložisko — najprv ho pripojte vyššie",
-  "autobackup.status_in_progress": "Prebieha záloha…"
+  "autobackup.status_in_progress": "Prebieha záloha…",
+  "autobackup.enabled_tooltip": "TidyBill potichu nahrá šifrovanú zálohu do vášho cloudového úložiska, keď prestanete vykonávať zmeny po nastavený čas. Nie sú potrebné žiadne manuálne kroky.",
+  "autobackup.transport_desc": "Ktoré pripojené cloudové úložisko prijme súbory automatickej zálohy.",
+  "autobackup.idle_minutes_desc": "Čaká tento počet minút po vašej poslednej zmene — nedokončená relácia sa tak nikdy nepošle.",
+  "autobackup.trigger_tooltip": "Nahrať zálohu hneď teraz, bez čakania na uplynutie doby nečinnosti."
 }
