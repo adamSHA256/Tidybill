@@ -30,7 +30,8 @@ func setupTestDB(t *testing.T) *sql.DB {
 	// deadlocks on PRAGMA foreign_keys = OFF in multi-statement migrations.
 	tmpDir := t.TempDir()
 	dbPath := filepath.Join(tmpDir, "test.db")
-	dsn := dbPath + "?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)"
+	// Match production DSN — keep this in sync with internal/database/database.go.
+	dsn := dbPath + "?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_time_format=sqlite"
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		t.Fatalf("open test db: %v", err)

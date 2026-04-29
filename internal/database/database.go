@@ -19,7 +19,14 @@ type DB struct {
 }
 
 func New(dbPath string) (*DB, error) {
-	dsn := dbPath + "?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)"
+	// _time_format=sqlite forces modernc.org/sqlite to write time.Time values
+	// as "YYYY-MM-DD HH:MM:SS[+-]HH:MM" — matching SQLite's lang_datefunc.html
+	// format 4 — which is the FIRST entry in modernc's parseTimeFormats slice.
+	// Default behavior is t.String() ("2026-01-02 15:04:05.999999999 +0000 UTC")
+	// which mostly parses but has edge cases (e.g. nanosecond precision lost
+	// across roundtrip, "UTC" zone abbreviation surprises). Pinning the format
+	// avoids those.
+	dsn := dbPath + "?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_time_format=sqlite"
 	sqlDB, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
