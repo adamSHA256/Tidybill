@@ -85,7 +85,7 @@ function HelpContent({ onBack }: { onBack: () => void }) {
               <Text fw={500}>{title}</Text>
             </Accordion.Control>
             <Accordion.Panel>
-              <Text size="sm" c="dimmed">{body}</Text>
+              <Text size="sm" c="dimmed" style={{ whiteSpace: 'pre-line' }}>{body}</Text>
             </Accordion.Panel>
           </Accordion.Item>
         ))}
