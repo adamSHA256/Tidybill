@@ -68,7 +68,6 @@ function HelpContent({ onBack }: { onBack: () => void }) {
     { value: 'invoice',   icon: IconFileInvoice, title: t('help.section_invoice'),   body: t('help.section_invoice_body') },
     { value: 'customers', icon: IconUsers,        title: t('help.section_customers'), body: t('help.section_customers_body') },
     { value: 'suppliers', icon: IconBuilding,     title: t('help.section_suppliers'), body: t('help.section_suppliers_body') },
-    { value: 'sync',      icon: IconRefresh,      title: t('help.section_sync'),      body: t('help.section_sync_body') },
   ]
 
   return (
@@ -89,6 +88,32 @@ function HelpContent({ onBack }: { onBack: () => void }) {
             </Accordion.Panel>
           </Accordion.Item>
         ))}
+
+        <Accordion.Item value="sync">
+          <Accordion.Control icon={<IconRefresh size={18} stroke={1.5} />}>
+            <Text fw={500}>{t('help.section_sync')}</Text>
+          </Accordion.Control>
+          <Accordion.Panel>
+            <Accordion variant="contained" radius="md">
+              <Accordion.Item value="what">
+                <Accordion.Control>
+                  <Text size="sm" fw={500}>{t('help.sync_what_q')}</Text>
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <Text size="sm" c="dimmed" style={{ whiteSpace: 'pre-line' }}>{t('help.sync_what_a')}</Text>
+                </Accordion.Panel>
+              </Accordion.Item>
+              <Accordion.Item value="setup">
+                <Accordion.Control>
+                  <Text size="sm" fw={500}>{t('help.sync_setup_q')}</Text>
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <Text size="sm" c="dimmed" style={{ whiteSpace: 'pre-line' }}>{t('help.sync_setup_a')}</Text>
+                </Accordion.Panel>
+              </Accordion.Item>
+            </Accordion>
+          </Accordion.Panel>
+        </Accordion.Item>
 
         <Accordion.Item value="faq">
           <Accordion.Control icon={<IconBug size={18} stroke={1.5} />}>
