@@ -306,6 +306,10 @@ export function useInvoiceForm() {
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
       queryClient.invalidateQueries({ queryKey: ['items'] })
       notifications.show({ title: t('notify.invoice_created'), message: t('notify.invoice_created_msg'), color: 'green' })
+      // Form state is now persisted as a real invoice — drop dirty flag so the
+      // post-save navigate doesn't trip the leave-confirm blocker (the modal
+      // would prompt to discard changes that were already saved).
+      savedRef.current = true
       navigate(`/invoices/${newInvoice.id}`)
     },
     onError: (err: Error) => {
@@ -399,10 +403,14 @@ export function useInvoiceForm() {
 
   // ── Dirty detection (tracks explicit user edits, excludes supplier/customer selection) ──
   const [formTouched, setFormTouched] = useState(false)
+  // Ref (not state) so the blocker callback below sees the new value within the
+  // same tick that the create-mutation success runs `navigate(...)` — a state
+  // update wouldn't propagate before navigate triggers the blocker.
+  const savedRef = useRef(false)
 
   // Leave confirmation — blocks ALL navigation (sidebar, back, URL) when form is dirty
   const blocker = useBlocker(({ currentLocation, nextLocation }) =>
-    formTouched && currentLocation.pathname !== nextLocation.pathname
+    formTouched && !savedRef.current && currentLocation.pathname !== nextLocation.pathname
   )
   const leaveConfirmOpen = blocker.state === 'blocked'
   const confirmLeave = () => { if (blocker.state === 'blocked') blocker.proceed() }
