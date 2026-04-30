@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-const Version = "0.5.0"
+const Version = "0.5.1"
 
 type Config struct {
 	DataDir    string

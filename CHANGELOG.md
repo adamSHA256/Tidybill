@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.5.1
+
+### Fixed
+- Backups containing time fields (e.g. `email_sent_at`) made on one machine could fail to load when imported on another with a different local timezone. After import, the affected invoices/customers/suppliers became unreadable and the corresponding pages showed a SQL scan error. The DB now writes timestamps in an unambiguous SQLite-native format that round-trips reliably across platforms and zones. **No action required for most users** — existing data continues to work. If you hit the symptom (preview shows N invoices, then list is empty after import), open Sync → Restore from cloud and the next import will fix it.
+
 ## v0.5.0
 
 ### New
