@@ -502,6 +502,8 @@
   "wizard.choose_folder": "Vybrat složku",
   "wizard.settings_hint": "Všechno a ještě více chytrých věcí můžete kdykoliv změnit v Nastavení.",
   "wizard.account_number_required": "Číslo účtu nebo IBAN je povinné",
+  "wizard.supplier_name_label": "Název firmy nebo Vaše jméno",
+  "wizard.supplier_name_hint": "Pokud jste fyzická podnikající osoba, vyplňte své celé jméno.",
   "wizard.happy_invoicing": "Veselé fakturování!",
 
   "update.check_label": "Kontrolovat aktualizace na nejnovější verzi",
