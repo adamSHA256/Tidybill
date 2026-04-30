@@ -337,7 +337,14 @@ export function SetupWizard({ onComplete }: Props) {
             <Paper p={isMobile ? 'md' : 'xl'} radius="md" withBorder mt="md">
               <Stack gap={isMobile ? 'xs' : 'md'}>
                 <TextInput
-                  label={t('supplier.name_label')}
+                  label={
+                    <Group gap={4}>
+                      <span>{t('wizard.supplier_name_label')}</span>
+                      <Tooltip label={t('wizard.supplier_name_hint')} multiline w={300} withArrow events={{ hover: true, focus: true, touch: true }}>
+                        <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+                      </Tooltip>
+                    </Group>
+                  }
                   value={supplierName}
                   onChange={(e) => setSupplierName(e.currentTarget.value)}
                   required

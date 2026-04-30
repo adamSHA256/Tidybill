@@ -4,8 +4,15 @@ import { MantineProvider, createTheme } from '@mantine/core'
 import { Notifications } from '@mantine/notifications'
 import { ModalsProvider } from '@mantine/modals'
 import { DatesProvider } from '@mantine/dates'
+import dayjs from 'dayjs'
+import customParseFormat from 'dayjs/plugin/customParseFormat'
 import 'dayjs/locale/cs'
 import 'dayjs/locale/sk'
+
+// Without this, dayjs ignores valueFormat ("DD.MM.YYYY") when parsing typed
+// input, falls back to native Date which interprets dot-separated dates as
+// MM.DD.YYYY — so "03.02.2026" (Feb 3) becomes March 2.
+dayjs.extend(customParseFormat)
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from 'react-router-dom'
 import { router } from './router'

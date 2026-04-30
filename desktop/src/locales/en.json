@@ -501,6 +501,8 @@
   "wizard.choose_folder": "Choose folder",
   "wizard.settings_hint": "Everything and even more smart things you can change anytime in Settings.",
   "wizard.account_number_required": "Account number or IBAN is required",
+  "wizard.supplier_name_label": "Company name or your full name",
+  "wizard.supplier_name_hint": "If you're a sole proprietor, enter your full name.",
   "wizard.happy_invoicing": "Happy invoicing!",
 
   "update.check_label": "Check for updates to the latest version",
