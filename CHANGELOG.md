@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.2
+
+### Fixed
+- Creating a new invoice (or "Nová z této") no longer pops the "Opustit tvorbu faktury? Máte neuložené změny" warning after a successful save. The form is correctly considered saved before the post-save navigation runs, so the leave-confirm blocker stays out of the way.
+- Typing an issue/taxable/due date in Czech format (e.g. `03.02.2026`) is now parsed correctly as Feb 3 instead of being silently swapped to March 2 by dayjs's fallback parser. Affects every date input in the app (invoice forms, sync filters). Picking a date from the calendar was already correct; only the typed-input path was wrong.
+
 ## v0.5.1
 
 ### Fixed

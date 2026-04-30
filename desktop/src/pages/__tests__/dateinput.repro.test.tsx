@@ -34,10 +34,9 @@ describe('DateInput repro — Czech format', () => {
     // Open calendar by focusing the input
     await user.click(input)
     // Wait for the calendar to populate days
-    let dayButton: HTMLElement | undefined
     await new Promise(resolve => setTimeout(resolve, 100))
     const allButtons = document.querySelectorAll('button')
-    dayButton = Array.from(allButtons).find(b => b.textContent?.trim() === '16') as HTMLElement
+    const dayButton = Array.from(allButtons).find(b => b.textContent?.trim() === '16') as HTMLElement | undefined
     if (!dayButton) throw new Error('No day "16" among ' + allButtons.length + ': ' + Array.from(allButtons).map(b => b.textContent).join('|'))
     await user.click(dayButton)
 

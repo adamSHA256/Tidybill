@@ -24,6 +24,7 @@ export default defineConfig([
       'react-hooks/static-components': 'off',
       'react-hooks/purity': 'off',
       'react-refresh/only-export-components': ['error', { allowConstantExport: true }],
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
     },
   },
   {
