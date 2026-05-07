@@ -230,11 +230,23 @@ export function SetupWizard({ onComplete }: Props) {
   const handleFinish = async () => {
     setSaving(true)
     try {
+      const nonVatPayer = !supplierSkipped && !supplierVat
       await api.updateSettings({
         default_due_days: dueDays,
         ...(pdfDir ? { dir_pdfs: pdfDir } : {}),
         check_updates: checkUpdates ? 'true' : 'false',
+        ...(nonVatPayer ? { default_vat_rate: '0' } : {}),
       })
+      if (nonVatPayer) {
+        try {
+          const currentRates = await api.getVATRates()
+          await api.updateVATRates(
+            currentRates.map((r) => ({ ...r, is_default: r.rate === 0 }))
+          )
+        } catch {
+          // Non-fatal: the default_vat_rate setting still took effect.
+        }
+      }
       onComplete()
     } catch (err) {
       notifications.show({
