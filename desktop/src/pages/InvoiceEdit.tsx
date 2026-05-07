@@ -76,6 +76,10 @@ export function InvoiceEdit() {
   const [variableSymbol, setVariableSymbol] = useState('')
   const [vsChangedByInvoiceNumber, setVsChangedByInvoiceNumber] = useState(false)
   const vsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [dueDateChangedByIssueDate, setDueDateChangedByIssueDate] = useState(false)
+  const dueDateIssueTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [taxableDateChangedByIssueDate, setTaxableDateChangedByIssueDate] = useState(false)
+  const taxableDateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [items, setItems] = useState<ItemForm[]>([{ ...emptyItem }])
 
   // Modal states for inline creation
@@ -176,6 +180,12 @@ export function InvoiceEdit() {
   const defaultVatRate = parseFloat(editSettings?.default_vat_rate || '21') || 21
   const globalCurrency = editSettings?.default_currency || 'CZK'
 
+  const { data: dueDaysOptions } = useQuery({
+    queryKey: ['due-days'],
+    queryFn: api.getDueDaysOptions,
+  })
+  const globalDueDays = (dueDaysOptions || []).find((d) => d.is_default)?.days || dueDaysOptions?.[0]?.days || 14
+
   // Compute whether selected payment method requires bank info
   const selectedPaymentType = paymentTypes?.find((pt) => pt.name === paymentMethod)
   const requiresBankInfo = !selectedPaymentType || selectedPaymentType.requires_bank_info !== false
@@ -242,6 +252,8 @@ export function InvoiceEdit() {
   useEffect(() => {
     return () => {
       if (vsTimerRef.current) clearTimeout(vsTimerRef.current)
+      if (dueDateIssueTimerRef.current) clearTimeout(dueDateIssueTimerRef.current)
+      if (taxableDateTimerRef.current) clearTimeout(taxableDateTimerRef.current)
     }
   }, [])
 
@@ -570,6 +582,34 @@ export function InvoiceEdit() {
     setBankAccountId(v)
   }
 
+  const handleIssueDateChange = (v: string | null) => {
+    setIssueDate(v)
+    if (!v || !initialized) return
+    const cust = customers?.find((c) => c.id === customerId)
+    const days = (cust && cust.default_due_days > 0) ? cust.default_due_days : globalDueDays
+    const baseMs = new Date(v).getTime()
+    if (isNaN(baseMs)) return
+    const newDueDate = new Date(baseMs + days * 86400000).toISOString().slice(0, 10)
+    if (dueDate && newDueDate !== dueDate) {
+      setDueDateChangedByIssueDate(true)
+      if (dueDateIssueTimerRef.current) clearTimeout(dueDateIssueTimerRef.current)
+      dueDateIssueTimerRef.current = setTimeout(() => setDueDateChangedByIssueDate(false), 10000)
+    } else {
+      setDueDateChangedByIssueDate(false)
+    }
+    setDueDate(newDueDate)
+
+    const prevTaxable = taxableDate ?? issueDate
+    if (prevTaxable && prevTaxable !== v) {
+      setTaxableDateChangedByIssueDate(true)
+      if (taxableDateTimerRef.current) clearTimeout(taxableDateTimerRef.current)
+      taxableDateTimerRef.current = setTimeout(() => setTaxableDateChangedByIssueDate(false), 10000)
+    } else {
+      setTaxableDateChangedByIssueDate(false)
+    }
+    setTaxableDate(v)
+  }
+
   return (
     <Stack gap="lg">
       {/* Status warning modal */}
@@ -613,24 +653,42 @@ export function InvoiceEdit() {
               <Tooltip label={id ? t('invoice.number_readonly_hint') : ''} multiline w={300} withArrow disabled={!id} events={{ hover: true, focus: true, touch: true }}>
                 <TextInput label={t('invoice.invoice_number')} value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.currentTarget.value)} readOnly={!!id} styles={id ? { input: { opacity: 0.6, cursor: 'not-allowed' } } : undefined} />
               </Tooltip>
-              <DateInput label={t('invoice.issue_date')} valueFormat="DD.MM.YYYY" value={issueDate} onChange={setIssueDate} clearable />
-              <DateInput
-                label={
-                  <Group gap={4}>
-                    <span>{t('invoice.taxable_date')}</span>
-                    <Tooltip label={t('invoice.taxable_date_hint')} multiline w={300} withArrow events={{ hover: true, focus: true, touch: true }}>
-                      <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
-                    </Tooltip>
-                  </Group>
-                }
-                valueFormat="DD.MM.YYYY"
-                value={taxableDate ?? issueDate}
-                onChange={setTaxableDate}
-                clearable
-              />
+              <DateInput label={t('invoice.issue_date')} valueFormat="DD.MM.YYYY" value={issueDate} onChange={handleIssueDateChange} clearable />
+              <div>
+                <DateInput
+                  label={
+                    <Group gap={4}>
+                      <span>{t('invoice.taxable_date')}</span>
+                      <Tooltip label={t('invoice.taxable_date_hint')} multiline w={300} withArrow events={{ hover: true, focus: true, touch: true }}>
+                        <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+                      </Tooltip>
+                    </Group>
+                  }
+                  valueFormat="DD.MM.YYYY"
+                  value={taxableDate ?? issueDate}
+                  onChange={setTaxableDate}
+                  clearable
+                  styles={taxableDateChangedByIssueDate ? { input: { borderColor: 'var(--mantine-primary-color-6)', borderWidth: 2 } } : undefined}
+                />
+                {taxableDateChangedByIssueDate && (
+                  <Text size="xs" c="var(--mantine-primary-color-7)" mt={4}>{t('invoice.taxable_date_changed_by_issue_date')}</Text>
+                )}
+              </div>
               <Select label={t('invoice.payment_method')} data={paymentTypeSelectData} value={paymentMethod} onChange={handlePaymentTypeSelect} searchable />
               <Select label={t('invoice.currency')} data={currencyData} value={currency} onChange={(v) => handleCurrencySelect(v, 'invoice')} searchable />
-              <DateInput label={t('invoice.due_date')} valueFormat="DD.MM.YYYY" value={dueDate} onChange={setDueDate} clearable />
+              <div>
+                <DateInput
+                  label={t('invoice.due_date')}
+                  valueFormat="DD.MM.YYYY"
+                  value={dueDate}
+                  onChange={setDueDate}
+                  clearable
+                  styles={dueDateChangedByIssueDate ? { input: { borderColor: 'var(--mantine-primary-color-6)', borderWidth: 2 } } : undefined}
+                />
+                {dueDateChangedByIssueDate && (
+                  <Text size="xs" c="var(--mantine-primary-color-7)" mt={4}>{t('invoice.due_date_changed_by_issue_date')}</Text>
+                )}
+              </div>
               {requiresBankInfo && (
                 <div>
                   <TextInput

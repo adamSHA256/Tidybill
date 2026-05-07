@@ -43,7 +43,7 @@ export function MobileInvoiceCreate() {
     isLoading,
     // Core state
     issueDate,
-    setIssueDate,
+    handleIssueDateChange,
     taxableDate,
     setTaxableDate,
     dueDate,
@@ -59,6 +59,8 @@ export function MobileInvoiceCreate() {
     items,
     // UI indicators
     dueDateChangedByCustomer,
+    dueDateChangedByIssueDate,
+    taxableDateChangedByIssueDate,
     vsChangedByInvoiceNumber,
     currencyMismatch,
     // Entities
@@ -150,23 +152,31 @@ export function MobileInvoiceCreate() {
             label={t('invoice.issue_date')}
             valueFormat="DD.MM.YYYY"
             value={issueDate}
-            onChange={setIssueDate}
+            onChange={handleIssueDateChange}
             clearable
           />
-          <DateInput
-            label={
-              <Group gap={4}>
-                <span>{t('invoice.taxable_date')}</span>
-                <Tooltip label={t('invoice.taxable_date_hint')} multiline w={250} withArrow events={{ hover: true, focus: true, touch: true }}>
-                  <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
-                </Tooltip>
-              </Group>
-            }
-            valueFormat="DD.MM.YYYY"
-            value={taxableDate ?? issueDate}
-            onChange={setTaxableDate}
-            clearable
-          />
+          <div>
+            <DateInput
+              label={
+                <Group gap={4}>
+                  <span>{t('invoice.taxable_date')}</span>
+                  <Tooltip label={t('invoice.taxable_date_hint')} multiline w={250} withArrow events={{ hover: true, focus: true, touch: true }}>
+                    <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+                  </Tooltip>
+                </Group>
+              }
+              valueFormat="DD.MM.YYYY"
+              value={taxableDate ?? issueDate}
+              onChange={setTaxableDate}
+              clearable
+              styles={taxableDateChangedByIssueDate ? { input: { borderColor: 'var(--mantine-primary-color-6)', borderWidth: 2 } } : undefined}
+            />
+            {taxableDateChangedByIssueDate && (
+              <Text size="xs" c="var(--mantine-primary-color-7)" mt={4}>
+                {t('invoice.taxable_date_changed_by_issue_date')}
+              </Text>
+            )}
+          </div>
           <Select
             label={t('invoice.payment_method')}
             data={paymentTypeSelectData}
@@ -189,7 +199,7 @@ export function MobileInvoiceCreate() {
               onChange={setDueDate}
               clearable
               styles={
-                dueDateChangedByCustomer
+                (dueDateChangedByCustomer || dueDateChangedByIssueDate)
                   ? { input: { borderColor: 'var(--mantine-primary-color-6)', borderWidth: 2 } }
                   : undefined
               }
@@ -197,6 +207,11 @@ export function MobileInvoiceCreate() {
             {dueDateChangedByCustomer && (
               <Text size="xs" c="var(--mantine-primary-color-7)" mt={4}>
                 {t('invoice.due_date_changed_by_customer')}
+              </Text>
+            )}
+            {dueDateChangedByIssueDate && !dueDateChangedByCustomer && (
+              <Text size="xs" c="var(--mantine-primary-color-7)" mt={4}>
+                {t('invoice.due_date_changed_by_issue_date')}
               </Text>
             )}
           </div>

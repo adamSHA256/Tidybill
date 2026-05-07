@@ -63,21 +63,27 @@ export function InvoiceCreate() {
               </Tooltip>
             </Group>
           } placeholder={t('invoice.invoice_number_placeholder')} value={form.invoiceNumber} onChange={(e) => form.setInvoiceNumber(e.currentTarget.value)} />
-          <DateInput data-tour="invoice-dates" label={t('invoice.issue_date')} valueFormat="DD.MM.YYYY" value={form.issueDate} onChange={form.setIssueDate} clearable />
-          <DateInput
-            label={
-              <Group gap={4}>
-                <span>{t('invoice.taxable_date')}</span>
-                <Tooltip label={t('invoice.taxable_date_hint')} multiline w={300} withArrow events={{ hover: true, focus: true, touch: true }}>
-                  <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
-                </Tooltip>
-              </Group>
-            }
-            valueFormat="DD.MM.YYYY"
-            value={form.taxableDate ?? form.issueDate}
-            onChange={form.setTaxableDate}
-            clearable
-          />
+          <DateInput data-tour="invoice-dates" label={t('invoice.issue_date')} valueFormat="DD.MM.YYYY" value={form.issueDate} onChange={form.handleIssueDateChange} clearable />
+          <div>
+            <DateInput
+              label={
+                <Group gap={4}>
+                  <span>{t('invoice.taxable_date')}</span>
+                  <Tooltip label={t('invoice.taxable_date_hint')} multiline w={300} withArrow events={{ hover: true, focus: true, touch: true }}>
+                    <IconInfoCircle size={14} style={{ opacity: 0.5, cursor: 'help' }} />
+                  </Tooltip>
+                </Group>
+              }
+              valueFormat="DD.MM.YYYY"
+              value={form.taxableDate ?? form.issueDate}
+              onChange={form.setTaxableDate}
+              clearable
+              styles={form.taxableDateChangedByIssueDate ? { input: { borderColor: 'var(--mantine-primary-color-6)', borderWidth: 2 } } : undefined}
+            />
+            {form.taxableDateChangedByIssueDate && (
+              <Text size="xs" c="var(--mantine-primary-color-7)" mt={4}>{t('invoice.taxable_date_changed_by_issue_date')}</Text>
+            )}
+          </div>
           <Select label={t('invoice.payment_method')} data={form.paymentTypeSelectData} value={form.paymentMethod} onChange={form.handlePaymentTypeSelect} searchable />
           <Select label={t('invoice.currency')} data={form.currencyData} value={form.currency} onChange={(v) => form.handleCurrencySelect(v, 'invoice')} searchable />
           <div>
@@ -87,10 +93,13 @@ export function InvoiceCreate() {
               value={form.dueDate}
               onChange={form.setDueDate}
               clearable
-              styles={form.dueDateChangedByCustomer ? { input: { borderColor: 'var(--mantine-primary-color-6)', borderWidth: 2 } } : undefined}
+              styles={(form.dueDateChangedByCustomer || form.dueDateChangedByIssueDate) ? { input: { borderColor: 'var(--mantine-primary-color-6)', borderWidth: 2 } } : undefined}
             />
             {form.dueDateChangedByCustomer && (
               <Text size="xs" c="var(--mantine-primary-color-7)" mt={4}>{t('invoice.due_date_changed_by_customer')}</Text>
+            )}
+            {form.dueDateChangedByIssueDate && !form.dueDateChangedByCustomer && (
+              <Text size="xs" c="var(--mantine-primary-color-7)" mt={4}>{t('invoice.due_date_changed_by_issue_date')}</Text>
             )}
           </div>
           {form.requiresBankInfo && (

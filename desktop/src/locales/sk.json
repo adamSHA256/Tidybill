@@ -470,6 +470,8 @@
   "invoice.number_readonly_hint": "Číslo faktúry nie je možné zmeniť. Najjednoduchšie to vyriešite tak, že dáte vytvoriť 'Nová z tejto' a len zmeníte číslo faktúry tak, ako potrebujete. Po vytvorení novej túto s nesprávnym číslom zmažte.",
   "invoice.missing_fields_msg_no_bank": "Vyberte dodávateľa a odberateľa",
   "invoice.due_date_changed_by_customer": "Splatnosť zmenená podľa nastavenia odberateľa",
+  "invoice.due_date_changed_by_issue_date": "Splatnosť prepočítaná podľa dátumu vystavenia",
+  "invoice.taxable_date_changed_by_issue_date": "DUZP zmenené podľa dátumu vystavenia",
   "invoice.taxable_date": "DUZP",
   "invoice.taxable_date_hint": "Dátum uskutočnenia zdaniteľného plnenia. Vyplňte iba ak ste platca DPH, inak môžete ignorovať.",
   "invoice.payment_method": "Forma úhrady",

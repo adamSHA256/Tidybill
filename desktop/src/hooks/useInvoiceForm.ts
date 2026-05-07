@@ -113,6 +113,10 @@ export function useInvoiceForm() {
   )
   const [dueDateChangedByCustomer, setDueDateChangedByCustomer] = useState(false)
   const dueDateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [dueDateChangedByIssueDate, setDueDateChangedByIssueDate] = useState(false)
+  const dueDateIssueTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [taxableDateChangedByIssueDate, setTaxableDateChangedByIssueDate] = useState(false)
+  const taxableDateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [variableSymbol, setVariableSymbol] = useState('')
   const [vsChangedByInvoiceNumber, setVsChangedByInvoiceNumber] = useState(false)
   const vsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -279,6 +283,8 @@ export function useInvoiceForm() {
   useEffect(() => {
     return () => {
       if (dueDateTimerRef.current) clearTimeout(dueDateTimerRef.current)
+      if (dueDateIssueTimerRef.current) clearTimeout(dueDateIssueTimerRef.current)
+      if (taxableDateTimerRef.current) clearTimeout(taxableDateTimerRef.current)
       if (vsTimerRef.current) clearTimeout(vsTimerRef.current)
     }
   }, [])
@@ -638,6 +644,34 @@ export function useInvoiceForm() {
     setDueDate(newDueDate)
   }
 
+  const handleIssueDateChange = (v: string | null) => {
+    setIssueDate(v)
+    if (!v) return
+    const cust = customers?.find((c) => c.id === customerId)
+    const days = (cust && cust.default_due_days > 0) ? cust.default_due_days : globalDueDays
+    const baseMs = new Date(v).getTime()
+    if (isNaN(baseMs)) return
+    const newDueDate = new Date(baseMs + days * 86400000).toISOString().slice(0, 10)
+    if (dueDate && newDueDate !== dueDate) {
+      setDueDateChangedByIssueDate(true)
+      if (dueDateIssueTimerRef.current) clearTimeout(dueDateIssueTimerRef.current)
+      dueDateIssueTimerRef.current = setTimeout(() => setDueDateChangedByIssueDate(false), 10000)
+    } else {
+      setDueDateChangedByIssueDate(false)
+    }
+    setDueDate(newDueDate)
+
+    const prevTaxable = taxableDate ?? issueDate
+    if (prevTaxable && prevTaxable !== v) {
+      setTaxableDateChangedByIssueDate(true)
+      if (taxableDateTimerRef.current) clearTimeout(taxableDateTimerRef.current)
+      taxableDateTimerRef.current = setTimeout(() => setTaxableDateChangedByIssueDate(false), 10000)
+    } else {
+      setTaxableDateChangedByIssueDate(false)
+    }
+    setTaxableDate(v)
+  }
+
   const handleBankSelect = (v: string | null) => {
     if (v === CREATE_NEW) {
       openBankModal()
@@ -710,6 +744,7 @@ export function useInvoiceForm() {
     bankAccountId: selectedBankId,
     issueDate,
     setIssueDate,
+    handleIssueDateChange,
     taxableDate,
     setTaxableDate,
     dueDate,
@@ -726,6 +761,8 @@ export function useInvoiceForm() {
 
     // UI indicators
     dueDateChangedByCustomer,
+    dueDateChangedByIssueDate,
+    taxableDateChangedByIssueDate,
     vsChangedByInvoiceNumber,
     currencyMismatch,
 

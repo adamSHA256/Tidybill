@@ -469,6 +469,8 @@
   "invoice.number_readonly_hint": "Invoice number cannot be changed. The easiest way is to use \"New from this\" and just change the invoice number as needed. After creating the new one, delete this invoice with the wrong number.",
   "invoice.missing_fields_msg_no_bank": "Select supplier and customer",
   "invoice.due_date_changed_by_customer": "Due date changed based on customer settings",
+  "invoice.due_date_changed_by_issue_date": "Due date recalculated from issue date",
+  "invoice.taxable_date_changed_by_issue_date": "Taxable supply date updated from issue date",
   "invoice.taxable_date": "Taxable supply date",
   "invoice.taxable_date_hint": "Date of taxable supply. Only relevant for VAT payers — if you are not a VAT payer, you can ignore this field.",
   "invoice.payment_method": "Payment method",
