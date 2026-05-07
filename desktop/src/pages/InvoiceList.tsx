@@ -12,12 +12,15 @@ import {
   Stack,
   Loader,
   Center,
+  Menu,
+  Tooltip,
 } from '@mantine/core'
-import { IconSearch, IconPlus, IconArrowsSort, IconSortAscending, IconSortDescending } from '@tabler/icons-react'
+import { notifications } from '@mantine/notifications'
+import { IconSearch, IconPlus, IconArrowsSort, IconSortAscending, IconSortDescending, IconChevronDown } from '@tabler/icons-react'
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { api, formatMoney, formatDate, type Invoice } from '../api/client'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { api, formatMoney, formatDate, type Invoice, type InvoiceStatus } from '../api/client'
 import { useT } from '../i18n'
 
 const DEFAULT_SORT_FIELD: SortField = 'created_at'
@@ -35,6 +38,9 @@ const statusColors: Record<string, string> = {
   cancelled: 'dimmed',
 }
 
+const selectableStatuses: InvoiceStatus[] = ['draft', 'created', 'sent', 'paid', 'partially_paid', 'cancelled']
+const lockedStatuses: ReadonlySet<string> = new Set(['paid', 'cancelled'])
+
 export function InvoiceList() {
   const [searchParams] = useSearchParams()
   const [filter, setFilter] = useState(searchParams.get('status') || 'all')
@@ -43,7 +49,20 @@ export function InvoiceList() {
   const [sortField, setSortField] = useState<SortField | null>(DEFAULT_SORT_FIELD)
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { t } = useT()
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: InvoiceStatus }) => api.updateInvoiceStatus(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
+      notifications.show({ title: t('notify.status_updated'), message: t('notify.status_updated_msg'), color: 'green' })
+    },
+    onError: (err: Error) => {
+      notifications.show({ title: t('common.error'), message: err.message, color: 'red' })
+    },
+  })
 
   // TODO: also expose this setting in CLI version
   const { data: settings } = useQuery({
@@ -196,10 +215,40 @@ export function InvoiceList() {
                     <Table.Td fz="sm">{formatDate(inv.issue_date)}</Table.Td>
                     <Table.Td fz="sm">{formatDate(inv.due_date)}</Table.Td>
                     <Table.Td fz="sm" fw={600}>{formatMoney(inv.total, inv.currency)}</Table.Td>
-                    <Table.Td>
-                      <Badge color={statusColors[inv.status]} size="sm" variant="light">
-                        {t(`status.${inv.status}`)}
-                      </Badge>
+                    <Table.Td onClick={(e) => e.stopPropagation()}>
+                      {lockedStatuses.has(inv.status) ? (
+                        <Badge color={statusColors[inv.status]} size="sm" variant="light">
+                          {t(`status.${inv.status}`)}
+                        </Badge>
+                      ) : (
+                        <Menu shadow="md" width={200} withinPortal position="bottom-start">
+                          <Menu.Target>
+                            <Tooltip label={t('invoice.change_status')} withArrow openDelay={400}>
+                              <Badge
+                                color={statusColors[inv.status]}
+                                size="sm"
+                                variant="light"
+                                rightSection={<IconChevronDown size={10} />}
+                                style={{ cursor: 'pointer' }}
+                              >
+                                {t(`status.${inv.status}`)}
+                              </Badge>
+                            </Tooltip>
+                          </Menu.Target>
+                          <Menu.Dropdown>
+                            {selectableStatuses.map((s) => (
+                              <Menu.Item
+                                key={s}
+                                disabled={s === inv.status}
+                                color={statusColors[s]}
+                                onClick={() => statusMutation.mutate({ id: inv.id, status: s })}
+                              >
+                                {t(`status.${s}`)}
+                              </Menu.Item>
+                            ))}
+                          </Menu.Dropdown>
+                        </Menu>
+                      )}
                     </Table.Td>
                   </Table.Tr>
               ))}
