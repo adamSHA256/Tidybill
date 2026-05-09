@@ -9,12 +9,17 @@
 #   scripts/release.sh --dry-run          show what would change, no writes
 #   scripts/release.sh --no-push          commit + tag locally, don't push
 #   scripts/release.sh --skip-check       skip `make check`
+#   scripts/release.sh --no-prompt        skip Claude/LLM prompt step
 #
 # Preflight: must be on main, clean tree, in sync with origin/main, target tag
-# unused. Then bumps every version string, opens $EDITOR for changelog entry
-# (prefilled with commits since last tag), runs `make check`, asks once for
-# confirmation, then commits + tags + pushes (main first, then tag — so CI
-# builds from a commit that's already on origin).
+# unused. Then bumps every version string. For the changelog: writes a self-
+# contained prompt to /tmp/tidybill-changelog-prompt.md (commits since last
+# tag + style reference from prior entries) — paste into a fresh Claude/LLM
+# instance, which writes the result to /tmp/tidybill-changelog.md. The script
+# waits for ENTER then opens that file in $EDITOR for a review pass (or falls
+# back to a commit-list template if you skipped the LLM step). Runs
+# `make check`, asks for confirmation, then commits + tags + pushes (main
+# first, then tag — so CI builds from a commit that's already on origin).
 
 set -euo pipefail
 
@@ -26,6 +31,10 @@ EXPLICIT_VERSION=""
 DRY_RUN=0
 NO_PUSH=0
 SKIP_CHECK=0
+NO_PROMPT=0
+
+PROMPT_FILE=/tmp/tidybill-changelog-prompt.md
+RESULT_FILE=/tmp/tidybill-changelog.md
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -36,7 +45,8 @@ while [ $# -gt 0 ]; do
     --dry-run)     DRY_RUN=1; shift ;;
     --no-push)     NO_PUSH=1; shift ;;
     --skip-check)  SKIP_CHECK=1; shift ;;
-    -h|--help)     sed -n '3,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --no-prompt)   NO_PROMPT=1; shift ;;
+    -h|--help)     sed -n '3,22p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *)             echo "unknown arg: $1" >&2; exit 2 ;;
   esac
 done
@@ -133,32 +143,112 @@ fi
 LAST_TAG="v$CUR"
 COMMITS="$(git log --no-merges --pretty='- %s' "$LAST_TAG"..HEAD 2>/dev/null || true)"
 
+# Build a self-contained prompt for a fresh LLM session that knows nothing
+# about this repo. Includes commits since last tag + the most recent two
+# CHANGELOG entries as a style reference.
+write_changelog_prompt() {
+  local out="$1" style
+  style="$(awk '/^## v/ { c++; if (c > 2) exit } c >= 1 { print }' CHANGELOG.md)"
+  cat >"$out" <<EOF
+You are writing a CHANGELOG.md entry for TidyBill $TAG.
+
+TidyBill is a desktop/mobile invoicing app for the Czech market. Users are
+small business owners; UI strings are in Czech.
+
+# Commits since $LAST_TAG
+
+$COMMITS
+
+# Style reference — most recent CHANGELOG.md entries (match this voice)
+
+$style
+
+# Rules
+
+- Group bullets under: \`### Fixed\` (bug fixes), \`### New\` (features),
+  \`### Build\` (CI / build / tooling — usually omit unless visibly relevant
+  to users).
+- Combine commits that describe the same change into one bullet.
+- Write user-visible language. Don't quote a commit subject verbatim if it's
+  terse or scoped (e.g. \`wizard:\`, \`invoice(list):\`) — rewrite for a
+  non-developer reader.
+- Czech UI labels stay in Czech, in quotes, the way prior entries do.
+- Skip purely internal commits with no user impact (refactors, lint, tests,
+  most dep bumps). Skip \`release:\` and \`Merge pull request\` commits.
+- 1–2 sentences per bullet. No marketing fluff.
+
+# Output
+
+Write the result to \`$RESULT_FILE\`. Content of that file must be exactly
+the markdown that should be prepended to CHANGELOG.md:
+
+  ## $TAG
+
+  ### Fixed
+  - ...
+
+  ### New
+  - ...
+
+No preamble, no trailing notes — just the markdown.
+EOF
+}
+
 if [ "$DRY_RUN" = "1" ]; then
   say "would open editor for CHANGELOG.md entry"
   [ -n "$COMMITS" ] && { echo "  prefill candidates:"; echo "$COMMITS" | sed 's/^/    /'; }
+  if [ "$NO_PROMPT" != "1" ]; then
+    echo "  would also write LLM prompt to: $PROMPT_FILE"
+  fi
 else
   TPL="$(mktemp -t tidybill-changelog.XXXXXX.md)"
   trap 'rm -f "$TPL"' EXIT
-  {
-    echo "## $TAG"
-    echo
-    if [ -n "$COMMITS" ]; then
-      echo "<!-- commits since $LAST_TAG (delete this line and edit below) -->"
-      echo "### Fixed"
-      echo "$COMMITS"
-    else
-      echo "### Fixed"
+
+  # Clear any stale Claude output from a previous run.
+  rm -f "$RESULT_FILE"
+
+  if [ "$NO_PROMPT" != "1" ]; then
+    write_changelog_prompt "$PROMPT_FILE"
+    say "wrote LLM prompt to $PROMPT_FILE"
+    cat <<MSG
+
+  To draft the changelog with Claude (or any LLM):
+    1) cat $PROMPT_FILE   # or open it; copy the full content
+    2) paste into a new chat (no prior context needed)
+    3) the model writes the result to $RESULT_FILE
+    4) come back here and press ENTER — I'll open it for review
+
+  Or just press ENTER now to write the changelog by hand instead.
+MSG
+    printf '  > '
+    read -r _ </dev/tty
+  fi
+
+  if [ -f "$RESULT_FILE" ] && [ -s "$RESULT_FILE" ]; then
+    say "found $RESULT_FILE — using as initial draft"
+    cp "$RESULT_FILE" "$TPL"
+  else
+    {
+      echo "## $TAG"
+      echo
+      if [ -n "$COMMITS" ]; then
+        echo "<!-- commits since $LAST_TAG (delete this line and edit below) -->"
+        echo "### Fixed"
+        echo "$COMMITS"
+      else
+        echo "### Fixed"
+        echo "- "
+      fi
+      echo
+      echo "<!-- optional sections — delete if unused"
+      echo "### New"
       echo "- "
-    fi
-    echo
-    echo "<!-- optional sections — delete if unused"
-    echo "### New"
-    echo "- "
-    echo
-    echo "### Build"
-    echo "- "
-    echo "-->"
-  } >"$TPL"
+      echo
+      echo "### Build"
+      echo "- "
+      echo "-->"
+    } >"$TPL"
+  fi
 
   EDITOR="${EDITOR:-vi}"
   say "opening \$EDITOR for $TAG changelog (save & quit when done)"
