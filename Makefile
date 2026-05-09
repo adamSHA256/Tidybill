@@ -20,7 +20,7 @@ else
   TRIPLE := x86_64-pc-windows-msvc
 endif
 
-.PHONY: build run clean build-linux build-windows build-all desktop desktop-sidecar desktop-dev desktop-fetch-rclone desktop-fetch-rclone-linux desktop-fetch-rclone-windows desktop-fetch-rclone-osx seed check android-aar android-apk android-build android-check-aar
+.PHONY: build run clean build-linux build-windows build-all desktop desktop-sidecar desktop-dev desktop-fetch-rclone desktop-fetch-rclone-linux desktop-fetch-rclone-windows desktop-fetch-rclone-osx seed check android-aar android-apk android-build android-check-aar version version-minor version-major version-dry
 
 # === CLI targets (unchanged) ===
 build:
@@ -90,6 +90,28 @@ desktop-sidecar: $(RCLONE_BIN)
 
 desktop-dev: desktop-sidecar
 	cd desktop && pnpm tauri dev
+
+# === Release / version bump ===
+# `make version`         → patch bump (e.g. 0.5.2 → 0.5.3) + changelog editor + commit + tag + push
+# `make version-minor`   → minor bump
+# `make version-major`   → major bump
+# `make version-dry`     → show what would change, no writes/git
+# Pass-through extra args via ARGS, e.g.:
+#   make version ARGS="--version 0.6.0"
+#   make version ARGS="--no-push"
+#   make version ARGS="--skip-check"
+ARGS ?=
+version:
+	./scripts/release.sh $(ARGS)
+
+version-minor:
+	./scripts/release.sh --bump minor $(ARGS)
+
+version-major:
+	./scripts/release.sh --bump major $(ARGS)
+
+version-dry:
+	./scripts/release.sh --dry-run $(ARGS)
 
 # === Check (same as CI) ===
 check:
