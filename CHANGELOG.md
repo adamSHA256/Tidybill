@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.5.3
+### New New
+- Status badge in the invoice list is now clickable and opens an inline menu to change the invoice's status without leaving the list 
+— faster than opening the invoice just to mark it as paid.- Status badge in the invoice list is now clickable and opens an inline 
+menu to change the invoice's status without leaving the list — faster than opening the invoice just to mark it as paid. - Changing 
+the issue date on an invoice now automatically recalculates the due date and DÚZP, briefly highlighting the updated fields so the 
+change is easy to spot. - The setup wizard's "nejsem plátce DPH" choice now sets the default VAT rate to 0%, so new invoices come out 
+without VAT by default instead of requiring the rate to be cleared on every invoice. - Changing the issue date on an invoice now 
+automatically recalculates the due date and DÚZP, briefly highlighting the updated fields so the change is easy to spot. - The setup 
+wizard's "nejsem plátce DPH" choice now sets the default VAT rate to 0%, so new invoices come out without VAT by default instead of 
+requiring the rate to be cleared on every invoice.
+
 ## v0.5.2
 
 ### Fixed
