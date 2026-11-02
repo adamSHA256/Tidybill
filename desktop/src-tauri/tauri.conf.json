@@ -54,6 +54,9 @@
         "template": "installer.nsi"
       }
     },
+    "macOS": {
+      "signingIdentity": "-"
+    },
     "linux": {
       "deb": {
         "files": {

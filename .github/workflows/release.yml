@@ -384,11 +384,11 @@ jobs:
           rename_asset "TidyBill_${VERSION}_amd64.deb"           "TidyBill_Linux_Desktop_amd64.deb"
           rename_asset "TidyBill-${VERSION}-1.x86_64.rpm"        "TidyBill_Linux_Desktop_x86_64.rpm"
           rename_asset "TidyBill_${VERSION}_aarch64.dmg"         "TidyBill_Mac_Desktop_aarch64.dmg"
-          rename_asset "TidyBill_${VERSION}_x64.app.tar.gz"       "TidyBill_Mac_Desktop_x64.app.tar.gz"
+          rename_asset "TidyBill_x64.app.tar.gz"                 "TidyBill_Mac_Desktop_x64.app.tar.gz"
 
           # Signature files for updater (if present)
           rename_asset "TidyBill_${VERSION}_aarch64.dmg.sig"     "TidyBill_Mac_Desktop_aarch64.dmg.sig"
-          rename_asset "TidyBill_${VERSION}_x64.app.tar.gz.sig"  "TidyBill_Mac_Desktop_x64.app.tar.gz.sig"
+          rename_asset "TidyBill_x64.app.tar.gz.sig"             "TidyBill_Mac_Desktop_x64.app.tar.gz.sig"
           rename_asset "TidyBill-${VERSION}-1.x86_64.rpm.sig"    "TidyBill_Linux_Desktop_x86_64.rpm.sig"
 
           # Update release body with download table
@@ -435,6 +435,15 @@ jobs:
           | **Windows** | [tidybill-windows-terminal-amd64.exe](${DOWNLOAD_BASE}/tidybill-windows-terminal-amd64.exe) |
           | **macOS (Apple Silicon)** | [tidybill-mac-terminal-arm64](${DOWNLOAD_BASE}/tidybill-mac-terminal-arm64) |
           | **macOS (Intel)** | [tidybill-mac-terminal-amd64](${DOWNLOAD_BASE}/tidybill-mac-terminal-amd64) |
+
+          On macOS, make the downloaded CLI executable and remove the download quarantine before the first run (use \`amd64\` instead of \`arm64\` on Intel Macs):
+
+          \`\`\`
+          cd ~/Downloads
+          chmod +x tidybill-mac-terminal-arm64
+          xattr -d com.apple.quarantine tidybill-mac-terminal-arm64
+          ./tidybill-mac-terminal-arm64
+          \`\`\`
 
           </details>
 
